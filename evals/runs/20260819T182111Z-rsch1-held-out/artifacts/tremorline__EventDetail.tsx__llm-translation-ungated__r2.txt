@@ -1,0 +1,111 @@
+// Read-only view of a single sighting record. Renders whatever getSighting
+// returned, including the species observed and location details. Optional fields
+// that are absent render as an em dash rather than being hidden, so the layout
+// stays stable from one sighting to the next.
+import type { SightingDetail as SightingDetailData } from "../api/tracker";
+
+interface SightingDetailProps {
+  sighting: SightingDetailData;
+  onReport: () => void;
+}
+
+export function SightingDetail({ sighting, onReport }: SightingDetailProps) {
+  const observations = sighting.observations ?? [];
+  const locations = sighting.locations ?? [];
+  return (
+    <section className="sighting-detail">
+      <div className="sighting-detail-head">
+        <div>
+          <h2>{sighting.sightingId}</h2>
+          <p>{sighting.observationTime}</p>
+        </div>
+        <button type="button" className="btn btn-primary" onClick={onReport}>
+          Report additional observations
+        </button>
+      </div>
+
+      <dl className="detail-grid">
+        <dt>Sighting id</dt>
+        <dd>{sighting.sightingId}</dd>
+        <dt>Observation time</dt>
+        <dd>{sighting.observationTime}</dd>
+        <dt>Species</dt>
+        <dd>{sighting.speciesName || "—"}</dd>
+        <dt>Location latitude</dt>
+        <dd>{sighting.locationLatitude.toFixed(4)}</dd>
+        <dt>Location longitude</dt>
+        <dd>{sighting.locationLongitude.toFixed(4)}</dd>
+        <dt>Elevation (m)</dt>
+        <dd>{sighting.elevationM.toFixed(1)}</dd>
+        <dt>Confidence level</dt>
+        <dd>{sighting.confidenceLevel !== undefined ? sighting.confidenceLevel.toFixed(2) : "—"}</dd>
+        <dt>Review status</dt>
+        <dd>{sighting.reviewStatus}</dd>
+        <dt>Observation count</dt>
+        <dd>{sighting.observationCount}</dd>
+      </dl>
+
+      <h3>
+        Species observations <span className="observation-count">{observations.length}</span>
+      </h3>
+      <p className="section-note">
+        One row per contributing observation. The sighting's own species field above is the
+        mean of these values, not a re-derived preferred solution.
+      </p>
+      {observations.length === 0 ? (
+        <p className="empty-note">No per-observation species data are recorded against this sighting.</p>
+      ) : (
+        <>
+          <div className="observation-list-head">
+            <span>Observer</span>
+            <span>Observation type</span>
+            <span>Value</span>
+            <span>Residual</span>
+          </div>
+          <ul className="observation-list">
+            {observations.map((obs) => (
+              <li key={obs.observationId}>
+                <span>{obs.observerId}</span>
+                <span>{obs.observationType}</span>
+                <span>{obs.value.toFixed(2)}</span>
+                <span>residual {obs.residual.toFixed(2)}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
+      <h3>
+        Location details <span className="location-count">{locations.length}</span>
+      </h3>
+      <p className="section-note">
+        Every location bound to this sighting by a tracking run, across every
+        sensor that reported one, oldest arrival first.
+      </p>
+      {locations.length === 0 ? (
+        <p className="empty-note">No location details are associated with this sighting.</p>
+      ) : (
+        <>
+          <div className="location-list-head">
+            <span>Sensor</span>
+            <span>Channel</span>
+            <span>Phase</span>
+            <span>Detected at</span>
+            <span>Intensity</span>
+          </div>
+          <ul className="location-list">
+            {locations.map((loc) => (
+              <li key={loc.locationId}>
+                <span>{loc.sensorId}</span>
+                <span>{loc.channelId}</span>
+                <span>{loc.phaseHint || "—"}</span>
+                <span>{loc.detectedAt}</span>
+                <span>intensity {loc.intensity.toFixed(3)}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </section>
+  );
+}

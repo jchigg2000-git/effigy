@@ -1,0 +1,13 @@
+{
+  "key": "meterworks__main.go__source__r0",
+  "arm": "source",
+  "replicate": 0,
+  "source_path": "corpus/meterworks/api/cmd/meterworksd/main.go",
+  "source_sha256": "ff23a7603ab82c6b61085b74ea86249f6eac78e802f3d3f0f8c537513fb04497",
+  "true_domain_id": "water-utility-metering",
+  "language": "go",
+  "artifact_sha256": "ff23a7603ab82c6b61085b74ea86249f6eac78e802f3d3f0f8c537513fb04497",
+  "artifact_lines": 98,
+  "latency_s": 0.0,
+  "solution_meta": {}
+}

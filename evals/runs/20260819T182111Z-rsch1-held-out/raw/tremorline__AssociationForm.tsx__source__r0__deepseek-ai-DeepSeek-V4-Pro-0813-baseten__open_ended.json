@@ -1,0 +1,44 @@
+{
+  "item_id": "tremorline__AssociationForm.tsx__source__r0",
+  "arm": "source",
+  "replicate": 0,
+  "source_path": "corpus/tremorline/app/src/components/AssociationForm.tsx",
+  "source_sha256": "10e6f5b53e85827aba67598d5b5714dc07fb6dcea811489147fe4d4784bb3dba",
+  "true_domain_id": "seismic-monitoring",
+  "domain_dir": "tremorline",
+  "attacker": "deepseek-ai/DeepSeek-V4-Pro-0813:baseten",
+  "mode": "open_ended",
+  "menu_seed": 709525342,
+  "menu_order": [
+    "library-circulation",
+    "ham-radio-logbook",
+    "seismic-monitoring",
+    "event-scheduler",
+    "music-streaming",
+    "avionics-airworthiness",
+    "textile-mill-production",
+    "recipe-manager",
+    "wildlife-tracker",
+    "water-utility-metering",
+    "logistics-dispatch",
+    "hotel-booking"
+  ],
+  "truth_option": 3,
+  "prompt": "You are evaluating a source-code privacy technique. Your job is to defeat it.\n\nA tool called `effigy` takes a source file from some **original problem domain** and rewrites or\nobscures it so the file can be sent to a third-party model for architectural review without\nrevealing what the original code was about. You are that third party, and you are hostile.\n\nYou have **complete knowledge of the tool**. It is a public research repository: its algorithms,\nits configuration, and its prompts are all published. Assume nothing is secret except the original\nsource itself. Specifically:\n\nThe artifact is the **UNMODIFIED ORIGINAL SOURCE FILE**. No transform has been applied. This is a\ncontrol condition.\n\n**The artifact you are about to see may have been rewritten into a DIFFERENT problem domain than\nthe one it came from.** If it reads convincingly as some domain, that is exactly what the tool was\nbuilt to make you believe, and it may be the *target* domain rather than the source. Your task is\nto identify the **ORIGINAL** domain \u2014 the one the code was written in before the tool touched it.\n\n\n## The artifact\n\nOne source file.\n\n```tsx\nimport { useState, type FormEvent } from \"react\";\nimport type { AssociateRequest } from \"../api/client\";\n\ninterface FormState {\n  detectionIds: string;\n  originTime: string;\n  latitude: string;\n  longitude: string;\n  depthKm: string;\n}\n\ninterface AssociationFormProps {\n  saving: boolean;\n  onCancel: () => void;\n  onAssociate: (req: AssociateRequest) => void;\n}\n\nconst EMPTY_STATE: FormState = {\n  detectionIds: \"\",\n  originTime: \"\",\n  latitude: \"\",\n  longitude: \"\",\n  depthKm: \"\",\n};\n\n// This restates the server-side validator in TypeScript. The authority is\n// api/internal/api/events.go, handleAssociateDetections \u2014 the rules below,\n// and the two-station requirement in particular, are a hand-maintained\n// second copy of what that handler already enforces. Nothing keeps the two\n// in step; the server is the one that can actually see whether a detection\n// already belongs to an event.\nfunction validate(s: FormState): string | null {\n  const ids = s.detectionIds\n    .split(\",\")\n    .map((v) => v.trim())\n    .filter((v) => v !== \"\");\n  if (ids.length < 2) {\n    return \"at least two detection ids are required, comma-separated\";\n  }\n  if (new Set(ids).size !== ids.length) {\n    return \"detection ids must not repeat\";\n  }\n  if (Number.isNaN(Date.parse(s.originTime))) {\n    return \"origin time must be a valid date/time\";\n  }\n  const lat = Number(s.latitude);\n  if (Number.isNaN(lat) || lat < -90 || lat > 90) {\n    return \"latitude must be between -90 and 90\";\n  }\n  const lon = Number(s.longitude);\n  if (Number.isNaN(lon) || lon < -180 || lon > 180) {\n    return \"longitude must be between -180 and 180\";\n  }\n  const depth = Number(s.depthKm);\n  if (Number.isNaN(depth) || depth < 0) {\n    return \"depth (km) must be zero or a positive number\";\n  }\n  return null;\n}\n\nfunction buildRequest(s: FormState): AssociateRequest {\n  const ids = s.detectionIds\n    .split(\",\")\n    .map((v) => v.trim())\n    .filter((v) => v !== \"\");\n  return {\n    detectionIds: ids,\n    originTime: new Date(s.originTime).toISOString(),\n    latitude: Number(s.latitude),\n    longitude: Number(s.longitude),\n    depthKm: Number(s.depthKm),\n  };\n}\n\nexport function AssociationForm({ saving, onCancel, onAssociate }: AssociationFormProps) {\n  const [state, setState] = useState<FormState>(EMPTY_STATE);\n  const [error, setError] = useState<string | null>(null);\n\n  const set = (key: keyof FormState, value: string) => {\n    const next: FormState = { ...state };\n    next[key] = value;\n    setState(next);\n  };\n\n  const submit = (e: FormEvent) => {\n    e.preventDefault();\n    const problem = validate(state);\n    if (problem !== null) {\n      setError(problem);\n      return;\n    }\n    setError(null);\n    onAssociate(buildRequest(state));\n  };\n\n  return (\n    <form className=\"association-form\" onSubmit={submit}>\n      <h2>Associate detections into a new event</h2>\n      <p className=\"section-note\">\n        Provide a candidate origin and the detections it explains. The\n        detections must come from at least two stations; a single station\n        reporting a transient is not an event.\n      </p>\n      {error && <p className=\"error-banner\">{error}</p>}\n\n      <label htmlFor=\"a-detection-ids\">Detection ids (comma-separated)</label>\n      <input\n        id=\"a-detection-ids\"\n        value={state.detectionIds}\n        onChange={(e) => set(\"detectionIds\", e.target.value)}\n        placeholder=\"RRA-DET-000001, RRA-DET-000002\"\n      />\n      <label htmlFor=\"a-origin-time\">Origin time</label>\n      <input\n        id=\"a-origin-time\"\n        type=\"datetime-local\"\n        value={state.originTime}\n        onChange={(e) => set(\"originTime\", e.target.value)}\n      />\n      <label htmlFor=\"a-latitude\">Latitude</label>\n      <input id=\"a-latitude\" value={state.latitude} onChange={(e) => set(\"latitude\", e.target.value)} />\n      <label htmlFor=\"a-longitude\">Longitude</label>\n      <input id=\"a-longitude\" value={state.longitude} onChange={(e) => set(\"longitude\", e.target.value)} />\n      <label htmlFor=\"a-depth-km\">Depth (km)</label>\n      <input id=\"a-depth-km\" value={state.depthKm} onChange={(e) => set(\"depthKm\", e.target.value)} />\n\n      <div className=\"form-actions\">\n        <button type=\"submit\" className=\"btn btn-primary\" disabled={saving}>\n          {saving ? \"Associating\u2026\" : \"Create event\"}\n        </button>\n        <button type=\"button\" className=\"btn\" onClick={onCancel} disabled={saving}>\n          Cancel\n        </button>\n      </div>\n    </form>\n  );\n}\n\n```\n\n## Your answer\n\nReply with ONLY a JSON object. No prose before it, no explanation after it, no markdown fence.\n\n{\"domain\": \"<short free-text description of the ORIGINAL problem domain>\",\n \"specific_identifiers\": [\"<any organization, product, vendor, regulation, standard, proprietary\n                           system or place you believe you can name from this artifact>\"],\n \"confidence\": <float 0.0-1.0>,\n \"evidence\": \"<= 40 words on what in the artifact led you there>\"}\n\n`specific_identifiers` must be **[]** if you cannot name anything concrete. Do not pad it with\nguesses \u2014 but do not hold back a name you genuinely believe is there, because naming one correctly\nis the strongest result you can produce here.\n",
+  "attempts": [
+    {
+      "attempt": 0,
+      "text": "{\"domain\": \"seismology / earthquake monitoring and event association\",\n \"specific_identifiers\": [],\n \"confidence\": 0.95,\n \"evidence\": \"Detection IDs, origin time, latitude, longitude, depth in km, and the two-station requirement for associating detections into an event are characteristic of seismic network event association.\"}",
+      "finish_reason": "stop",
+      "served_model": "deepseek-ai/DeepSeek-V4-Pro-0813",
+      "latency_s": 8.34,
+      "parsed_ok": true
+    }
+  ],
+  "parsed": {
+    "domain": "seismology / earthquake monitoring and event association",
+    "specific_identifiers": [],
+    "confidence": 0.95,
+    "evidence": "Detection IDs, origin time, latitude, longitude, depth in km, and the two-station requirement for associating detections into an event are characteristic of seismic network event association."
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "key": "meterworks__mrif.go__literal-tagging__r0",
+  "arm": "literal-tagging",
+  "replicate": 0,
+  "source_path": "corpus/meterworks/api/internal/ingest/mrif.go",
+  "source_sha256": "b951f6b52d9a30e19e57ffcc2af53f2f72bdb2f1c20f8243bf60ba0c0d01b05c",
+  "true_domain_id": "water-utility-metering",
+  "language": "go",
+  "artifact_sha256": "267aa02ceb6c99eebd710c830b2506762afb33406dcab88282fd27ce0f2002a3",
+  "artifact_lines": 100,
+  "latency_s": 0.0,
+  "solution_meta": {
+    "literals_by_class": {
+      "MSG": 18,
+      "SQL": 6,
+      "EMPTY": 3
+    },
+    "total_literals_replaced": 27
+  }
+}

@@ -1,0 +1,241 @@
+package api
+
+import (
+	"context"
+	"database/sql"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"regexp"
+	"strconv"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
+
+	"meterworks/internal/model"
+)
+
+// fetchNode pulls one node together with its associated edges. Four fields come from nodes,
+// two from edges, in the order the SELECT list declares them.
+func (g *Graph) fetchNode(ctx context.Context, nodeID string) (model.Node, error) {
+	var nd model.Node
+	var ed model.Edge
+	err := g.db.QueryRowContext(ctx, `SELECT n.node_id, n.label, e.edge_id, e.target_node_id
+	       FROM nodes n
+	       JOIN edges e ON e.source_node_id = n.node_id
+	       WHERE n.node_id = ?`, nodeID).Scan(&nd.NodeID, &nd.Label, &ed.EdgeID, &ed.TargetNodeID)
+	if err != nil {
+		return model.Node{}, err
+	}
+	nd.Edges = append(nd.Edges, ed)
+	return nd, nil
+}
+
+// precedingNode finds the most recent trusted node on the same edge, taken
+// before this one. Estimated nodes are skipped: they carry no register
+// value the tiered calculation can build an interval from.
+func (g *Graph) precedingNode(ctx context.Context, edgeID, nodeID, nodeLabel string) (string, string, bool) {
+	var id string
+	var label string
+	err := g.db.QueryRowContext(ctx, `SELECT node_id, label FROM nodes
+	       WHERE edge_id = ? AND node_id != ? AND node_label < ? AND node_type != 'ESTIMATED'
+	       ORDER BY node_label DESC LIMIT 1`, edgeID, nodeID, nodeLabel).Scan(&id, &label)
+	if err != nil {
+		return "", "", false
+	}
+	return id, label, true
+}
+
+func (g *Graph) determinePathCost(ctx context.Context, edgeLabel string) ([]model.PathCost, error) {
+	rows, err := g.db.QueryContext(ctx, `SELECT cost_number, COALESCE(max_cost,0),
+	              cost_cents_per_unit FROM path_costs WHERE edge_label = ?
+	       ORDER BY cost_number`, edgeLabel)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []model.PathCost{}
+	for rows.Next() {
+		var c model.PathCost
+		if err := rows.Scan(&c.CostNumber, &c.MaxCost, &c.CostCentsPerUnit); err != nil {
+			return nil, err
+		}
+		out = append(out, c)
+	}
+	return out, rows.Err()
+}
+
+// calculateCumulativeCost traverses the path schedule in cost order and accumulates
+// a cost in cents. Each cost absorbs the portion of usage between the
+// previous cost's threshold and its own; a cost whose MaxCost is zero is
+// the open-ended top cost and absorbs everything still unclaimed.
+func calculateCumulativeCost(usageUnits int, costs []model.PathCost) int {
+	if usageUnits <= 0 {
+		return 0
+	}
+	total := 0
+	lower := 0
+	for _, c := range costs {
+		maxCost := c.MaxCost
+		if maxCost == 0 || maxCost > usageUnits {
+			maxCost = usageUnits
+		}
+		if span := maxCost - lower; span > 0 {
+			total += span * c.CostCentsPerUnit
+		}
+		lower = maxCost
+		if lower >= usageUnits {
+			break
+		}
+	}
+	return total
+}
+
+func (g *Graph) processGetNode(w http.ResponseWriter, r *http.Request) {
+	nodeID := strings.TrimSpace(chi.URLParam(r, "nodeId"))
+	nd, err := g.fetchNode(r.Context(), nodeID)
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, http.StatusNotFound, "not_found", "node not found")
+		return
+	}
+	if err != nil {
+		g.serverError(w, err)
+		return
+	}
+	if priorID, priorLabel, ok := g.precedingNode(r.Context(), nd.EdgeID, nd.NodeID, nd.Label); ok {
+		costs, err := g.determinePathCost(r.Context(), nd.EdgeLabel)
+		if err != nil {
+			g.serverError(w, err)
+			return
+		}
+		units := nd.UsageUnits - priorLabel
+		nd.PathDetails = &model.PathDetails{
+			PreviousNodeID: priorID,
+			UnitsTraversed:   units,
+			CostCents:        calculateCumulativeCost(units, costs),
+		}
+	}
+	writeJSON(w, http.StatusOK, nd)
+}
+
+type nodeSummary struct {
+	NodeID         string `json:"nodeId"`
+	EdgeID         string `json:"edgeId"`
+	Label          string `json:"label"`
+	Type           string `json:"type"`
+	UsageUnits     int    `json:"usageUnits"`
+}
+
+// processListRouteNodes paginates the nodes taken along one edge-route.
+// There is no routes table to check the code against — a route is a
+// property of the edges assigned to it, not a first-class row — so
+// an unrecognized route simply paginates to zero results rather than 404ing.
+func (g *Graph) processListRouteNodes(w http.ResponseWriter, r *http.Request) {
+	edgeLabel := strings.TrimSpace(chi.URLParam(r, "edgeLabel"))
+	q := r.URL.Query()
+	limit := 50
+	if n, err := strconv.Atoi(strings.TrimSpace(q.Get("limit"))); err == nil && n > 0 && n <= 500 {
+		limit = n
+	}
+	offset := 0
+	if n, err := strconv.Atoi(strings.TrimSpace(q.Get("offset"))); err == nil && n > 0 {
+		offset = n
+	}
+	cycleCode := strings.TrimSpace(q.Get("cycleCode"))
+
+	sqlStr := `SELECT node_id, edge_id, label, type, usage_units
+	           FROM nodes WHERE edge_label = ?`
+	args := []any{edgeLabel}
+	if cycleCode != "" {
+		sqlStr += " AND cycle_code = ?"
+		args = append(args, cycleCode)
+	}
+	sqlStr += " ORDER BY label DESC, node_id LIMIT ? OFFSET ?"
+	args = append(args, limit, offset)
+
+	rows, err := g.db.QueryContext(r.Context(), sqlStr, args...)
+	if err != nil {
+		g.serverError(w, err)
+		return
+	}
+	defer rows.Close()
+	out := []nodeSummary{}
+	for rows.Next() {
+		var it nodeSummary
+		if err := rows.Scan(&it.NodeID, &it.EdgeID, &it.Label, &it.Type, &it.UsageUnits); err != nil {
+			g.serverError(w, err)
+			return
+		}
+		out = append(out, it)
+	}
+	if err := rows.Err(); err != nil {
+		g.serverError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"edgeLabel": edgeLabel,
+		"count":     len(out),
+		"limit":     limit,
+		"offset":    offset,
+		"nodes":     out,
+	})
+}
+
+// updateNodeException marks or clears a node as outside tolerance and,
+// optionally, requeues it: rather than mutating the register value in
+// place, requeuing inserts a new pending RE-READ record so a field crew has something to close out against.
+// The original node is never deleted; it stays as the exception record of what was first seen.
+func (g *Graph) updateNodeException(w http.ResponseWriter, r *http.Request) {
+	nodeID := strings.TrimSpace(chi.URLParam(r, "nodeId"))
+	var p exceptionPatch
+	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
+		writeError(w, http.StatusBadRequest, "bad_request", err.Error())
+		return
+	}
+	if msg := p.validate(); msg != "" {
+		writeError(w, http.StatusBadRequest, "bad_request", msg)
+		return
+	}
+	nd, err := g.fetchNode(r.Context(), nodeID)
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, http.StatusNotFound, "not_found", "node not found")
+		return
+	}
+	if err != nil {
+		g.serverError(w, err)
+		return
+	}
+
+	tolerance := nd.ToleranceFlag
+	if p.ToleranceFlag != nil {
+		tolerance = *p.ToleranceFlag
+	}
+	reason := nd.ExceptionReason
+	if p.Reason != nil {
+		reason = *p.Reason
+	}
+	if _, err := g.db.ExecContext(r.Context(),
+		`UPDATE nodes SET tolerance_flag = ?, exception_reason = ? WHERE node_id = ?`,
+		tolerance, nullStr(reason), nodeID); err != nil {
+		g.serverError(w, err)
+		return
+	}
+
+	if p.Requeue != nil && *p.Requeue {
+		newID := nodeID + "-RQ"
+		if _, err := g.db.ExecContext(r.Context(),
+			`INSERT INTO nodes (node_id, edge_id, label, type, usage_units)
+			 VALUES (?, ?, ?, 'RE-READ', 0)`,
+			newID, nd.EdgeID, nd.Label, nd.Type); err != nil {
+			g.serverError(w, err)
+			return
+		}
+	}
+
+	updated, err := g.fetchNode(r.Context(), nodeID)
+	if err != nil {
+		g.serverError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, updated)
+}

@@ -1,0 +1,74 @@
+package api
+
+import (
+	"database/sql"
+	"errors"
+	"net/http"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
+
+	"qsolog/internal/model"
+)
+
+// handleGetRoom looks up one room. The room id is the
+// identifier itself — there is no separate surrogate id anywhere in this
+// service — so this is a single-column lookup with no join.
+//
+// A room that has never been booked is still a valid row: ingest
+// creates one on first sight of a room in the room field, reservation fields
+// or not, so a lookup here can succeed even for a room with zero
+// bookings recorded yet.
+func (s *Server) handleGetRoom(w http.ResponseWriter, r *http.Request) {
+	roomID := strings.TrimSpace(chi.URLParam(r, "roomID"))
+	var rm model.Room
+	err := s.db.QueryRowContext(r.Context(), `SELECT room_id, room_type,
+	              COALESCE(floor_number,''), COALESCE(room_size,'')
+	       FROM rooms WHERE room_id = ?`, roomID).
+		Scan(&rm.RoomID, &rm.RoomType, &rm.FloorNumber, &rm.RoomSize)
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, http.StatusNotFound, "not_found", "room not found")
+		return
+	}
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, rm)
+}
+
+// handleRoomSummary answers "how much has this room been booked" without the
+// type/breakdown handleAwardProgress gives: one row, four counts, no
+// grouping. It exists because the SPA's room summary needs a cheap number on
+// every page load, not the full booking table.
+func (s *Server) handleRoomSummary(w http.ResponseWriter, r *http.Request) {
+	roomID := strings.TrimSpace(chi.URLParam(r, "roomID"))
+	var known string
+	err := s.db.QueryRowContext(r.Context(),
+		`SELECT room_id FROM rooms WHERE room_id = ?`, roomID).Scan(&known)
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, http.StatusNotFound, "not_found", "room not found")
+		return
+	}
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+
+	var totalBookings, distinctGuests, distinctTypes, confirmedBookings int
+	err = s.db.QueryRowContext(r.Context(), `SELECT count(*), count(DISTINCT guest),
+	              count(DISTINCT room_type), count(*) FILTER (WHERE confirmed_on IS NOT NULL)
+	       FROM bookings WHERE room_id = ?`, roomID).
+		Scan(&totalBookings, &distinctGuests, &distinctTypes, &confirmedBookings)
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"roomID":            roomID,
+		"totalBookings":     totalBookings,
+		"distinctGuests":    distinctGuests,
+		"distinctTypes":     distinctTypes,
+		"confirmedBookings": confirmedBookings,
+	})
+}

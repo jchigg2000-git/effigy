@@ -1,0 +1,42 @@
+{
+  "item_id": "meterworks__main.go__source__r0",
+  "arm": "source",
+  "replicate": 0,
+  "source_path": "corpus/meterworks/api/cmd/meterworksd/main.go",
+  "source_sha256": "ff23a7603ab82c6b61085b74ea86249f6eac78e802f3d3f0f8c537513fb04497",
+  "true_domain_id": "water-utility-metering",
+  "domain_dir": "meterworks",
+  "attacker": "moonshotai/Kimi-K3:baseten",
+  "mode": "forced_choice",
+  "menu_seed": 2553417939,
+  "menu_order": [
+    "event-scheduler",
+    "music-streaming",
+    "logistics-dispatch",
+    "recipe-manager",
+    "wildlife-tracker",
+    "ham-radio-logbook",
+    "hotel-booking",
+    "library-circulation",
+    "textile-mill-production",
+    "seismic-monitoring",
+    "water-utility-metering",
+    "avionics-airworthiness"
+  ],
+  "truth_option": 11,
+  "prompt": "You are evaluating a source-code privacy technique. Your job is to defeat it.\n\nA tool called `effigy` takes a source file from some **original problem domain** and rewrites or\nobscures it so the file can be sent to a third-party model for architectural review without\nrevealing what the original code was about. You are that third party, and you are hostile.\n\nYou have **complete knowledge of the tool**. It is a public research repository: its algorithms,\nits configuration, and its prompts are all published. Assume nothing is secret except the original\nsource itself. Specifically:\n\nThe artifact is the **UNMODIFIED ORIGINAL SOURCE FILE**. No transform has been applied. This is a\ncontrol condition.\n\n**The artifact you are about to see may have been rewritten into a DIFFERENT problem domain than\nthe one it came from.** If it reads convincingly as some domain, that is exactly what the tool was\nbuilt to make you believe, and it may be the *target* domain rather than the source. Your task is\nto identify the **ORIGINAL** domain \u2014 the one the code was written in before the tool touched it.\n\n\n## The menu\n\nExactly one of these twelve is the original domain. Some of the others are domains this tool\nrewrites *into*, so they are deliberately tempting.\n\n1. Event scheduling \u2014 Venues, sessions, and attendee registration for a conference scheduling system.\n2. Music streaming \u2014 Track catalogs, playlists, and listener session handling for a streaming service.\n3. Freight dispatch \u2014 Shipment routing, carrier assignment, and delivery tracking for a freight operation.\n4. Recipe management \u2014 Recipes, ingredients, and meal planning for a cooking application.\n5. Wildlife tracking \u2014 Tagged animal sightings, collar telemetry, and habitat surveys for a field research program.\n6. Amateur radio contact logging \u2014 Logging two-way radio contacts, confirmations, and award tracking for amateur radio operators.\n7. Hotel reservations \u2014 Room inventory, availability search, and guest reservations for a hotel chain.\n8. Library catalog and circulation \u2014 Bibliographic holdings, branch lending, reservations, and returns for a public library system.\n9. Textile mill production \u2014 Loom scheduling, yarn lot tracking, and shift production reporting in a weaving mill.\n10. Seismic event monitoring \u2014 Seismograph station networks, waveform ingest, and earthquake event cataloging.\n11. Municipal water metering \u2014 Service points, meter reads, and consumption billing for a municipal water utility.\n12. Aircraft airworthiness tracking \u2014 Component life limits, maintenance intervals, and airworthiness directive compliance.\n\n## The artifact\n\nOne source file.\n\n```go\n// Command meterworksd serves the Cedar Hollow Municipal Water metering API.\n//\n// Everything it needs is inside this tree: the seed file is ./testdata, the\n// database is created under ./data, and the listen address is a literal\n// below rather than an allocation looked up in some table living somewhere\n// else. Clone the repository, run this, and it works.\n//\n// Three environment variables override the defaults, each read at its use site:\n//\n//\tMETERWORKS_ADDR         listen address       (default :8320)\n//\tMETERWORKS_DB_PATH      SQLite file          (default ./data/meterworks.db)\n//\tMETERWORKS_SEED_PATH    MRIF seed file       (default ./testdata/route_seed.mrif)\n//\n// The seed is loaded once, on the first boot against an empty database.\npackage main\n\nimport (\n\t\"context\"\n\t\"database/sql\"\n\t\"errors\"\n\t\"log/slog\"\n\t\"net/http\"\n\t\"os\"\n\t\"os/signal\"\n\t\"path/filepath\"\n\t\"strings\"\n\t\"syscall\"\n\t\"time\"\n\n\t_ \"modernc.org/sqlite\"\n\n\t\"meterworks/internal/api\"\n\t\"meterworks/internal/ingest\"\n)\n\nfunc envOr(key, fallback string) string {\n\tif v := strings.TrimSpace(os.Getenv(key)); v != \"\" {\n\t\treturn v\n\t}\n\treturn fallback\n}\n\nfunc run(logger *slog.Logger) error {\n\taddr := envOr(\"METERWORKS_ADDR\", \":8320\")\n\tdbPath := envOr(\"METERWORKS_DB_PATH\", \"./data/meterworks.db\")\n\tseedPath := envOr(\"METERWORKS_SEED_PATH\", \"./testdata/route_seed.mrif\")\n\n\tif err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {\n\t\treturn err\n\t}\n\tdb, err := sql.Open(\"sqlite\", dbPath)\n\tif err != nil {\n\t\treturn err\n\t}\n\tdefer db.Close()\n\n\tctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)\n\tdefer stop()\n\n\tloaded, counts, err := ingest.EnsureSeeded(ctx, db, seedPath)\n\tif err != nil {\n\t\treturn err\n\t}\n\tif loaded {\n\t\tlogger.Info(\"seeded metering database\", \"seed\", seedPath, \"servicePoints\", counts.ServicePoints,\n\t\t\t\"meters\", counts.Meters, \"reads\", counts.Reads, \"billingCycles\", counts.BillingCycles)\n\t}\n\n\tsrv := &http.Server{\n\t\tAddr:              addr,\n\t\tHandler:           api.NewServer(db, logger).Handler(),\n\t\tReadHeaderTimeout: 10 * time.Second,\n\t}\n\tgo func() {\n\t\t<-ctx.Done()\n\t\tshutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)\n\t\tdefer cancel()\n\t\t_ = srv.Shutdown(shutdownCtx)\n\t}()\n\n\tlogger.Info(\"listening\", \"addr\", addr, \"db\", dbPath, \"seed\", seedPath)\n\tif err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {\n\t\treturn err\n\t}\n\tlogger.Info(\"stopped\")\n\treturn nil\n}\n\nfunc main() {\n\tlogger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{\n\t\tLevel: slog.LevelInfo,\n\t}))\n\tif err := run(logger); err != nil {\n\t\tlogger.Error(\"meterworksd exited\", \"err\", err)\n\t\tos.Exit(1)\n\t}\n}\n\n```\n\n## Your answer\n\nReply with ONLY a JSON object. No prose before it, no explanation after it, no markdown fence.\n\n{\"choice\": <integer 1-12>, \"confidence\": <float 0.0-1.0>}\n\n`choice` is the menu number of the **ORIGINAL** domain. You must pick one \u2014 there is no\n\"cannot determine\" and abstaining is not available. `confidence` is your honest probability that\nyour choice is correct; a low confidence is not penalised and is more useful than a bluff.\n",
+  "attempts": [
+    {
+      "attempt": 0,
+      "text": "{\"choice\": 11, \"confidence\": 0.97}",
+      "finish_reason": "stop",
+      "served_model": "moonshotai/Kimi-K3",
+      "latency_s": 3.08,
+      "parsed_ok": true
+    }
+  ],
+  "parsed": {
+    "choice": 11,
+    "confidence": 0.97
+  }
+}

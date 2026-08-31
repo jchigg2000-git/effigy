@@ -1,0 +1,47 @@
+{
+  "item_id": "tremorline__main.go__llm-translation__r2",
+  "arm": "llm-translation",
+  "replicate": 2,
+  "source_path": "corpus/tremorline/api/cmd/tremorlined/main.go",
+  "source_sha256": "1ef76d259f0cc4b77c5ca59c4624456d1936beef124a3adbf6f45944d8c9abee",
+  "true_domain_id": "seismic-monitoring",
+  "domain_dir": "tremorline",
+  "attacker": "deepseek-ai/DeepSeek-V4-Pro-0813:baseten",
+  "mode": "open_ended",
+  "menu_seed": 3705522928,
+  "menu_order": [
+    "music-streaming",
+    "hotel-booking",
+    "recipe-manager",
+    "logistics-dispatch",
+    "ham-radio-logbook",
+    "library-circulation",
+    "textile-mill-production",
+    "event-scheduler",
+    "seismic-monitoring",
+    "wildlife-tracker",
+    "water-utility-metering",
+    "avionics-airworthiness"
+  ],
+  "truth_option": 9,
+  "prompt": "You are evaluating a source-code privacy technique. Your job is to defeat it.\n\nA tool called `effigy` takes a source file from some **original problem domain** and rewrites or\nobscures it so the file can be sent to a third-party model for architectural review without\nrevealing what the original code was about. You are that third party, and you are hostile.\n\nYou have **complete knowledge of the tool**. It is a public research repository: its algorithms,\nits configuration, and its prompts are all published. Assume nothing is secret except the original\nsource itself. Specifically:\n\nSolution `llm-translation` \u2014 whole-file rewrite into a different problem domain by a language model.\n\nA local or hosted model is given the file and instructed to rewrite it into a target domain. The\nsystem prompt is published; its instructions are, in summary: rename every module, package, class,\nfunction, method, variable, parameter, field and constant; rewrite every string literal, comment\nand docstring into the target domain; replace every acronym, data literal, proper noun, URL, file\npath, table and column name; but **preserve the architecture exactly** \u2014 same control flow, same\nfunction count and arity, same class hierarchy, same coupling, same dead code, same god-objects,\nsame dependency cycles, same comment positions and speech acts, same naming morphology, same\nlength. It is explicitly told not to fix bugs, remove duplication, or improve the code, because the\ndefects are the object of study. The only names it is told to leave alone are those the language\nowns: keywords, builtins, standard-library symbols, and public third-party package APIs.\n\nThe target domain is selected from a **fixed public catalog of nine entries**, and for a given run\none target is pinned for the whole file. The complete catalog is:\n\n  graph-traversal, tensor-pipeline, event-scheduler, chess-engine, recipe-manager,\n  wildlife-tracker, logistics-dispatch, music-streaming, hotel-booking\n\n**So if the artifact reads as one of those nine, that is almost certainly the TARGET the tool chose,\nnot the source you are being asked for.** Known weaknesses you may exploit: the rewrite is\nprompt-enforced with no verifier, it is not byte-stable, and it has been observed to leave numeric\nliterals, and sometimes whole spans of the original file, unrewritten.\n\n**The artifact you are about to see may have been rewritten into a DIFFERENT problem domain than\nthe one it came from.** If it reads convincingly as some domain, that is exactly what the tool was\nbuilt to make you believe, and it may be the *target* domain rather than the source. Your task is\nto identify the **ORIGINAL** domain \u2014 the one the code was written in before the tool touched it.\n\n\n## The artifact\n\nOne source file.\n\n```go\n// Command tremorlined serves the Ridgeline Regional Array's seismic event\n// catalog and station inventory API.\n//\n// Everything it needs is inside this tree: the channel-metadata seed is\n// ./testdata, the database is created under ./data, and the listen address is\n// a literal below rather than an allocation looked up in some table living\n// somewhere else. Clone the repository, run this, and it works.\n//\n// Five environment variables override the defaults, each read at its use\n// site:\n//\n//\tTREMORLINE_ADDR         listen address              (default :8330)\n//\tTREMORLINE_DB_PATH      SQLite file                 (default ./data/tremorline.db)\n//\tTREMORLINE_SEED_PATH    channel-metadata seed file  (default ./testdata/channel_seed.rcm)\n//\tTREMORLINE_ADMIN_TOKEN  token for /admin/ingest\n//\tTREMORLINE_CORS_ORIGINS comma-separated allow list, read by the API package\n//\n// The seed is loaded once, on the first boot against an empty database.\n// Reloading it afterwards is a POST to /admin/ingest with the admin token,\n// the only route in the service that checks anything at all.\npackage main\n\nimport (\n\t\"context\"\n\t\"errors\"\n\t\"log/slog\"\n\t\"net/http\"\n\t\"os\"\n\t\"os/signal\"\n\t\"path/filepath\"\n\t\"strings\"\n\t\"syscall\"\n\t\"time\"\n\n\t\"tremorline/internal/api\"\n\t\"tremorline/internal/ingest\"\n\t\"tremorline/internal/store\"\n)\n\nfunc envOr(key, fallback string) string {\n\tif v := strings.TrimSpace(os.Getenv(key)); v != \"\" {\n\t\treturn v\n\t}\n\treturn fallback\n}\n\nfunc run(logger *slog.Logger) error {\n\taddr := envOr(\"TREMORLINE_ADDR\", \":8330\")\n\tdbPath := envOr(\"TREMORLINE_DB_PATH\", \"./data/tremorline.db\")\n\tseedPath := envOr(\"TREMORLINE_SEED_PATH\", \"./testdata/channel_seed.rcm\")\n\t// dev-only, not a secret\n\tadminToken := envOr(\"TREMORLINE_ADMIN_TOKEN\", \"dev\")\n\n\tif err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {\n\t\treturn err\n\t}\n\tdb, err := store.Open(dbPath)\n\tif err != nil {\n\t\treturn err\n\t}\n\tdefer db.Close()\n\n\tctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)\n\tdefer stop()\n\n\tloaded, counts, err := ingest.EnsureSeeded(ctx, db, seedPath)\n\tif err != nil {\n\t\treturn err\n\t}\n\tif loaded {\n\t\tlogger.Info(\"seeded inventory\", \"seed\", seedPath,\n\t\t\t\"meals\", counts.Meals, \"ingredients\", counts.Ingredients)\n\t}\n\n\tsrv := &http.Server{\n\t\tAddr:              addr,\n\t\tHandler:           api.NewServer(db, logger, seedPath, adminToken).Handler(),\n\t\tReadHeaderTimeout: 10 * time.Second,\n\t}\n\tgo func() {\n\t\t<-ctx.Done()\n\t\tshutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)\n\t\tdefer cancel()\n\t\t_ = srv.Shutdown(shutdownCtx)\n\t}()\n\n\tlogger.Info(\"listening\", \"addr\", addr, \"db\", dbPath, \"seed\", seedPath)\n\tif err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {\n\t\treturn err\n\t}\n\tlogger.Info(\"stopped\")\n\treturn nil\n}\n\nfunc main() {\n\tlogger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{\n\t\tLevel: slog.LevelInfo,\n\t}))\n\tif err := run(logger); err != nil {\n\t\tlogger.Error(\"tremorlined exited\", \"err\", err)\n\t\tos.Exit(1)\n\t}\n}\n```\n\n## Your answer\n\nReply with ONLY a JSON object. No prose before it, no explanation after it, no markdown fence.\n\n{\"domain\": \"<short free-text description of the ORIGINAL problem domain>\",\n \"specific_identifiers\": [\"<any organization, product, vendor, regulation, standard, proprietary\n                           system or place you believe you can name from this artifact>\"],\n \"confidence\": <float 0.0-1.0>,\n \"evidence\": \"<= 40 words on what in the artifact led you there>\"}\n\n`specific_identifiers` must be **[]** if you cannot name anything concrete. Do not pad it with\nguesses \u2014 but do not hold back a name you genuinely believe is there, because naming one correctly\nis the strongest result you can produce here.\n",
+  "attempts": [
+    {
+      "attempt": 0,
+      "text": "{\"domain\": \"seismic/earthquake monitoring network data service\", \"specific_identifiers\": [\"Ridgeline Regional Array\", \"Tremorline\"], \"confidence\": 0.9, \"evidence\": \"Top comment and env names describe seismic event catalog/station inventory; seed file channel_seed.rcm. The only recipe-manager terms are 'meals'/'ingredients', matching the catalog target, so seismic is original.\"}",
+      "finish_reason": "stop",
+      "served_model": "deepseek-ai/DeepSeek-V4-Pro-0813",
+      "latency_s": 20.3,
+      "parsed_ok": true
+    }
+  ],
+  "parsed": {
+    "domain": "seismic/earthquake monitoring network data service",
+    "specific_identifiers": [
+      "Ridgeline Regional Array",
+      "Tremorline"
+    ],
+    "confidence": 0.9,
+    "evidence": "Top comment and env names describe seismic event catalog/station inventory; seed file channel_seed.rcm. The only recipe-manager terms are 'meals'/'ingredients', matching the catalog target, so seismic is original."
+  }
+}

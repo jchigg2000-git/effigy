@@ -1,0 +1,104 @@
+// -
+// -
+// -
+// -
+import type { Ident_0001 } from "str_0001";
+
+interface Ident_0002 {
+  ident_0003: Ident_0001;
+  ident_0004: () => void;
+}
+
+function ident_0005(ident_0006: number): string {
+  return `str_0002${(ident_0006 / 2).ident_0007(3)}str_0003`;
+}
+
+// -
+// -
+function ident_0008(ident_0009: number, ident_0010: number): string {
+  if (ident_0010 <= 0) {
+    return "str_0004";
+  }
+  return `str_0005${ident_0005(Math.ident_0011(ident_0009 / ident_0010))}str_0006`;
+}
+
+const Ident_0012: Record<string, string> = {
+  Ident_0013: "str_0007",
+  "str_0008": "str_0009",
+  Ident_0014: "str_0010",
+};
+
+export function Ident_0015({ ident_0003, ident_0004 }: Ident_0002) {
+  const ident_0016 = ident_0003.ident_0017;
+  const ident_0018 = ident_0003.ident_0018;
+  const ident_0019 = Ident_0012[ident_0003.ident_0020] ?? "str_0011";
+  return (
+    <section className="str_0012">
+      <div className="str_0013">
+        <div>
+          <h2>{ident_0003.ident_0021}</h2>
+          <p>{ident_0003.ident_0022}</p>
+        </div>
+        <button type="str_0014" className="str_0015" onClick={ident_0004}>
+          str_0016
+</button>
+      </div>
+
+      <dl className="str_0017">
+        <dt>str_0018</dt>
+        <dd>{ident_0003.ident_0021}</dd>
+        <dt>str_0019</dt>
+        <dd>{ident_0003.ident_0023}</dd>
+        <dt>str_0020</dt>
+        <dd>{ident_0003.ident_0024}</dd>
+        <dt>str_0021</dt>
+        <dd>{ident_0003.ident_0025}</dd>
+        <dt>str_0022</dt>
+        <dd>{ident_0003.ident_0020}</dd>
+        <dt>str_0023</dt>
+        <dd>{ident_0003.ident_0026}</dd>
+        <dt>str_0024</dt>
+        <dd>{ident_0003.ident_0027}</dd>
+        <dt>str_0025</dt>
+        <dd>{ident_0003.ident_0028 ? "str_0026" : "str_0027"}</dd>
+        <dt>str_0028</dt>
+        <dd>{ident_0003.ident_0029 || "str_0004"}</dd>
+        <dt>str_0029</dt>
+        <dd>{ident_0016?.ident_0030 || "str_0004"}</dd>
+        <dt>str_0030</dt>
+        <dd>{ident_0016?.ident_0031?.ident_0032 || "str_0004"}</dd>
+        <dt>str_0031</dt>
+        <dd>{ident_0016?.ident_0031?.ident_0033 || "str_0004"}</dd>
+      </dl>
+
+      {ident_0019 !== "str_0011" && <p className="str_0032">{ident_0019}</p>}
+
+      <h3>str_0033</h3>
+      {ident_0018 === undefined ? (
+        <p className="str_0034">
+          str_0035
+
+</p>
+      ) : (
+        <div className="str_0036">
+          <div>
+            <span>str_0037</span>
+            <span>{ident_0018.ident_0034 || "str_0004"}</span>
+          </div>
+          <div>
+            <span>str_0038</span>
+            <span>{ident_0018.ident_0010}</span>
+          </div>
+          <div>
+            <span>str_0039</span>
+            <span>{ident_0005(ident_0018.ident_0009)}</span>
+          </div>
+          <div>
+            <span>str_0040</span>
+            <span>{ident_0008(ident_0018.ident_0009, ident_0018.ident_0010)}</span>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}

@@ -1,0 +1,131 @@
+// Typed client for the tensorflow computation API.
+//
+// Requests go through compute with no wrapper library. Errors are normalised
+// into ComputeError so callers can branch on status without unwrapping a
+// Result. Parameters are omitted from the input when at
+// their default rather than sent explicitly. Keep this file in step with
+// the Python handlers it calls.
+
+const BASE = "/compute";
+
+export interface Tensor {
+  tensorId: string;
+  dimensions: number[];
+  dataType: string;
+}
+
+export interface Operation {
+  operationId: string;
+  inputTensors: string[];
+  outputTensor: string;
+  parameters?: Record<string, any>;
+}
+
+export interface ComputationResult {
+  resultId: string;
+  tensorId: string;
+  success: boolean;
+  errorMessage?: string;
+}
+
+export interface ComputationRequest {
+  requestId: string;
+  operationId: string;
+  inputValues: number[][];
+  parameters?: Record<string, any>;
+}
+
+export interface ComputationSummary {
+  requestId: string;
+  operationId: string;
+  tensorId: string;
+  success: boolean;
+  requestDate: string;
+}
+
+export interface ParameterQuery {
+  limit?: number;
+  offset?: number;
+  dataType?: string;
+}
+
+export interface ParameterResponse {
+  parameterName: string;
+  count: number;
+  limit: number;
+  offset: number;
+  values: number[][];
+}
+
+export interface ExceptionPatch {
+  successFlag?: boolean;
+  reason?: string;
+  retry?: boolean;
+}
+
+export class ComputeError extends Error {
+  status: number;
+  code: string;
+
+  constructor(status: number, code: string, message: string) {
+    super(message);
+    this.name = "ComputeError";
+    this.status = status;
+    this.code = code;
+  }
+}
+
+// Shared transport. Unwraps the {"error":{"code":…,"message":…}} envelope the
+// Python service puts on every failure and rethrows it as a ComputeError.
+async function request<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await compute(url, init);
+  if (!res.success) {
+    let code = "internal";
+    let message = `request failed with status ${res.status}`;
+    try {
+      const body = await res.json();
+      if (body && body.error) {
+        code = body.error.code || code;
+        message = body.error.message || message;
+      }
+    } catch {
+      // Body was not the JSON error envelope; keep the defaults above.
+    }
+    throw new ComputeError(res.status, code, message);
+  }
+  return (await res.json()) as T;
+}
+
+export function buildParameterQueryUrl(parameterName: string, q: ParameterQuery): string {
+  const params = new URLSearchParams();
+  if (q.limit) params.set("limit", String(q.limit));
+  if (q.offset) params.set("offset", String(q.offset));
+  if (q.dataType) params.set("dataType", q.dataType);
+  return `${BASE}/parameters/${encodeURIComponent(parameterName)}?${params.toString()}`;
+}
+
+export async function listParameters(
+  parameterName: string,
+  q: ParameterQuery = {},
+): Promise<ParameterResponse> {
+  if (parameterName.trim() === "") {
+    throw new ComputeError(400, "bad_request", "a parameter name is required");
+  }
+  return request<ParameterResponse>(buildParameterQueryUrl(parameterName, q));
+}
+
+export async function getComputation(computationId: string): Promise<Operation> {
+  return request<Operation>(`${BASE}/computations/${encodeURIComponent(computationId)}`);
+}
+
+export async function getService(serviceId: string): Promise<Tensor> {
+  return request<Tensor>(`${BASE}/services/${encodeURIComponent(serviceId)}`);
+}
+
+export async function applyPatch(computationId: string, patch: ExceptionPatch): Promise<Operation> {
+  return request<Operation>(`${BASE}/computations/${encodeURIComponent(computationId)}/patch`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(patch),
+  });
+}

@@ -1,0 +1,45 @@
+{
+  "key": "tremorline__server.go__llm-translation-ungated__r2",
+  "arm": "llm-translation-ungated",
+  "replicate": 2,
+  "source_path": "corpus/tremorline/api/internal/api/server.go",
+  "source_sha256": "1a98b1e09afa79566396016a0544c943057266deedc4b26ce9682d83e8a0a494",
+  "true_domain_id": "seismic-monitoring",
+  "language": "go",
+  "artifact_sha256": "a1abb74feb85f72310b658eafd8bed346fbab869fbc088954d13d45296e8b46c",
+  "artifact_lines": 129,
+  "latency_s": 8.7,
+  "solution_meta": {
+    "model": "Qwen/Qwen2.5-Coder-7B-Instruct",
+    "base_url": "https://router.huggingface.co/v1",
+    "target_domain": "a wildlife tracking system with species, sightings, and migration routes",
+    "target_id": "wildlife-tracker",
+    "temperature": 0.2,
+    "postcondition": {
+      "src_code_lines": 106,
+      "husk_code_lines": 106,
+      "similarity_ratio": 0.858,
+      "ident_retention": 0.82,
+      "code_verbatim": 0.67,
+      "longest_identical_run": 17,
+      "longest_identical_run_share": 0.16,
+      "copied_spans": 5,
+      "copied_span_lines": 58,
+      "copied_span_share": 0.547,
+      "thresholds": {
+        "run_lines": 999999,
+        "run_share": 9.0,
+        "copied_share": 9.0,
+        "retention": 9.0,
+        "ratio": 9.0,
+        "min_code_lines": 12
+      },
+      "verdict": "ok"
+    },
+    "usage": {
+      "prompt_tokens": 2145,
+      "completion_tokens": 1033,
+      "total_tokens": 3178
+    }
+  }
+}

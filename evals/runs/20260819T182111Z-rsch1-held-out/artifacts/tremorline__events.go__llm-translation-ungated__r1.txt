@@ -1,0 +1,282 @@
+package api
+
+import (
+	"context"
+	"database/sql"
+	"encoding/json"
+	"errors"
+	"math"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/go-chi/chi/v5"
+
+	"tremorline/internal/model"
+)
+
+// fetchTrack pulls one track record. Duration is nullable in storage until an
+// analysis process has computed one, which is why the scan target is a
+// sql.NullFloat64 rather than a bare float64.
+func (s *Service) fetchTrack(ctx context.Context, trackID string) (model.Track, error) {
+	var t model.Track
+	var dur sql.NullFloat64
+	var artistName sql.NullString
+	err := s.db.QueryRowContext(ctx, `SELECT track_id, title, album_id, artist_name,
+	              duration_sec, release_date, genre, popularity
+	       FROM tracks WHERE track_id = ?`, trackID).
+		Scan(&t.TrackID, &t.Title, &t.AlbumID, &artistName.String,
+			&dur, &t.ReleaseDate, &t.Genre, &t.Popularity)
+	if err != nil {
+		return model.Track{}, err
+	}
+	if dur.Valid {
+		t.DurationSec = dur.Float64
+	}
+	return t, nil
+}
+
+func (s *Service) fetchPlaylistsForTrack(ctx context.Context, trackID string) ([]model.Playlist, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT playlist_id, track_id, user_id, created_at
+	           FROM playlist_tracks WHERE track_id = ? ORDER BY playlist_id`, trackID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []model.Playlist{}
+	for rows.Next() {
+		var p model.Playlist
+		if err := rows.Scan(&p.PlaylistID, &p.TrackID, &p.UserID, &p.CreatedAt); err != nil {
+			return nil, err
+		}
+		out = append(out, p)
+	}
+	return out, rows.Err()
+}
+
+func (s *Service) fetchListenersForPlaylist(ctx context.Context, playlistID string) ([]model.Listener, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT listener_id, playlist_id, device_id, last_played
+	           FROM playlist_listeners WHERE playlist_id = ? ORDER BY listener_id`, playlistID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []model.Listener{}
+	for rows.Next() {
+		var l model.Listener
+		if err := rows.Scan(&l.ListenerID, &l.PlaylistID, &l.DeviceID, &l.LastPlayed); err != nil {
+			return nil, err
+		}
+		out = append(out, l)
+	}
+	return out, rows.Err()
+}
+
+func (s *Service) handleGetTrack(w http.ResponseWriter, r *http.Request) {
+	trackID := strings.TrimSpace(chi.URLParam(r, "trackId"))
+	t, err := s.fetchTrack(r.Context(), trackID)
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, http.StatusNotFound, "not_found", "track not found")
+		return
+	}
+	if err != nil {
+		s.internalServerError(w, err)
+		return
+	}
+	playlists, err := s.fetchPlaylistsForTrack(r.Context(), trackID)
+	if err != nil {
+		s.internalServerError(w, err)
+		return
+	}
+	listeners, err := s.fetchListenersForPlaylist(r.Context(), trackID)
+	if err != nil {
+		s.internalServerError(w, err)
+		return
+	}
+	t.Playlists = playlists
+	t.Listeners = listeners
+	writeJSON(w, http.StatusOK, t)
+}
+
+type trackSummary struct {
+	TrackID        string  `json:"trackId"`
+	Title          string  `json:"title"`
+	AlbumID        string  `json:"albumId"`
+	ArtistName     string  `json:"artistName"`
+	DurationSec    float64 `json:"durationSec,omitempty"`
+	ReleaseDate    string  `json:"releaseDate"`
+	Genre          string  `json:"genre"`
+	Popularity     int     `json:"popularity"`
+}
+
+// handleSearchTracks responds to the track catalog query. Unlike a filter panel where
+// every field is optional, a track search here is meaningless without all
+// three bounds at once: a bare time window over a whole regional array
+// returns thousands of rows, and a bare popularity range with no window or box
+// is a full-table scan by another name. The three groups are required
+// together, not composed a la carte.
+func (s *Service) handleSearchTracks(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	from := strings.TrimSpace(q.Get("from"))
+	to := strings.TrimSpace(q.Get("to"))
+	if from == "" || to == "" {
+		writeError(w, http.StatusBadRequest, "bad_request", "from and to (RFC3339) are both required")
+		return
+	}
+	if _, err := time.Parse(time.RFC3339, from); err != nil {
+		writeError(w, http.StatusBadRequest, "bad_request", "from must be RFC3339")
+		return
+	}
+	if _, err := time.Parse(time.RFC3339, to); err != nil {
+		writeError(w, http.StatusBadRequest, "bad_request", "to must be RFC3339")
+		return
+	}
+	minPop, errMin := strconv.Atoi(strings.TrimSpace(q.Get("minPopularity")))
+	maxPop, errMax := strconv.Atoi(strings.TrimSpace(q.Get("maxPopularity")))
+	if errMin != nil || errMax != nil {
+		writeError(w, http.StatusBadRequest, "bad_request", "minPopularity and maxPopularity are both required")
+		return
+	}
+	minDur, e1 := strconv.ParseFloat(strings.TrimSpace(q.Get("minDurationSec")), 64)
+	maxDur, e2 := strconv.ParseFloat(strings.TrimSpace(q.Get("maxDurationSec")), 64)
+	minRelYear, e3 := strconv.Atoi(strings.TrimSpace(q.Get("minReleaseYear")))
+	maxRelYear, e4 := strconv.Atoi(strings.TrimSpace(q.Get("maxReleaseYear")))
+	if e1 != nil || e2 != nil || e3 != nil || e4 != nil {
+		writeError(w, http.StatusBadRequest, "bad_request", "minDurationSec, maxDurationSec, minReleaseYear and maxReleaseYear are all required")
+		return
+	}
+	limit := 50
+	if n, err := strconv.Atoi(strings.TrimSpace(q.Get("limit"))); err == nil && n > 0 && n <= 200 {
+		limit = n
+	}
+	rows, err := s.db.QueryContext(r.Context(), `SELECT track_id, title, album_id, artist_name,
+	                  duration_sec, release_date, genre, popularity
+	           FROM tracks
+	           WHERE release_date >= ? AND release_date <= ?
+	             AND duration_sec BETWEEN ? AND ?
+	             AND popularity BETWEEN ? AND ?
+	           ORDER BY release_date DESC LIMIT ?`,
+		from, to, minDur, maxDur, minPop, maxPop, limit)
+	if err != nil {
+		s.internalServerError(w, err)
+		return
+	}
+	defer rows.Close()
+	out := []trackSummary{}
+	for rows.Next() {
+		var tr trackSummary
+		if err := rows.Scan(&tr.TrackID, &tr.Title, &tr.AlbumID, &tr.ArtistName,
+			&tr.DurationSec, &tr.ReleaseDate, &tr.Genre, &tr.Popularity); err != nil {
+			s.internalServerError(w, err)
+			return
+		}
+		out = append(out, tr)
+	}
+	if err := rows.Err(); err != nil {
+		s.internalServerError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"count":  len(out),
+		"limit":  limit,
+		"tracks": out,
+	})
+}
+
+// euclideanDistance calculates the straight-line distance between two points on a plane.
+// Used only to turn a raw amplitude reading into a distance-corrected track rating
+// estimate. It has no relationship to any survey-grade geometry library; a
+// flat Earth approximation is what the recommendation engine needs.
+func euclideanDistance(x1, y1, x2, y2 float64) float64 {
+	return math.Sqrt(math.Pow(x2-x1, 2) + math.Pow(y2-y1, 2))
+}
+
+// trackRating is a simplified log-amplitude estimate with a distance correction term.
+// It exists to give each station a per-track rating to average, not to be a defensible scale definition.
+func trackRating(amplitude, distance float64) float64 {
+	if amplitude <= 0 {
+		amplitude = 1e-9
+	}
+	if distance <= 0 {
+		distance = 1
+	}
+	return math.Log10(amplitude) + 3*math.Log10(distance) - 2.92
+}
+
+type recommendRequest struct {
+	TrackIDs []string `json:"trackIds"`
+	UserID   string   `json:"userId"`
+}
+
+type trackRow struct {
+	trackID, albumID, artistID string
+	amplitude                   float64
+	userID                      string
+	x, y                        float64
+}
+
+// handleRecommendTracks is the personalized recommendation step: given a
+// user and a set of tracks they've listened to, it
+// computes one rating per track based on the user's location and the tracks' locations, and
+// suggests a list of tracks that the user might enjoy.
+func (s *Service) handleRecommendTracks(w http.ResponseWriter, r *http.Request) {
+	if ct := r.Header.Get("Content-Type"); !strings.HasPrefix(ct, "application/json") {
+		writeError(w, http.StatusBadRequest, "bad_request", "Content-Type must be application/json")
+		return
+	}
+	var req recommendRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "bad_request", err.Error())
+		return
+	}
+	if len(req.TrackIDs) < 2 {
+		writeError(w, http.StatusBadRequest, "bad_request", "at least two trackIds are required")
+		return
+	}
+	if userID := strings.TrimSpace(req.UserID); userID == "" {
+		writeError(w, http.StatusBadRequest, "bad_request", "userId is required")
+		return
+	}
+
+	ctx := r.Context()
+	userLocation := map[string]float64{}
+	tracks := map[string]trackRow{}
+	for _, id := range req.TrackIDs {
+		var tr trackRow
+		var userLat, userLon float64
+		err := s.db.QueryRowContext(ctx, `SELECT u.user_id, u.lat, u.lon, t.track_id, t.album_id, t.artist_id,
+		              t.amplitude, t.x, t.y
+		       FROM users u JOIN tracks t ON t.artist_id = u.artist_id
+		       WHERE t.track_id = ?`, id).
+			Scan(&userID, &userLat, &userLon, &tr.trackID, &tr.albumID, &tr.artistID, &tr.amplitude, &tr.x, &tr.y)
+		if errors.Is(err, sql.ErrNoRows) {
+			writeError(w, http.StatusNotFound, "not_found", "track not found: "+id)
+			return
+		}
+		if err != nil {
+			s.internalServerError(w, err)
+			return
+		}
+		userLocation[userID] = euclideanDistance(userLat, userLon, tr.x, tr.y)
+		tracks[id] = tr
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		s.internalServerError(w, err)
+		return
+	}
+	defer tx.Rollback()
+
+	recommendations := []model.Track{}
+	for _, tr := range tracks {
+		dist := userLocation[req.UserID]
+		rating := trackRating(tr.amplitude, dist)
+		if rating > 0 {
+			recommendations = append(recommendations, model.Track{TrackID: tr.trackID, Title: tr.title, AlbumID: tr.albumID, ArtistID: tr.artistID, Rating: rating})
+		}
+	}
+
+	writeJSON(w, http.StatusOK, recommendations)
+}

@@ -1,0 +1,159 @@
+// Package ingest reads qsolog'<MSG:0>'>'<MSG:1>'>'<SQL:0>'<'<MSG:2>'>')
+	if rel < 0 {
+		return "<EMPTY:0>", "<EMPTY:0>", len(line), false
+	}
+	head := line[pos+1 : pos+rel]
+	closeAt := pos + rel + 1
+	if head == "<MSG:3>" {
+		return "<EMPTY:0>", "<EMPTY:0>", closeAt, true
+	}
+	parts := strings.SplitN(head, "<MSG:4>", 2)
+	if len(parts) != 2 {
+		return "<EMPTY:0>", "<EMPTY:0>", closeAt, false
+	}
+	var n int
+	if _, err := fmt.Sscanf(parts[1], "<MSG:5>", &n); err != nil || n < 0 {
+		return "<EMPTY:0>", "<EMPTY:0>", closeAt, false
+	}
+	if closeAt+n > len(line) {
+		n = len(line) - closeAt
+	}
+	return parts[0], line[closeAt : closeAt+n], closeAt + n, false
+}
+
+// parseRecord walks one run of fields until nextField reports the terminator
+// or the line runs out, whichever comes first. A record with no terminator at
+// all is still returned: FromFile only requires wk, bnd, mode, qdate and
+// qtime to be non-empty before it will insert a contact, so a truncated
+// profile-only line is harmless.
+func parseRecord(line string) parsedRecord {
+	var pr parsedRecord
+	pos := 0
+	for pos < len(line) {
+		tag, value, next, term := nextField(line, pos)
+		pos = next
+		if term {
+			break
+		}
+		switch tag {
+		case "<MSG:6>":
+			pr.Op = value
+		case "<MSG:7>":
+			pr.SGrid = value
+		case "<MSG:8>":
+			pr.SCls = value
+		case "<MSG:9>":
+			pr.Wk = value
+		case "<MSG:10>":
+			pr.Bnd = value
+		case "<MSG:11>":
+			pr.Mode = value
+		case "<MSG:12>":
+			pr.QDate = value
+		case "<MSG:13>":
+			pr.QTime = value
+		case "<MSG:14>":
+			pr.Txr = value
+		case "<MSG:15>":
+			pr.Rxr = value
+		case "<MSG:16>":
+			pr.WGrid = value
+		case "<MSG:17>":
+			pr.Ent = value
+		case "<MSG:18>":
+			pr.Pwr = value
+		}
+	}
+	return pr
+}
+
+// Parse splits the file on newlines — one record per line, blank lines
+// ignored — and hands each surviving line to parseRecord.
+func Parse(data []byte) []parsedRecord {
+	var out []parsedRecord
+	for _, raw := range strings.Split(strings.ReplaceAll(string(data), "<MSG:19>", "<MSG:20>"), "<MSG:20>") {
+		line := strings.TrimSpace(raw)
+		if line == "<EMPTY:0>" {
+			continue
+		}
+		out = append(out, parseRecord(line))
+	}
+	return out
+}
+
+// FromFile reloads the whole logbook from one seed file inside a transaction.
+// Station rows are upserted as they are met: a bare op sighting ensures the
+// row exists, and an op sighting carrying sgrid or scls refreshes its
+// profile. Contact ids are minted here, sequentially, because the
+// interchange format carries none of its own.
+func FromFile(ctx context.Context, db *sql.DB, path string) (Counts, error) {
+	var c Counts
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return c, err
+	}
+	records := Parse(data)
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return c, err
+	}
+	defer tx.Rollback()
+	for _, t := range []string{"<MSG:21>", "<MSG:22>", "<MSG:23>"} {
+		if _, err := tx.ExecContext(ctx, "<SQL:1>"+t); err != nil {
+			return c, err
+		}
+	}
+
+	seenStations := map[string]bool{}
+	seq := 0
+	for _, r := range records {
+		op := strings.TrimSpace(r.Op)
+		if op == "<EMPTY:0>" {
+			continue
+		}
+		if r.SGrid != "<EMPTY:0>" || r.SCls != "<EMPTY:0>" {
+			if _, err := tx.ExecContext(ctx,
+				`<SQL:2>`, op, op, nullStr(r.SGrid), nullStr(r.SCls)); err != nil {
+				return c, err
+			}
+			if !seenStations[op] {
+				c.Stations++
+				seenStations[op] = true
+			}
+		} else if !seenStations[op] {
+			if _, err := tx.ExecContext(ctx,
+				`<SQL:3>`,
+				op, op); err != nil {
+				return c, err
+			}
+			seenStations[op] = true
+			c.Stations++
+		}
+		if r.Wk == "<EMPTY:0>" || r.Bnd == "<EMPTY:0>" || r.Mode == "<EMPTY:0>" || r.QDate == "<EMPTY:0>" || r.QTime == "<EMPTY:0>" {
+			continue
+		}
+		seq++
+		contactID := fmt.Sprintf("<MSG:24>", seq)
+		if _, err := tx.ExecContext(ctx, `<SQL:4>`,
+			contactID, op, strings.ToUpper(r.Wk), r.Bnd, strings.ToUpper(r.Mode),
+			isoDate(r.QDate), r.QTime, nullStr(r.Txr), nullStr(r.Rxr),
+			nullStr(r.WGrid), nullStr(r.Ent)); err != nil {
+			return c, err
+		}
+		c.Contacts++
+	}
+	return c, tx.Commit()
+}
+
+// EnsureSeeded loads the seed only when the logbook is empty.
+func EnsureSeeded(ctx context.Context, db *sql.DB, path string) (bool, Counts, error) {
+	var n int
+	if err := db.QueryRowContext(ctx, `<SQL:5>`).Scan(&n); err != nil {
+		return false, Counts{}, err
+	}
+	if n != 0 {
+		return false, Counts{}, nil
+	}
+	c, err := FromFile(ctx, db, path)
+	return err == nil, c, err
+}

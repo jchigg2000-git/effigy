@@ -1,0 +1,15 @@
+{
+  "key": "meterworks__main.go__blind__r0",
+  "arm": "blind",
+  "replicate": 0,
+  "source_path": "corpus/meterworks/api/cmd/meterworksd/main.go",
+  "source_sha256": "ff23a7603ab82c6b61085b74ea86249f6eac78e802f3d3f0f8c537513fb04497",
+  "true_domain_id": "water-utility-metering",
+  "language": "go",
+  "artifact_sha256": "bc696a5f21a0d4b1012c82c5c66d7a64fb12ab2738a263f0832d826f58bb5535",
+  "artifact_lines": 13,
+  "latency_s": 0.0,
+  "solution_meta": {
+    "generated_by": "evals/blind_stub.py"
+  }
+}

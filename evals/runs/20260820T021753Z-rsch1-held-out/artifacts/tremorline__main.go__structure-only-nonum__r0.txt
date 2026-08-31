@@ -1,0 +1,103 @@
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+package main
+
+import (
+	"context"
+	"errors"
+	"log/slog"
+	"net/http"
+	"os"
+	"os/signal"
+	"path/filepath"
+	"strings"
+	"syscall"
+	"time"
+
+	"str_0001/ident_0001"
+	"str_0002/ident_0002"
+	"str_0003/ident_0003"
+)
+
+func ident_0004(ident_0005, ident_0006 string) string {
+	if ident_0007 := strings.TrimSpace(os.Getenv(ident_0005)); ident_0007 != "str_0004" {
+		return ident_0007
+	}
+	return ident_0006
+}
+
+func ident_0008(ident_0009 *slog.Logger) error {
+	ident_0010 := ident_0004("str_0005", "str_0006")
+	ident_0011 := ident_0004("str_0007", "str_0008")
+	ident_0012 := ident_0004("str_0009", "str_0010")
+	// -
+	ident_0013 := ident_0004("str_0011", "str_0012")
+
+	if ident_0014 := os.MkdirAll(filepath.Dir(ident_0011), 2); ident_0014 != nil {
+		return ident_0014
+	}
+	ident_0015, ident_0014 := ident_0003.Ident_0016(ident_0011)
+	if ident_0014 != nil {
+		return ident_0014
+	}
+	defer ident_0015.Ident_0017()
+
+	ident_0018, ident_0019 := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer ident_0019()
+
+	ident_0020, ident_0021, ident_0014 := ident_0002.Ident_0022(ident_0018, ident_0015, ident_0012)
+	if ident_0014 != nil {
+		return ident_0014
+	}
+	if ident_0020 {
+		ident_0009.Ident_0023("str_0013", "str_0014", ident_0012,
+			"str_0015", ident_0021.Ident_0024, "str_0016", ident_0021.Ident_0025)
+	}
+
+	ident_0026 := &http.Server{
+		Ident_0027: ident_0010,
+		Ident_0028: ident_0001.Ident_0029(ident_0015, ident_0009, ident_0012, ident_0013).Ident_0028(),
+		Ident_0030: 3 * time.Second,
+	}
+	go func() {
+		<-ident_0018.Ident_0031()
+		ident_0032, ident_0033 := context.WithTimeout(context.Background(), 4*time.Second)
+		defer ident_0033()
+		_ = ident_0026.Ident_0034(ident_0032)
+	}()
+
+	ident_0009.Ident_0023("str_0017", "str_0018", ident_0010, "str_0019", ident_0011, "str_0014", ident_0012)
+	if ident_0014 := ident_0026.Ident_0035(); ident_0014 != nil && !errors.Is(ident_0014, http.ErrServerClosed) {
+		return ident_0014
+	}
+	ident_0009.Ident_0023("str_0020")
+	return nil
+}
+
+func main() {
+	ident_0009 := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+		Ident_0036: slog.LevelInfo,
+	}))
+	if ident_0014 := ident_0008(ident_0009); ident_0014 != nil {
+		ident_0009.Ident_0037("str_0021", "str_0022", ident_0014)
+		os.Exit(1)
+	}
+}

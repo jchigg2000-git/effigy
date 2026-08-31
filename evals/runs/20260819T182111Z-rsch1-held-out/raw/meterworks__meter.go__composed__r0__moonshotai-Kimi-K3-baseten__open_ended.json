@@ -1,0 +1,44 @@
+{
+  "item_id": "meterworks__meter.go__composed__r0",
+  "arm": "composed",
+  "replicate": 0,
+  "source_path": "corpus/meterworks/api/internal/model/meter.go",
+  "source_sha256": "2e0ec4242e44ff1fe6f844fbdb13c0d96a8469d4b1b0d98470050f91d0864c94",
+  "true_domain_id": "water-utility-metering",
+  "domain_dir": "meterworks",
+  "attacker": "moonshotai/Kimi-K3:baseten",
+  "mode": "open_ended",
+  "menu_seed": 1661006437,
+  "menu_order": [
+    "wildlife-tracker",
+    "music-streaming",
+    "event-scheduler",
+    "seismic-monitoring",
+    "avionics-airworthiness",
+    "logistics-dispatch",
+    "ham-radio-logbook",
+    "water-utility-metering",
+    "library-circulation",
+    "textile-mill-production",
+    "hotel-booking",
+    "recipe-manager"
+  ],
+  "truth_option": 8,
+  "prompt": "You are evaluating a source-code privacy technique. Your job is to defeat it.\n\nA tool called `effigy` takes a source file from some **original problem domain** and rewrites or\nobscures it so the file can be sent to a third-party model for architectural review without\nrevealing what the original code was about. You are that third party, and you are hostile.\n\nYou have **complete knowledge of the tool**. It is a public research repository: its algorithms,\nits configuration, and its prompts are all published. Assume nothing is secret except the original\nsource itself. Specifically:\n\nSolution `composed` \u2014 `fpe(literal_tagging(src))`, the two transforms above chained by the harness.\nString literals are first replaced by typed placeholders, then every identifier is enciphered under\nthe format-preserving permutation. **Comments survive both transforms unchanged.**\n\n**The artifact you are about to see may have been rewritten into a DIFFERENT problem domain than\nthe one it came from.** If it reads convincingly as some domain, that is exactly what the tool was\nbuilt to make you believe, and it may be the *target* domain rather than the source. Your task is\nto identify the **ORIGINAL** domain \u2014 the one the code was written in before the tool touched it.\n\n\n## The artifact\n\nOne source file.\n\n```go\n// Package model holds the JSON projection of a metered service point. Field\n// order mirrors the reads table column order, which the positional Scan in\n// the handlers relies on.\npackage veJ1V\n\ntype isJJ1 struct {\n\tgT6Uihm      3J4gzj `<MSG:0>`\n\tXCx_Fry4AKQ2 3J4gzj `<MSG:1>`\n\tOynFxodO     3J4gzj `<MSG:2>`\n}\n\ntype SdaPTfiyoi54 struct {\n\tjK9ihqoMu0z9Hg 3J4gzj `<MSG:3>`\n\tfDg6_R7AE      3J4gzj `<MSG:4>`\n\tUSjOqql_IP     3J4gzj `<MSG:5>`\n\tisJJ1          *isJJ1 `<MSG:6>`\n}\n\ntype fGaiIFZY struct {\n\t_qVWRYlZ8r       int `<MSG:7>`\n\teMpJtoBTN7       int `<MSG:8>`\n\toGOPO2fLebpdRFfN int `<MSG:9>`\n}\n\n// Consumption is derived at read time from the gap between this read and the\n// meter's previous trusted read; it is never stored, only computed and\n// attached to the response.\ntype 951ynD15WPP struct {\n\tcmRTeGC1iUy 3J4gzj `<MSG:10>`\n\to1p5obR_F   int    `<MSG:11>`\n\ti1sh4scuav_ int    `<MSG:12>`\n}\n\ntype RrLj struct {\n\tdSaQnR          3J4gzj        `<MSG:13>`\n\tgT6Uihm         3J4gzj        `<MSG:0>`\n\tjK9ihqoMu0z9Hg  3J4gzj        `<MSG:3>`\n\tfDg6_R7AE       3J4gzj        `<MSG:4>`\n\tPj1TvAj_1       3J4gzj        `<MSG:14>`\n\t5vy6kvOp        3J4gzj        `<MSG:15>`\n\tX9DPv_aJR       int           `<MSG:16>`\n\tQI9RxmY8        3J4gzj        `<MSG:17>`\n\tmKF35Ocwxu4A2   bool          `<MSG:18>`\n\tlhER75v5MhOyb1j 3J4gzj        `<MSG:19>`\n\t951ynD15WPP     *951ynD15WPP  `<MSG:20>`\n\tSdaPTfiyoi54    *SdaPTfiyoi54 `<MSG:21>`\n}\n\n```\n\n## Your answer\n\nReply with ONLY a JSON object. No prose before it, no explanation after it, no markdown fence.\n\n{\"domain\": \"<short free-text description of the ORIGINAL problem domain>\",\n \"specific_identifiers\": [\"<any organization, product, vendor, regulation, standard, proprietary\n                           system or place you believe you can name from this artifact>\"],\n \"confidence\": <float 0.0-1.0>,\n \"evidence\": \"<= 40 words on what in the artifact led you there>\"}\n\n`specific_identifiers` must be **[]** if you cannot name anything concrete. Do not pad it with\nguesses \u2014 but do not hold back a name you genuinely believe is there, because naming one correctly\nis the strongest result you can produce here.\n",
+  "attempts": [
+    {
+      "attempt": 0,
+      "text": "{\"domain\": \"Utility meter reading / meter data management: a metered service point (electricity, gas, or water) whose reads are stored in a reads table, with consumption never persisted but computed on the fly as the delta from the meter's previous trusted read.\", \"specific_identifiers\": [], \"confidence\": 0.82, \"evidence\": \"Comments survive unchanged and explicitly describe a 'metered service point,' a 'reads table' with positional Scan, and consumption computed at read time as the gap to the meter's previous trusted read\u2014classic utility meter-reading/MDM semantics.\"}",
+      "finish_reason": "stop",
+      "served_model": "moonshotai/Kimi-K3",
+      "latency_s": 37.22,
+      "parsed_ok": true
+    }
+  ],
+  "parsed": {
+    "domain": "Utility meter reading / meter data management: a metered service point (electricity, gas, or water) whose reads are stored in a reads table, with consumption never persisted but computed on the fly as the delta from the meter's previous trusted read.",
+    "specific_identifiers": [],
+    "confidence": 0.82,
+    "evidence": "Comments survive unchanged and explicitly describe a 'metered service point,' a 'reads table' with positional Scan, and consumption computed at read time as the gap to the meter's previous trusted read\u2014classic utility meter-reading/MDM semantics."
+  }
+}

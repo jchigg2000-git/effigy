@@ -1,0 +1,106 @@
+// Read-only view of a single wildlife sighting. Renders whatever getSighting
+// returned, including the location details and migration route data. Optional fields that are absent render as an em dash rather
+// than being hidden, so the layout stays stable from one sighting to the next.
+import type { SightingDetail as SightingDetailData } from "../api/tracking";
+
+interface SightingDetailProps {
+  sighting: SightingDetailData;
+  onReportRoute: () => void;
+}
+
+export function SightingDetail({ sighting, onReportRoute }: SightingDetailProps) {
+  const locations = sighting.locations ?? [];
+  const routes = sighting.routes ?? [];
+  return (
+    <section className="sighting-detail">
+      <div className="sighting-detail-head">
+        <div>
+          <h2>{sighting.sightingId}</h2>
+          <p>{sighting.observationTime}</p>
+        </div>
+        <button type="button" className="btn btn-primary" onClick={onReportRoute}>
+          Report migration route
+        </button>
+      </div>
+
+      <dl className="detail-grid">
+        <dt>Sighting id</dt>
+        <dd>{sighting.sightingId}</dd>
+        <dt>Observation time</dt>
+        <dd>{sighting.observationTime}</dd>
+        <dt>Latitude</dt>
+        <dd>{sighting.latitude.toFixed(4)}</dd>
+        <dt>Longitude</dt>
+        <dd>{sighting.longitude.toFixed(4)}</dd>
+        <dt>Elevation (m)</dt>
+        <dd>{sighting.elevationM.toFixed(1)}</dd>
+        <dt>Species</dt>
+        <dd>{sighting.speciesName || "—"}</dd>
+        <dt>Location count</dt>
+        <dd>{sighting.locationCount}</dd>
+      </dl>
+
+      <h3>
+        Location details <span className="location-count">{locations.length}</span>
+      </h3>
+      <p className="section-note">
+        One row per contributing observation point. The sighting's own location field above is the
+        average of these values, not a re-derived preferred solution.
+      </p>
+      {locations.length === 0 ? (
+        <p className="empty-note">No per-location details are recorded against this sighting.</p>
+      ) : (
+        <>
+          <div className="location-list-head">
+            <span>Point</span>
+            <span>Type</span>
+            <span>Value</span>
+            <span>Error</span>
+          </div>
+          <ul className="location-list">
+            {locations.map((loc) => (
+              <li key={loc.locationId}>
+                <span>{loc.pointId}</span>
+                <span>{loc.locType}</span>
+                <span>{loc.value.toFixed(2)}</span>
+                <span>error {loc.error.toFixed(2)}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
+      <h3>
+        Migration routes <span className="route-count">{routes.length}</span>
+      </h3>
+      <p className="section-note">
+        Every route bound to this sighting by a tracking analysis, across every
+        station that reported one, oldest entry first.
+      </p>
+      {routes.length === 0 ? (
+        <p className="empty-note">No migration routes are associated with this sighting.</p>
+      ) : (
+        <>
+          <div className="route-list-head">
+            <span>Station</span>
+            <span>Point</span>
+            <span>Direction</span>
+            <span>Start time</span>
+            <span>End time</span>
+          </div>
+          <ul className="route-list">
+            {routes.map((r) => (
+              <li key={r.routeId}>
+                <span>{r.stationId}</span>
+                <span>{r.pointId}</span>
+                <span>{r.directionHint || "—"}</span>
+                <span>{r.startTime}</span>
+                <span>{r.endTime}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </section>
+  );
+}

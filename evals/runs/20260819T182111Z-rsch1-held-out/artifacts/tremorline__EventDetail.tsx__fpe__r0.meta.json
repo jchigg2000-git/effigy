@@ -1,0 +1,21 @@
+{
+  "key": "tremorline__EventDetail.tsx__fpe__r0",
+  "arm": "fpe",
+  "replicate": 0,
+  "source_path": "corpus/tremorline/app/src/components/EventDetail.tsx",
+  "source_sha256": "7b8174fa8e466eac55bd54c885af41753f5f7577e3ae6c85534e58ae10647267",
+  "true_domain_id": "seismic-monitoring",
+  "language": "tsx",
+  "artifact_sha256": "9ad4e119084ae0d87a07d8af38667942cb94a8ff1b5d335a1ee5df42c4244f02",
+  "artifact_lines": 112,
+  "latency_s": 0.0,
+  "solution_meta": {
+    "cipher_backend": "pyffx",
+    "identifiers_replaced": 280,
+    "identifiers_skipped": 20,
+    "unique_tokens_replaced": 109,
+    "key_id": "insecure-demo",
+    "pseudonym_collisions": 0,
+    "key_warning": "PUBLIC source-baked demo key; output is trivially reversible"
+  }
+}

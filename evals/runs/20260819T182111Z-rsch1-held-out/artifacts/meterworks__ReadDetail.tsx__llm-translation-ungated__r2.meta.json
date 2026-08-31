@@ -1,0 +1,45 @@
+{
+  "key": "meterworks__ReadDetail.tsx__llm-translation-ungated__r2",
+  "arm": "llm-translation-ungated",
+  "replicate": 2,
+  "source_path": "corpus/meterworks/app/src/components/ReadDetail.tsx",
+  "source_sha256": "73e290a1945b22211c4e537cb6bdf0444cec219f2d66a8980fb757216b25943e",
+  "true_domain_id": "water-utility-metering",
+  "language": "tsx",
+  "artifact_sha256": "00617959382043a5b27b64e6efc8fab693cd1090deef7d52eb2b2fc88bd34d79",
+  "artifact_lines": 103,
+  "latency_s": 6.8,
+  "solution_meta": {
+    "model": "Qwen/Qwen2.5-Coder-7B-Instruct",
+    "base_url": "https://router.huggingface.co/v1",
+    "target_domain": "a music streaming service with tracks, playlists, and listeners",
+    "target_id": "music-streaming",
+    "temperature": 0.2,
+    "postcondition": {
+      "src_code_lines": 90,
+      "husk_code_lines": 90,
+      "similarity_ratio": 0.643,
+      "ident_retention": 0.417,
+      "code_verbatim": 0.333,
+      "longest_identical_run": 6,
+      "longest_identical_run_share": 0.067,
+      "copied_spans": 1,
+      "copied_span_lines": 6,
+      "copied_span_share": 0.067,
+      "thresholds": {
+        "run_lines": 999999,
+        "run_share": 9.0,
+        "copied_share": 9.0,
+        "retention": 9.0,
+        "ratio": 9.0,
+        "min_code_lines": 12
+      },
+      "verdict": "ok"
+    },
+    "usage": {
+      "prompt_tokens": 2049,
+      "completion_tokens": 894,
+      "total_tokens": 2943
+    }
+  }
+}

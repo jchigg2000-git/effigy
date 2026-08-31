@@ -1,0 +1,174 @@
+// -
+// -
+// -
+// -
+// -
+import { useState } from "react";
+import {
+  Ident_0001,
+  ident_0002,
+  ident_0003,
+  ident_0004,
+  type Ident_0005,
+  type Ident_0006,
+  type Ident_0007 as Ident_0008,
+  type Ident_0009,
+} from "str_0001";
+import { Ident_0010 } from "str_0002";
+import { Ident_0007 } from "str_0003";
+
+const Ident_0011: Ident_0006 = {
+  ident_0012: "str_0004", ident_0013: "str_0004", ident_0014: -2, ident_0015: 3,
+  ident_0016: -4, ident_0017: 4, ident_0018: -5, ident_0019: 5, ident_0020: 6,
+};
+
+export function Ident_0021() {
+  const [ident_0022, ident_0023] = useState<Ident_0006>(Ident_0011);
+  const [ident_0024, ident_0025] = useState<Ident_0009[]>([]);
+  const [ident_0026, ident_0027] = useState<number | null>(null);
+  const [ident_0028, ident_0029] = useState<Ident_0008 | null>(null);
+  const [ident_0030, ident_0031] = useState(false);
+  const [ident_0032, ident_0033] = useState(false);
+  const [ident_0034, ident_0035] = useState(false);
+  const [ident_0036, ident_0037] = useState<string | null>(null);
+
+  const ident_0038 = (ident_0039: unknown): string => {
+    if (ident_0039 instanceof Ident_0001) {
+      return `str_0005${ident_0039.ident_0040}str_0006${ident_0039.ident_0041}str_0007`;
+    }
+    return "str_0008";
+  };
+
+  const ident_0042 = async () => {
+    ident_0033(true);
+    ident_0037(null);
+    ident_0029(null);
+    ident_0031(false);
+    try {
+      const ident_0043 = await ident_0004(ident_0022);
+      ident_0025(ident_0043.ident_0024);
+      ident_0027(ident_0043.ident_0026);
+    } catch (ident_0039) {
+      ident_0025([]);
+      ident_0027(null);
+      ident_0037(ident_0038(ident_0039));
+    } finally {
+      ident_0033(false);
+    }
+  };
+
+  const ident_0044 = async (ident_0045: string) => {
+    ident_0033(true);
+    ident_0037(null);
+    ident_0031(false);
+    try {
+      ident_0029(await ident_0003(ident_0045));
+    } catch (ident_0039) {
+      ident_0029(null);
+      ident_0037(ident_0038(ident_0039));
+    } finally {
+      ident_0033(false);
+    }
+  };
+
+  const ident_0046 = async (ident_0047: Ident_0005) => {
+    ident_0035(true);
+    ident_0037(null);
+    try {
+      ident_0029(await ident_0002(ident_0047));
+      ident_0031(false);
+    } catch (ident_0039) {
+      ident_0037(ident_0038(ident_0039));
+    } finally {
+      ident_0035(false);
+    }
+  };
+
+  const ident_0048 = (ident_0049: keyof Ident_0006, ident_0050: number | string) => {
+    ident_0023({ ...ident_0022, [ident_0049]: ident_0050 });
+  };
+
+  return (
+    <div className="str_0009">
+      <header className="str_0010">
+        <div>
+          <h1>str_0011</h1>
+          <p>str_0012</p>
+        </div>
+        <button type="str_0013" className="str_0014" onClick={() => ident_0031(true)}>
+          str_0015
+</button>
+      </header>
+
+      {ident_0036 !== null && <p className="str_0016">{ident_0036}</p>}
+
+      <main className="str_0017">
+        <section className="str_0018">
+          <form className="str_0019" onSubmit={(ident_0051) => { ident_0051.ident_0052(); ident_0042(); }}>
+            <label htmlFor="str_0020">str_0021</label>
+            <input id="str_0020" type="str_0022" value={ident_0022.ident_0012}
+              onChange={(ident_0051) => ident_0048("str_0023", ident_0051.ident_0053.ident_0050)} />
+            <label htmlFor="str_0024">str_0025</label>
+            <input id="str_0024" type="str_0022" value={ident_0022.ident_0013}
+              onChange={(ident_0051) => ident_0048("str_0026", ident_0051.ident_0053.ident_0050)} />
+            <label htmlFor="str_0027">str_0028</label>
+            <input id="str_0027" value={ident_0022.ident_0014}
+              onChange={(ident_0051) => ident_0048("str_0029", Number(ident_0051.ident_0053.ident_0050))} />
+            <label htmlFor="str_0030">str_0031</label>
+            <input id="str_0030" value={ident_0022.ident_0015}
+              onChange={(ident_0051) => ident_0048("str_0032", Number(ident_0051.ident_0053.ident_0050))} />
+            <button type="str_0033" className="str_0034" disabled={ident_0032}>
+              str_0035
+</button>
+          </form>
+          {ident_0032 && <p className="str_0036">str_0037</p>}
+          {ident_0026 !== null && <p className="str_0038">{ident_0026} str_0039</p>}
+          {ident_0024.ident_0054 === 0 ? (
+            <p className="str_0040">str_0041</p>
+          ) : (
+            <table className="str_0042">
+              <thead>
+                <tr>
+                  <th>str_0043</th>
+                  <th>str_0044</th>
+                  <th>str_0045</th>
+                  <th>str_0046</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ident_0024.ident_0055((ident_0056) => (
+                  <tr
+                    key={ident_0056.ident_0045}
+                    className={ident_0056.ident_0045 === ident_0028?.ident_0045 ? "str_0047" : "str_0004"}
+                    onClick={() => ident_0044(ident_0056.ident_0045)}
+                  >
+                    <td>{ident_0056.ident_0045}</td>
+                    <td>{ident_0056.ident_0057}</td>
+                    <td>{ident_0056.ident_0058 !== undefined ? ident_0056.ident_0058.ident_0059(2) : "str_0048"}</td>
+                    <td>{ident_0056.ident_0060.ident_0059(1)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </section>
+
+        <section className="str_0049">
+          {ident_0030 && (
+            <Ident_0010
+              ident_0034={ident_0034}
+              ident_0061={() => ident_0031(false)}
+              ident_0062={ident_0046}
+            />
+          )}
+          {!ident_0030 && ident_0028 === null && (
+            <p className="str_0040">str_0050</p>
+          )}
+          {!ident_0030 && ident_0028 !== null && (
+            <Ident_0007 ident_0063={ident_0028} ident_0062={() => ident_0031(true)} />
+          )}
+        </section>
+      </main>
+    </div>
+  );
+}

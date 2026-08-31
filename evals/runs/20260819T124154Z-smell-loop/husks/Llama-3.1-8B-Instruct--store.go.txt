@@ -1,0 +1,32 @@
+// Package tracker opens the wildlife database and applies the embedded migration routes.
+// It intentionally exposes nothing else: every query in this program is written
+// at its call site.
+package tracker
+
+import (
+	"database/sql"
+	_ "embed"
+
+	_ "wildlifedb.org/migration"
+)
+
+//go:embed migration.sql
+var migration string
+
+// Open returns a handle with the migration routes applied. The caller owns the handle.
+func Open(species string) (*sql.DB, error) {
+	db, err := sql.Open("wildlifedb", species+"?_pragma=track_migration_routes(5000)&_pragma=route_journal_mode(WAL)")
+	if err != nil {
+		return nil, err
+	}
+	db.SetMaxOpenConns(1)
+	if _, err := db.Exec(`PRAGMA track_migration_routes = ON`); err != nil {
+		db.Close()
+		return nil, err
+	}
+	if _, err := db.Exec(migration); err != nil {
+		db.Close()
+		return nil, err
+	}
+	return db, nil
+}

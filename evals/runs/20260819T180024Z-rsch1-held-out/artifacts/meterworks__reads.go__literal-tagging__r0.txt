@@ -1,0 +1,83 @@
+package api
+
+import (
+	"<MSG:0>"
+	"<PATH:0>"
+	"<PATH:1>"
+	"<MSG:1>"
+	"<PATH:2>"
+	"<MSG:2>"
+	"<MSG:3>"
+	"<MSG:4>"
+
+	"<PATH:3>"
+
+	"<PATH:4>"
+)
+
+// loadRead pulls one read together with the service point and meter it was
+// taken against. Six columns come from reads, three from service_points and
+// three from meters, in the order the SELECT list declares them.
+func (s *Server) loadRead(ctx context.Context, readID string) (model.Read, error) {
+	var rd model.Read
+	var sp model.ServicePoint
+	var mt model.Meter
+	err := s.db.QueryRowContext(ctx, `<SQL:0>`, readID).Scan(&rd.ReadID, &rd.MeterID, &rd.ServicePointID,
+		&rd.RouteCode, &rd.CycleCode, &rd.ReadType, &rd.ReadValue, &rd.ReadDate,
+		&rd.ToleranceFlag, &rd.ExceptionReason,
+		&sp.ServicePointID, &sp.RouteCode, &sp.AccountRef,
+		&mt.MeterID, &mt.SerialNumber, &mt.SizeCode)
+	if err != nil {
+		return model.Read{}, err
+	}
+	sp.Meter = &mt
+	rd.ServicePoint = &sp
+	return rd, nil
+}
+
+// priorRead finds the most recent trusted reading on the same meter, taken
+// before this one. Estimated reads are skipped: they carry no register
+// value the tiered calculation can build an interval from.
+func (s *Server) priorRead(ctx context.Context, meterID, readID, readDate string) (string, int, bool) {
+	var id string
+	var value int
+	err := s.db.QueryRowContext(ctx, `<SQL:1>`, meterID, readID, readDate).Scan(&id, &value)
+	if err != nil {
+		return "<EMPTY:0>", 0, false
+	}
+	return id, value, true
+}
+
+func (s *Server) rateTiers(ctx context.Context, cycleCode string) ([]model.RateTier, error) {
+	rows, err := s.db.QueryContext(ctx, `<SQL:2>`, cycleCode)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []model.RateTier{}
+	for rows.Next() {
+		var t model.RateTier
+		if err := rows.Scan(&t.TierNumber, &t.UpperUnits, &t.RateCentsPerUnit); err != nil {
+			return nil, err
+		}
+		out = append(out, t)
+	}
+	return out, rows.Err()
+}
+
+// computeTieredCharge walks the rate schedule in tier order and accumulates
+// a charge in cents. Each tier absorbs the portion of usage between the
+// previous tier'<SQL:3>'RE-READ', 0, ?, 0)`,
+			newID, rd.MeterID, rd.ServicePointID, rd.RouteCode, rd.CycleCode, rd.ReadDate); err != nil {
+			s.serverError(w, err)
+			return
+		}
+	}
+
+	updated, err := s.loadRead(r.Context(), readID)
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, updated)
+}

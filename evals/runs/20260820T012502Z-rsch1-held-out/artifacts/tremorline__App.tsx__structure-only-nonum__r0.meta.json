@@ -1,0 +1,68 @@
+{
+  "key": "tremorline__App.tsx__structure-only-nonum__r0",
+  "arm": "structure-only-nonum",
+  "replicate": 0,
+  "source_path": "corpus/tremorline/app/src/App.tsx",
+  "source_sha256": "d41b409ce24c6323601b6a6b25b7c3c709bb7254b7dfda21d88141bc855c3cab",
+  "true_domain_id": "seismic-monitoring",
+  "language": "tsx",
+  "artifact_sha256": "e44db0791ceff79e43e31cc2a05b5252339369f6578a7ca4ada138477e0c42a0",
+  "artifact_lines": 175,
+  "latency_s": 0.8,
+  "solution_meta": {
+    "generated_by": "evals/canonicalize.py",
+    "preserved_tokens": [
+      "Number",
+      "button",
+      "className",
+      "disabled",
+      "div",
+      "form",
+      "h1",
+      "header",
+      "htmlFor",
+      "id",
+      "input",
+      "key",
+      "label",
+      "main",
+      "onChange",
+      "onClick",
+      "onSubmit",
+      "p",
+      "section",
+      "table",
+      "tbody",
+      "td",
+      "th",
+      "thead",
+      "tr",
+      "type",
+      "undefined",
+      "useState",
+      "value"
+    ],
+    "preserved_import_paths": [],
+    "n_idents_canonicalised": 63,
+    "n_strings_canonicalised": 50,
+    "n_runes_canonicalised": 0,
+    "n_numbers_canonicalised": 5,
+    "counters_delta": {
+      "lines": 0,
+      "bytes": -52,
+      "funcs": 0,
+      "structs": 0,
+      "interfaces": 0,
+      "imports": 0,
+      "exports": 0,
+      "string_literals": 0,
+      "max_brace_depth": 0
+    },
+    "blind_delta": {
+      "bytes": [
+        5979,
+        5927
+      ]
+    }
+  }
+}

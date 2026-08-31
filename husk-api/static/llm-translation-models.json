@@ -1,0 +1,228 @@
+{
+  "models": [
+    {
+      "id": "swiss-ai/Apertus-8B-Instruct-2509",
+      "label": "Apertus-8B-Instruct-2509",
+      "cost": "$",
+      "params_b": 8,
+      "price_per_mtok": 0.15
+    },
+    {
+      "id": "katanemo/Arch-Router-1.5B",
+      "label": "Arch-Router-1.5B",
+      "cost": "$",
+      "params_b": 1.5,
+      "price_per_mtok": null
+    },
+    {
+      "id": "CohereLabs/c4ai-command-r7b-arabic-02-2025",
+      "label": "c4ai-command-r7b-arabic-02-2025",
+      "cost": "$",
+      "params_b": 7,
+      "price_per_mtok": null
+    },
+    {
+      "id": "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
+      "label": "DeepSeek-R1-Distill-Llama-8B",
+      "cost": "$",
+      "params_b": 8,
+      "price_per_mtok": 0.05
+    },
+    {
+      "id": "utter-project/EuroLLM-22B-Instruct-2512",
+      "label": "EuroLLM-22B-Instruct-2512",
+      "cost": "$",
+      "params_b": 22,
+      "price_per_mtok": 0.15
+    },
+    {
+      "id": "google/gemma-3n-E4B-it",
+      "label": "gemma-3n-E4B-it",
+      "cost": "$",
+      "params_b": 4,
+      "price_per_mtok": 0.09
+    },
+    {
+      "id": "openai/gpt-oss-120b",
+      "label": "gpt-oss-120b",
+      "cost": "$",
+      "params_b": 120,
+      "price_per_mtok": 0.15
+    },
+    {
+      "id": "openai/gpt-oss-20b",
+      "label": "gpt-oss-20b",
+      "cost": "$",
+      "params_b": 20,
+      "price_per_mtok": 0.1
+    },
+    {
+      "id": "NousResearch/Hermes-2-Pro-Llama-3-8B",
+      "label": "Hermes-2-Pro-Llama-3-8B",
+      "cost": "$",
+      "params_b": 8,
+      "price_per_mtok": 0.14
+    },
+    {
+      "id": "Sao10K/L3-8B-Stheno-v3.2",
+      "label": "L3-8B-Stheno-v3.2",
+      "cost": "$",
+      "params_b": 8,
+      "price_per_mtok": 0.05
+    },
+    {
+      "id": "meta-llama/Llama-3.1-8B-Instruct",
+      "label": "Llama-3.1-8B-Instruct",
+      "cost": "$",
+      "params_b": 8,
+      "price_per_mtok": 0.04
+    },
+    {
+      "id": "allenai/Olmo-3-7B-Instruct",
+      "label": "Olmo-3-7B-Instruct",
+      "cost": "$",
+      "params_b": 7,
+      "price_per_mtok": 0.15
+    },
+    {
+      "id": "Qwen/Qwen2.5-Coder-32B-Instruct",
+      "label": "Qwen2.5-Coder-32B-Instruct",
+      "cost": "$",
+      "params_b": 32,
+      "price_per_mtok": 0.13
+    },
+    {
+      "id": "Qwen/Qwen2.5-Coder-7B-Instruct",
+      "label": "Qwen2.5-Coder-7B-Instruct",
+      "cost": "$",
+      "params_b": 7,
+      "price_per_mtok": 0.02
+    },
+    {
+      "id": "Qwen/Qwen3-32B",
+      "label": "Qwen3-32B",
+      "cost": "$",
+      "params_b": 32,
+      "price_per_mtok": 0.17
+    },
+    {
+      "id": "Qwen/Qwen3-4B-Thinking-2507",
+      "label": "Qwen3-4B-Thinking-2507",
+      "cost": "$",
+      "params_b": 4,
+      "price_per_mtok": 0.02
+    },
+    {
+      "id": "Qwen/QwQ-32B",
+      "label": "QwQ-32B",
+      "cost": "$",
+      "params_b": 32,
+      "price_per_mtok": 0.19
+    },
+    {
+      "id": "CohereLabs/aya-expanse-32b",
+      "label": "aya-expanse-32b",
+      "cost": "$$",
+      "params_b": 32,
+      "price_per_mtok": null
+    },
+    {
+      "id": "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B",
+      "label": "DeepSeek-R1-Distill-Qwen-32B",
+      "cost": "$$",
+      "params_b": 32,
+      "price_per_mtok": 0.3
+    },
+    {
+      "id": "google/gemma-4-31B-it",
+      "label": "gemma-4-31B-it",
+      "cost": "$$",
+      "params_b": 31,
+      "price_per_mtok": 0.26
+    },
+    {
+      "id": "pearl-ai/Gemma-4-31B-it-pearl",
+      "label": "Gemma-4-31B-it-pearl",
+      "cost": "$$",
+      "params_b": 31,
+      "price_per_mtok": 0.57
+    },
+    {
+      "id": "zai-org/GLM-4.5-Air",
+      "label": "GLM-4.5-Air",
+      "cost": "$$",
+      "params_b": 110,
+      "price_per_mtok": 0.49
+    },
+    {
+      "id": "meta-llama/Llama-3.3-70B-Instruct",
+      "label": "Llama-3.3-70B-Instruct",
+      "cost": "$$",
+      "params_b": 70,
+      "price_per_mtok": 0.27
+    },
+    {
+      "id": "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8",
+      "label": "Llama-4-Maverick-17B-128E-Instruct-FP8",
+      "cost": "$$",
+      "params_b": 17,
+      "price_per_mtok": 0.56
+    },
+    {
+      "id": "aisingapore/Qwen-SEA-LION-v4-32B-IT",
+      "label": "Qwen-SEA-LION-v4-32B-IT",
+      "cost": "$$",
+      "params_b": 32,
+      "price_per_mtok": 0.38
+    },
+    {
+      "id": "Qwen/Qwen2.5-7B-Instruct",
+      "label": "Qwen2.5-7B-Instruct",
+      "cost": "$$",
+      "params_b": 7,
+      "price_per_mtok": 0.3
+    },
+    {
+      "id": "deepseek-ai/DeepSeek-R1-Distill-Llama-70B",
+      "label": "DeepSeek-R1-Distill-Llama-70B",
+      "cost": "$$$",
+      "params_b": 70,
+      "price_per_mtok": 0.75
+    },
+    {
+      "id": "zai-org/GLM-4-32B-0414",
+      "label": "GLM-4-32B-0414",
+      "cost": "$$$",
+      "params_b": 32,
+      "price_per_mtok": 1.1
+    },
+    {
+      "id": "Sao10K/L3-70B-Euryale-v2.1",
+      "label": "L3-70B-Euryale-v2.1",
+      "cost": "$$$",
+      "params_b": 70,
+      "price_per_mtok": 1.48
+    },
+    {
+      "id": "Qwen/Qwen3-Next-80B-A3B-Instruct",
+      "label": "Qwen3-Next-80B-A3B-Instruct",
+      "cost": "$$$",
+      "params_b": 80,
+      "price_per_mtok": 0.82
+    },
+    {
+      "id": "Qwen/Qwen3-Next-80B-A3B-Thinking",
+      "label": "Qwen3-Next-80B-A3B-Thinking",
+      "cost": "$$$",
+      "params_b": 80,
+      "price_per_mtok": 0.82
+    },
+    {
+      "id": "swiss-ai/Apertus-70B-Instruct-2509",
+      "label": "Apertus-70B-Instruct-2509",
+      "cost": "$$$$",
+      "params_b": 70,
+      "price_per_mtok": 1.87
+    }
+  ]
+}

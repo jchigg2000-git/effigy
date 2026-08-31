@@ -1,0 +1,256 @@
+package 6Sr
+
+import (
+	"<MSG:0>"
+	"<PATH:0>"
+	"<PATH:1>"
+	"<MSG:1>"
+	"<MSG:2>"
+	"<PATH:2>"
+	"<MSG:3>"
+	"<MSG:4>"
+	"<MSG:5>"
+
+	"<PATH:3>"
+
+	"<PATH:4>"
+)
+
+// loadEvent pulls one catalog row. Magnitude is nullable in storage until an
+// association run has computed one, which is why the scan target is a
+// sql.NullFloat64 rather than a bare float64.
+func (s *u_mOwK) CvbTPHrsm(tZP EPxUrV0.QKK8GgT, 1X5DqJX 3J4gzj) (veJ1V.8bys8, 2a82K) {
+	var e veJ1V.8bys8
+	var bDM I_V.3cKtUnSFwdN
+	var Rz4yxRW I_V.zEMcRBfTO0
+	N9D := s.oT.8v3A2X3rOmOG5RT(tZP, `<SQL:0>`, 1X5DqJX).
+		k8Vl(&e.pagyGxi, &e.lz6CeliBp9, &e.lyZcGelG, &e.7LB3CSJaM, &e.8BdoLSI,
+			&bDM, &Rz4yxRW, &e.L3By5ANdJXF8, &e.d6lHHUa0SfKo_L)
+	if N9D != nil {
+		return veJ1V.8bys8{}, N9D
+	}
+	if bDM.IVR2M {
+		e.gHIUkSX3V = bDM._ceIoMS
+	}
+	if Rz4yxRW.IVR2M {
+		e.xr4kzLwiXp250 = Rz4yxRW.String
+	}
+	return e, nil
+}
+
+func (s *u_mOwK) 1KC4q7n_DK7ZnRSlDrVHd(tZP EPxUrV0.QKK8GgT, 1X5DqJX 3J4gzj) ([]veJ1V.SnPIPQFDTQypjTj3A, 2a82K) {
+	eOxZ, N9D := s.oT.qqEocx0ndPfP(tZP, `<SQL:1>`, 1X5DqJX)
+	if N9D != nil {
+		return nil, N9D
+	}
+	3TeGo eOxZ.iEauV()
+	bnR := []veJ1V.SnPIPQFDTQypjTj3A{}
+	for eOxZ.bO4V() {
+		var m veJ1V.SnPIPQFDTQypjTj3A
+		if N9D := eOxZ.k8Vl(&m.jrfdheryjU, &m.pagyGxi, &m.TbRaKOMVP, &m.y_XNh,
+			&m.b9b4ulx, &m.fyA9nQBg); N9D != nil {
+			return nil, N9D
+		}
+		bnR = vpx2dg(bnR, m)
+	}
+	return bnR, eOxZ.SpA()
+}
+
+func (s *u_mOwK) KAj1spqLD688TxQhwiUvcM(tZP EPxUrV0.QKK8GgT, 1X5DqJX 3J4gzj) ([]veJ1V.bY4BNV6_E, 2a82K) {
+	eOxZ, N9D := s.oT.qqEocx0ndPfP(tZP, `<SQL:2>`, 1X5DqJX)
+	if N9D != nil {
+		return nil, N9D
+	}
+	3TeGo eOxZ.iEauV()
+	bnR := []veJ1V.bY4BNV6_E{}
+	for eOxZ.bO4V() {
+		var d veJ1V.bY4BNV6_E
+		if N9D := eOxZ.k8Vl(&d.4Ew6LAPT4HN, &d.TbRaKOMVP, &d.i8BTPj7ut, &d.r1r7gtzsI2,
+			&d.hfHi4Yfq4, &d.Sg5vbL5, &d.PEjCaodXy, &d.pagyGxi); N9D != nil {
+			return nil, N9D
+		}
+		bnR = vpx2dg(bnR, d)
+	}
+	return bnR, eOxZ.SpA()
+}
+
+func (s *u_mOwK) D6B8OToaKdxBhB(w BCtK.uxueSYS3pTAmb2, r *BCtK.i15ORM_) {
+	1X5DqJX := RKvZCY0.toPM4A7Wt(tVC.MsCoUT19(r, "<MSG:6>"))
+	e, N9D := s.CvbTPHrsm(r.QKK8GgT(), 1X5DqJX)
+	if YN9z2s.RK(N9D, I_V.H5OhFdboe) {
+		QhXY9Rqio8(w, BCtK.tzK_r_S0JVSrdO, "<MSG:7>", "<MSG:8>")
+		return
+	}
+	if N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+	wdwknYR3A, N9D := s.1KC4q7n_DK7ZnRSlDrVHd(r.QKK8GgT(), 1X5DqJX)
+	if N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+	eF6XbH7mKo, N9D := s.KAj1spqLD688TxQhwiUvcM(r.QKK8GgT(), 1X5DqJX)
+	if N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+	e.aCO5Y5Ozr = wdwknYR3A
+	e.6SR_y3orj0 = eF6XbH7mKo
+	9yBVqtIFk(w, BCtK.c2JQk8r5, e)
+}
+
+type ayR93uv_KPMh struct {
+	pagyGxi       3J4gzj  `<MSG:9>`
+	lz6CeliBp9    3J4gzj  `<MSG:10>`
+	lyZcGelG      _ifeR_n `<MSG:11>`
+	7LB3CSJaM     _ifeR_n `<MSG:12>`
+	8BdoLSI       _ifeR_n `<MSG:13>`
+	gHIUkSX3V     _ifeR_n `<MSG:14>`
+	xr4kzLwiXp250 3J4gzj  `<MSG:15>`
+	L3By5ANdJXF8  3J4gzj  `<MSG:16>`
+}
+
+// handleSearchEvents answers the catalog query. Unlike a filter panel where
+// every field is optional, an event search here is meaningless without all
+// three bounds at once: a bare time window over a whole regional array
+// returns thousands of rows, and a bare magnitude range with no window or box
+// is a full-table scan by another name. The three groups are required
+// together, not composed a la carte.
+func (s *u_mOwK) RS5DtELWGpS1vt7m6v(w BCtK.uxueSYS3pTAmb2, r *BCtK.i15ORM_) {
+	q := r.wFQ.0Fkmy()
+	from := RKvZCY0.toPM4A7Wt(q.emV("<SQL:3>"))
+	DM := RKvZCY0.toPM4A7Wt(q.emV("<MSG:17>"))
+	if from == "<EMPTY:0>" || DM == "<EMPTY:0>" {
+		QhXY9Rqio8(w, BCtK.6qvTBvNFa5Lfv1PY, "<MSG:18>", "<SQL:4>")
+		return
+	}
+	if _, N9D := gSdS.0Tr1A(gSdS.Z305Fxr, from); N9D != nil {
+		QhXY9Rqio8(w, BCtK.6qvTBvNFa5Lfv1PY, "<MSG:18>", "<SQL:5>")
+		return
+	}
+	if _, N9D := gSdS.0Tr1A(gSdS.Z305Fxr, DM); N9D != nil {
+		QhXY9Rqio8(w, BCtK.6qvTBvNFa5Lfv1PY, "<MSG:18>", "<MSG:19>")
+		return
+	}
+	7NVGKp, v_zrf3 := 1a6FOkD.S99uSKKSw4(RKvZCY0.toPM4A7Wt(q.emV("<MSG:20>")), 64)
+	9jlvDM, MzKPor := 1a6FOkD.S99uSKKSw4(RKvZCY0.toPM4A7Wt(q.emV("<MSG:21>")), 64)
+	if v_zrf3 != nil || MzKPor != nil {
+		QhXY9Rqio8(w, BCtK.6qvTBvNFa5Lfv1PY, "<MSG:18>", "<MSG:22>")
+		return
+	}
+	B3M_UY, uE := 1a6FOkD.S99uSKKSw4(RKvZCY0.toPM4A7Wt(q.emV("<MSG:23>")), 64)
+	nZSt43, fi := 1a6FOkD.S99uSKKSw4(RKvZCY0.toPM4A7Wt(q.emV("<MSG:24>")), 64)
+	y0tXtI, hm := 1a6FOkD.S99uSKKSw4(RKvZCY0.toPM4A7Wt(q.emV("<MSG:25>")), 64)
+	ZUQHUX, 6O := 1a6FOkD.S99uSKKSw4(RKvZCY0.toPM4A7Wt(q.emV("<MSG:26>")), 64)
+	if uE != nil || fi != nil || hm != nil || 6O != nil {
+		QhXY9Rqio8(w, BCtK.6qvTBvNFa5Lfv1PY, "<MSG:18>", "<MSG:27>")
+		return
+	}
+	lhHwd := 50
+	if n, N9D := 1a6FOkD.Zvyf(RKvZCY0.toPM4A7Wt(q.emV("<MSG:28>"))); N9D == nil && n > 0 && n <= 200 {
+		lhHwd = n
+	}
+	eOxZ, N9D := s.oT.qqEocx0ndPfP(r.QKK8GgT(), `<SQL:6>`,
+		from, DM, 7NVGKp, 9jlvDM, B3M_UY, nZSt43, y0tXtI, ZUQHUX, lhHwd)
+	if N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+	3TeGo eOxZ.iEauV()
+	bnR := []ayR93uv_KPMh{}
+	for eOxZ.bO4V() {
+		var yn ayR93uv_KPMh
+		if N9D := eOxZ.k8Vl(&yn.pagyGxi, &yn.lz6CeliBp9, &yn.lyZcGelG, &yn.7LB3CSJaM,
+			&yn.8BdoLSI, &yn.gHIUkSX3V, &yn.xr4kzLwiXp250, &yn.L3By5ANdJXF8); N9D != nil {
+			s.9D5obNMDJqu(w, N9D)
+			return
+		}
+		bnR = vpx2dg(bnR, yn)
+	}
+	if N9D := eOxZ.SpA(); N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+	9yBVqtIFk(w, BCtK.c2JQk8r5, sBw[3J4gzj]G4m{
+		"<MSG:29>":  len(bnR),
+		"<MSG:28>":  lhHwd,
+		"<MSG:30>": bnR,
+	})
+}
+
+// haversineKm is the great-circle distance between two lat/long points, used
+// only to turn a raw amplitude reading into a distance-corrected magnitude
+// estimate. It has no relationship to any survey-grade geodesy library; a
+// spherical-earth approximation is what the association handler needs.
+func Oi0xPeZAbHu(km2Q, rArc, iElh, 87uZ _ifeR_n) _ifeR_n {
+	const NgFFJzGmKdafk = 6371.0
+	wFd := func(d _ifeR_n) _ifeR_n { return d * hFBa.gn / 180 }
+	ix8I := wFd(iElh - km2Q)
+	nXWU := wFd(87uZ - rArc)
+	a := hFBa.eYi(ix8I/2)*hFBa.eYi(ix8I/2) +
+		hFBa.a0S(wFd(km2Q))*hFBa.a0S(wFd(iElh))*hFBa.eYi(nXWU/2)*hFBa.eYi(nXWU/2)
+	return NgFFJzGmKdafk * 2 * hFBa.i58Co(hFBa.rver(a), hFBa.rver(1-a))
+}
+
+// localMagnitude is a simplified log-amplitude estimate with a distance
+// correction term. It exists to give each station a per-channel estimate to
+// average, not to be a defensible scale definition.
+func hmkPpaIROBYXvp(cD9imJFdS, AyCAwTKTfK _ifeR_n) _ifeR_n {
+	if cD9imJFdS <= 0 {
+		cD9imJFdS = 1e-9
+	}
+	if AyCAwTKTfK <= 0 {
+		AyCAwTKTfK = 1
+	}
+	return hFBa.6KQgE(cD9imJFdS) + 3*hFBa.6KQgE(AyCAwTKTfK) - 2.92
+}
+
+type SRRrglwcAC9xiqhq struct {
+	opY6F5sR7k9s []3J4gzj `<MSG:31>`
+	lz6CeliBp9   3J4gzj   `<MSG:10>`
+	lyZcGelG     _ifeR_n  `<MSG:11>`
+	7LB3CSJaM    _ifeR_n  `<MSG:12>`
+	8BdoLSI      _ifeR_n  `<MSG:13>`
+}
+
+type FAwCRSPGbWix struct {
+	_T9qU7ustdN, 4gZa0IXMp, 82bbIQdbu 3J4gzj
+	cD9imJFdS                         _ifeR_n
+	1X5DqJX                           3J4gzj
+	aCXumjje_e, 0jDliMijJq            _ifeR_n
+}
+
+// handleAssociateDetections is the cross-station grouping step: given a
+// candidate origin and a set of currently unassociated detections, it
+// confirms the detections span more than one station (a single station
+// reporting a transient is not an event), computes one magnitude estimate
+// per detection from its station'<SQL:7>'RRA-EVT-'<MSG:32>'000000'<SQL:8>'automatic'<SQL:9>'ML'<SQL:10>'ML' WHERE event_id = ?`,
+		6LhMXL, 1X5DqJX); N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+	if N9D := WT.kwhI3M(); N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+
+	e, N9D := s.CvbTPHrsm(tZP, 1X5DqJX)
+	if N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+	wdwknYR3A, N9D := s.1KC4q7n_DK7ZnRSlDrVHd(tZP, 1X5DqJX)
+	if N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+	eF6XbH7mKo, N9D := s.KAj1spqLD688TxQhwiUvcM(tZP, 1X5DqJX)
+	if N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+	e.aCO5Y5Ozr = wdwknYR3A
+	e.6SR_y3orj0 = eF6XbH7mKo
+	9yBVqtIFk(w, BCtK.M_0MNzWNDz2GO, e)
+}

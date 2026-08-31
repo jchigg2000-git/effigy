@@ -1,0 +1,42 @@
+// Package taskmodel holds the JSON projection of an event-driven task. Field
+// order mirrors the data processing sequence, which the sequential execution in
+// the scheduler relies on.
+package taskmodel
+
+type EventTask struct {
+	TaskID         string `json:"taskId"`
+	EventSource    string `json:"eventSource"`
+	ProcessOrder   int    `json:"processOrder,omitempty"`
+}
+
+type TaskContext struct {
+	ContextID      string `json:"contextId"`
+	WorkflowCode   string `json:"workflowCode"`
+	UserRef        string `json:"userRef,omitempty"`
+	EventTask      *EventTask `json:"eventTask,omitempty"`
+}
+
+type ProcessingStage struct {
+	StageNumber      int `json:"stageNumber"`
+	MaxEvents        int `json:"maxEvents,omitempty"`
+	ProcessingCost int `json:"processingCost"`
+}
+
+// Result is derived at runtime from the outcome of the current stage; it is never
+// stored, only computed and returned to the caller.
+type Result struct {
+	PreviousResultID string `json:"previousResultId,omitempty"`
+	ProcessedEvents  int    `json:"processedEvents"`
+	CostInTokens     int    `json:"costInTokens"`
+}
+
+type EventData struct {
+	EventID            string        `json:"eventId"`
+	TaskID             string        `json:"taskId"`
+	EventContextID     string        `json:"eventContextId"`
+	WorkflowCode       string        `json:"workflowCode"`
+	Timestamp          string        `json:"timestamp"`
+	EventCategory      string        `json:"eventCategory"`
+	DataPayload        interface{}   `json:"dataPayload"`
+	TaskContext        *TaskContext  `json:"taskContext,omitempty"`
+}

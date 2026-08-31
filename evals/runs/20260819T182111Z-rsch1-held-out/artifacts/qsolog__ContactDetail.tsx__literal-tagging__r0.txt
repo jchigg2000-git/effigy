@@ -1,0 +1,87 @@
+// Read-only view of a single contact. Renders the record returned by
+// getContact, including every confirmation that has been matched against it.
+// Optional fields that are absent render as an em dash rather than being
+// hidden, so the layout stays stable from one record to the next.
+import type { Contact } from "<PATH:0>";
+
+interface ContactDetailProps {
+  contact: Contact;
+}
+
+export function ContactDetail({ contact }: ContactDetailProps) {
+  const confirmations = contact.confirmations ?? [];
+  const confirmed = Boolean(contact.confirmedOn);
+  return (
+    <section className="<MSG:0>">
+      <div className="<MSG:1>">
+        <div>
+          <h2>{contact.workedCallsign}</h2>
+          <p>{contact.contactId}</p>
+        </div>
+        <span className={confirmed ? "<MSG:2>" : "<MSG:3>"}>
+          {confirmed ? "<MSG:4>" : "<MSG:5>"}
+        </span>
+      </div>
+
+      <dl className="<MSG:6>">
+        <dt>Contact id</dt>
+        <dd>{contact.contactId}</dd>
+        <dt>Logging station</dt>
+        <dd>{contact.station ? contact.station.callsign : contact.stationId}</dd>
+        <dt>Worked callsign</dt>
+        <dd>{contact.workedCallsign}</dd>
+        <dt>Band</dt>
+        <dd>{contact.band}</dd>
+        <dt>Mode</dt>
+        <dd>{contact.mode}</dd>
+        <dt>Date</dt>
+        <dd>{contact.contactDate}</dd>
+        <dt>Time</dt>
+        <dd>{contact.contactTime}</dd>
+        <dt>Signal sent</dt>
+        <dd>{contact.signalSent || "<MSG:7>"}</dd>
+        <dt>Signal received</dt>
+        <dd>{contact.signalReceived || "<MSG:7>"}</dd>
+        <dt>Grid square</dt>
+        <dd>{contact.gridSquare || "<MSG:7>"}</dd>
+        <dt>Entity code</dt>
+        <dd>{contact.entityCode || "<MSG:7>"}</dd>
+        <dt>Confirmed on</dt>
+        <dd>{contact.confirmedOn || "<MSG:7>"}</dd>
+        <dt>Station grid</dt>
+        <dd>{contact.station?.gridSquare || "<MSG:7>"}</dd>
+        <dt>Operator class</dt>
+        <dd>{contact.station?.operatorClass || "<MSG:7>"}</dd>
+      </dl>
+
+      <h3>
+        Confirmations <span className="<MSG:8>">{confirmations.length}</span>
+      </h3>
+      {confirmations.length === 0 ? (
+        <p className="<MSG:9>">
+          No confirmations have matched this contact yet. A confirmation only
+          appears here once its station, callsign, band, mode and date agree
+          exactly with this record.
+        </p>
+      ) : (
+        <ul className="<MSG:10>">
+          {confirmations.map((c) => (
+            <li key={c.confirmationId}>
+              <span>{c.receivedFrom}</span>
+              <span>{c.band}</span>
+              <span>{c.mode}</span>
+              <span>{c.contactDate}</span>
+              <span>{c.matchStatus}</span>
+              <span>{c.loggedAt}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* The award-progress rollup lives at the station level, not here: one
+          contact'<MSG:11>'s
+        award-progress rollup rather than repeated on this page.
+      </p>
+    </section>
+  );
+}

@@ -1,0 +1,75 @@
+Here is the translated code in the target domain of a pure computation pipeline over numeric tensors:
+
+```python
+import numpy as np
+
+def handle_get_branch(branch_id):
+    # Fetch branch data from database
+    branch_data = np.array([branch_id, 0, 0, 0])  # Initialize with zeros
+    try:
+        # Simulate database query
+        branch_data = np.array([branch_id, 0, 0, 0])  # Initialize with zeros
+        # Simulate database query result
+        branch_data[1] = 1  # Set name to 1
+        branch_data[2] = 2  # Set registry symbol to 2
+        branch_data[3] = 3  # Set system ID to 3
+    except ValueError:
+        # Handle not found error
+        return np.array([0, 0, 0, 0])  # Return empty array
+
+    # Prepare output
+    output = np.array([branch_data[0], 0, 0, 0])  # Initialize with zeros
+    output[0] = branch_data[0]  # Set branch ID
+    output[1] = branch_data[1]  # Set name
+    output[2] = branch_data[2]  # Set registry symbol
+    output[3] = branch_data[3]  # Set system ID
+
+    return output
+
+def handle_branch_shelflist(branch_id, limit, offset):
+    # Fetch branch data from database
+    branch_data = np.array([branch_id, 0, 0, 0])  # Initialize with zeros
+    try:
+        # Simulate database query
+        branch_data = np.array([branch_id, 0, 0, 0])  # Initialize with zeros
+        # Simulate database query result
+        branch_data[1] = 1  # Set name to 1
+    except ValueError:
+        # Handle not found error
+        return np.array([0, 0, 0, 0])  # Return empty array
+
+    # Prepare output
+    output = np.array([branch_data[0], 0, 0, 0])  # Initialize with zeros
+    output[0] = branch_data[0]  # Set branch ID
+
+    # Fetch holdings data from database
+    holdings_data = np.array([[0, branch_id, 0, 0, 0, 0, 0, 0] for _ in range(50)])  # Initialize with zeros
+    try:
+        # Simulate database query
+        holdings_data = np.array([[0, branch_id, 0, 0, 0, 0, 0, 0] for _ in range(50)])  # Initialize with zeros
+        # Simulate database query result
+        for i in range(50):
+            holdings_data[i][0] = i  # Set holding ID
+            holdings_data[i][1] = branch_id  # Set branch ID
+            holdings_data[i][2] = i  # Set author
+            holdings_data[i][3] = i  # Set title
+            holdings_data[i][4] = i  # Set published
+            holdings_data[i][5] = i  # Set room
+            holdings_data[i][6] = i  # Set wing
+            holdings_data[i][7] = i  # Set bin
+    except ValueError:
+        # Handle error
+        return np.array([0, 0, 0, 0])  # Return empty array
+
+    # Prepare output
+    output = np.array([branch_id, 0, 0, 0])  # Initialize with zeros
+    output[0] = branch_id  # Set branch ID
+    output[1] = len(holdings_data)  # Set count
+    output[2] = limit  # Set limit
+    output[3] = offset  # Set offset
+    output = np.concatenate((output, holdings_data))  # Concatenate output
+
+    return output
+```
+
+Note that I've used NumPy to represent the tensors, and I've simulated the database queries and results using simple arithmetic operations. The code is not optimized for performance, but it preserves the structure and control flow of the original code.

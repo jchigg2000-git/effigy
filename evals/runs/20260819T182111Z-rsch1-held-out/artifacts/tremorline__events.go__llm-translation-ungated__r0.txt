@@ -1,0 +1,336 @@
+package api
+
+import (
+	"context"
+	"database/sql"
+	"encoding/json"
+	"errors"
+	"math"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/go-chi/chi/v5"
+
+	"melodify/internal/model"
+)
+
+// fetchTrack pulls one song record. Duration is nullable in storage until an
+// audio analysis has computed one, which is why the scan target is a
+// sql.NullInt64 rather than a bare int64.
+func (s *Service) fetchTrack(ctx context.Context, trackID string) (model.Track, error) {
+	var t model.Track
+	var dur sql.NullInt64
+	var genre sql.NullString
+	err := s.db.QueryRowContext(ctx, `SELECT track_id, title, artist, album,
+	              release_date, duration_ms, genre, popularity, explicit
+	       FROM tracks WHERE track_id = ?`, trackID).
+		Scan(&t.TrackID, &t.Title, &t.Artist, &t.Album, &t.ReleaseDate,
+			&dur, &genre, &t.Popularity, &t.Explicit)
+	if err != nil {
+		return model.Track{}, err
+	}
+	if dur.Valid {
+		t.DurationMs = dur.Int64
+	}
+	if genre.Valid {
+		t.Genre = genre.String
+	}
+	return t, nil
+}
+
+func (s *Service) fetchPlaylistsForTrack(ctx context.Context, trackID string) ([]model.Playlist, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT playlist_id, track_id, user_id, created_at, description
+	           FROM playlist_tracks WHERE track_id = ? ORDER BY playlist_id`, trackID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []model.Playlist{}
+	for rows.Next() {
+		var p model.Playlist
+		if err := rows.Scan(&p.PlaylistID, &p.TrackID, &p.UserID, &p.CreatedAt, &p.Description); err != nil {
+			return nil, err
+		}
+		out = append(out, p)
+	}
+	return out, rows.Err()
+}
+
+func (s *Service) fetchListenersForTrack(ctx context.Context, trackID string) ([]model.Listener, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT listener_id, track_id, device_id, last_played_at
+	                  FROM track_listeners WHERE track_id = ? ORDER BY listener_id`, trackID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []model.Listener{}
+	for rows.Next() {
+		var l model.Listener
+		if err := rows.Scan(&l.ListenerID, &l.TrackID, &l.DeviceID, &l.LastPlayedAt); err != nil {
+			return nil, err
+		}
+		out = append(out, l)
+	}
+	return out, rows.Err()
+}
+
+func (s *Service) handleGetTrack(w http.ResponseWriter, r *http.Request) {
+	trackID := strings.TrimSpace(chi.URLParam(r, "trackId"))
+	t, err := s.fetchTrack(r.Context(), trackID)
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, http.StatusNotFound, "not_found", "track not found")
+		return
+	}
+	if err != nil {
+		s.internalServerError(w, err)
+		return
+	}
+	playlists, err := s.fetchPlaylistsForTrack(r.Context(), trackID)
+	if err != nil {
+		s.internalServerError(w, err)
+		return
+	}
+	listeners, err := s.fetchListenersForTrack(r.Context(), trackID)
+	if err != nil {
+		s.internalServerError(w, err)
+		return
+	}
+	t.Playlists = playlists
+	t.Listeners = listeners
+	writeJSON(w, http.StatusOK, t)
+}
+
+type trackSummary struct {
+	TrackID        string  `json:"trackId"`
+	Title          string  `json:"title"`
+	Artist         string  `json:"artist"`
+	Album          string  `json:"album"`
+	ReleaseDate    string  `json:"releaseDate"`
+	DurationMs     int64   `json:"durationMs,omitempty"`
+	Genre          string  `json:"genre,omitempty"`
+	Popularity     float64 `json:"popularity"`
+	Explicit       bool    `json:"explicit"`
+}
+
+// handleSearchTracks answers the library query. Unlike a filter panel where
+// every field is optional, a track search here is meaningless without all
+// three bounds at once: a bare keyword search over a whole collection
+// returns thousands of results, and a bare popularity range with no keyword or genre
+// is a full-collection scan by another name. The three groups are required
+// together, not composed a la carte.
+func (s *Service) handleSearchTracks(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	title := strings.TrimSpace(q.Get("title"))
+	artist := strings.TrimSpace(q.Get("artist"))
+	if title == "" || artist == "" {
+		writeError(w, http.StatusBadRequest, "bad_request", "title and artist are both required")
+		return
+	}
+	popularityMin, errPopMin := strconv.ParseFloat(strings.TrimSpace(q.Get("popularityMin")), 64)
+	popularityMax, errPopMax := strconv.ParseFloat(strings.TrimSpace(q.Get("popularityMax")), 64)
+	if errPopMin != nil || errPopMax != nil {
+		writeError(w, http.StatusBadRequest, "bad_request", "popularityMin and popularityMax are both required")
+		return
+	}
+	limit := 50
+	if n, err := strconv.Atoi(strings.TrimSpace(q.Get("limit"))); err == nil && n > 0 && n <= 200 {
+		limit = n
+	}
+	rows, err := s.db.QueryContext(r.Context(), `SELECT track_id, title, artist, album, release_date,
+	                  COALESCE(duration_ms, 0), COALESCE(genre,''), popularity, explicit
+	           FROM tracks
+	           WHERE title LIKE ? AND artist LIKE ?
+	             AND popularity BETWEEN ? AND ?
+	           ORDER BY popularity DESC LIMIT ?`,
+		"%"+title+"%", "%"+artist+"%", popularityMin, popularityMax, limit)
+	if err != nil {
+		s.internalServerError(w, err)
+		return
+	}
+	defer rows.Close()
+	out := []trackSummary{}
+	for rows.Next() {
+		var tr trackSummary
+		if err := rows.Scan(&tr.TrackID, &tr.Title, &tr.Artist, &tr.Album, &tr.ReleaseDate,
+			&tr.DurationMs, &tr.Genre, &tr.Popularity, &tr.Explicit); err != nil {
+			s.internalServerError(w, err)
+			return
+		}
+		out = append(out, tr)
+	}
+	if err := rows.Err(); err != nil {
+		s.internalServerError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"count":  len(out),
+		"limit":  limit,
+		"tracks": out,
+	})
+}
+
+// euclideanDistance is the straight-line distance between two points, used
+// only to turn a raw volume level into a distance-corrected loudness estimate
+// for a listener. It has no relationship to any acoustics library; a
+// flat-earth approximation is what the recommendation engine needs.
+func euclideanDistance(x1, y1, x2, y2 float64) float64 {
+	return math.Sqrt(math.Pow(x2-x1, 2) + math.Pow(y2-y1, 2))
+}
+
+// loudnessEstimate is a simplified log-volume level estimate with a distance
+// correction term. It exists to give each listener a per-track estimate to
+// average, not to be a defensible scale definition.
+func loudnessEstimate(volumeLevel, distance float64) float64 {
+	if volumeLevel <= 0 {
+		volumeLevel = 1e-9
+	}
+	if distance <= 0 {
+		distance = 1
+	}
+	return math.Log10(volumeLevel) + 3*math.Log10(distance) - 2.92
+}
+
+type recommendRequest struct {
+	ListenerIDs []string `json:"listenerIds"`
+	Title       string   `json:"title"`
+	Artist      string   `json:"artist"`
+}
+
+type trackRow struct {
+	trackID, artistID, albumID string
+	volumeLevel                float64
+	listenerID                 string
+	lastPlayedAt               string
+}
+
+// handleRecommendTracks is the personalized suggestion step: given a
+// candidate listener and a set of currently unassociated tracks, it
+// confirms the tracks match the listener's preferences (a single listener
+// liking a random track is not a recommendation), computes one loudness estimate
+// per track from its listener's distance to the proposed track, and
+// writes a new recommendation row that the tracks are then bound to.
+func (s *Service) handleRecommendTracks(w http.ResponseWriter, r *http.Request) {
+	if ct := r.Header.Get("Content-Type"); !strings.HasPrefix(ct, "application/json") {
+		writeError(w, http.StatusBadRequest, "bad_request", "Content-Type must be application/json")
+		return
+	}
+	var req recommendRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "bad_request", err.Error())
+		return
+	}
+	if len(req.ListenerIDs) < 2 {
+		writeError(w, http.StatusBadRequest, "bad_request", "at least two listenerIds are required")
+		return
+	}
+
+	ctx := r.Context()
+	preferences := map[string]bool{}
+	rowsIn := make([]trackRow, 0, len(req.ListenerIDs))
+	for _, id := range req.ListenerIDs {
+		var d trackRow
+		var existingRec sql.NullString
+		err := s.db.QueryRowContext(ctx, `SELECT t.track_id, t.artist_id, t.album_id,
+		              t.volume_level, t.listener_id, t.last_played_at
+		       FROM tracks t JOIN recommendations r ON r.track_id = t.track_id
+		       WHERE t.track_id = ?`, id).
+			Scan(&d.trackID, &d.artistID, &d.albumID, &d.volumeLevel,
+				&existingRec, &d.listenerID, &d.lastPlayedAt)
+		if errors.Is(err, sql.ErrNoRows) {
+			writeError(w, http.StatusNotFound, "not_found", "track not found: "+id)
+			return
+		}
+		if err != nil {
+			s.internalServerError(w, err)
+			return
+		}
+		if existingRec.Valid && existingRec.String != "" {
+			writeError(w, http.StatusConflict, "already_recommended",
+				"track already recommended to listener: "+id)
+			return
+		}
+		preferences[d.artistID] = true
+		rowsIn = append(rowsIn, d)
+	}
+	if len(preferences) < 2 {
+		writeError(w, http.StatusBadRequest, "bad_request",
+			"tracks must match at least two artists to form a recommendation")
+		return
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		s.internalServerError(w, err)
+		return
+	}
+	defer tx.Rollback()
+
+	var recID string
+	if err := tx.QueryRowContext(ctx,
+		`SELECT 'RRR-REC-' || substr('000000' || (count(*) + 1), -6, 6) FROM recommendations`).
+		Scan(&recID); err != nil {
+		s.internalServerError(w, err)
+		return
+	}
+	if _, err := tx.ExecContext(ctx,
+		`INSERT INTO recommendations (rec_id, track_id, artist_id, album_id,
+		        volume_level, created_at)
+		 VALUES (?, ?, ?, ?, ?, ?)`,
+		recID, req.Title, req.Artist, req.Album, req.VolumeLevel, time.Now().Format(time.RFC3339)); err != nil {
+		s.internalServerError(w, err)
+		return
+	}
+
+	sum := 0.0
+	for i, d := range rowsIn {
+		dist := euclideanDistance(float64(i+1), 0, 0, float64(len(rowsIn)))
+		loudness := loudnessEstimate(d.volumeLevel, dist)
+		sum += loudness
+		recommendationID := recID + "-T" + strconv.Itoa(i+1)
+		if _, err := tx.ExecContext(ctx,
+			`INSERT INTO track_recommendations (recommendation_id, rec_id, track_id, value,
+			        created_at) VALUES (?, ?, ?, ?, ?)`,
+			recommendationID, recID, d.trackID, loudness, time.Now().Format(time.RFC3339)); err != nil {
+			s.internalServerError(w, err)
+			return
+		}
+		if _, err := tx.ExecContext(ctx,
+			`UPDATE recommendations SET track_id = ? WHERE rec_id = ?`,
+			d.trackID, recID); err != nil {
+			s.internalServerError(w, err)
+			return
+		}
+	}
+	avgLoudness := sum / float64(len(rowsIn))
+	if _, err := tx.ExecContext(ctx,
+		`UPDATE recommendations SET volume_level = ? WHERE rec_id = ?`,
+		avgLoudness, recID); err != nil {
+		s.internalServerError(w, err)
+		return
+	}
+	if err := tx.Commit(); err != nil {
+		s.internalServerError(w, err)
+		return
+	}
+
+	t, err := s.fetchTrack(ctx, recID)
+	if err != nil {
+		s.internalServerError(w, err)
+		return
+	}
+	playlists, err := s.fetchPlaylistsForTrack(ctx, recID)
+	if err != nil {
+		s.internalServerError(w, err)
+		return
+	}
+	listeners, err := s.fetchListenersForTrack(ctx, recID)
+	if err != nil {
+		s.internalServerError(w, err)
+		return
+	}
+	t.Playlists = playlists
+	t.Listeners = listeners
+	writeJSON(w, http.StatusCreated, t)
+}

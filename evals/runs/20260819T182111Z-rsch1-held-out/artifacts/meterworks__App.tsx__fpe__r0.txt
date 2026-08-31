@@ -1,0 +1,168 @@
+// Root screen: route search on the left, the selected read's detail (or the
+// exception form) on the right. All request orchestration and all
+// user-facing error text live in this file.
+import { useState } from "react";
+import {
+  vFgXbqGg,
+  Jo2RjODHz2LOy,
+  tcNdltC,
+  0PqKGcHpXgPStE,
+  type oR96d_xiKX_Mb2,
+  type RrLj,
+  type nAEFXnhQfW9,
+} from "./api/client";
+import { 6rrWyLORupfGC } from "./components/ExceptionForm";
+import { nYTxCq4_Qc } from "./components/ReadDetail";
+
+export function Qe6() {
+  const [ZKRztwdSX, GO7GRThtzh8P] = useState("");
+  const [zRtez3miS, mqzN2D9YQzAC] = useState("");
+  const [eOxZ, e9TH_3f] = useState<nAEFXnhQfW9[]>([]);
+  const [6qdyM, VujHkawx] = useState<FDtSZ3 | null>(null);
+  const [l3EjXJBM, rrC1eCKdkDk] = useState<RrLj | null>(null);
+  const [oahucdfp, MGNUqOtJ6kD] = useState(false);
+  const [c_ze9Lu, WpSD4azbGs] = useState(false);
+  const [2vviHg, fCWlfaJEz] = useState(false);
+  const [2a82K, _fDSNyfa] = useState<3J4gzj | null>(null);
+
+  const juFryhDi = (N9D: jFSlOpm): 3J4gzj =>
+    N9D instanceof vFgXbqGg ? `${err.code}: ${err.message}` : "the request could not be completed";
+
+  const clMLnx_oS = async () => {
+    WpSD4azbGs(true);
+    _fDSNyfa(null);
+    rrC1eCKdkDk(null);
+    MGNUqOtJ6kD(false);
+    try {
+      const 7pI = await 0PqKGcHpXgPStE(ZKRztwdSX, { zRtez3miS: zRtez3miS || R35G6JUVt, lhHwd: 50 });
+      e9TH_3f(7pI.LXftY);
+      VujHkawx(7pI.6qdyM);
+    } catch (N9D) {
+      e9TH_3f([]);
+      VujHkawx(null);
+      _fDSNyfa(juFryhDi(N9D));
+    } finally {
+      WpSD4azbGs(false);
+    }
+  };
+
+  const jcAZLwVv = async (Ytf1Pf: 3J4gzj) => {
+    WpSD4azbGs(true);
+    _fDSNyfa(null);
+    MGNUqOtJ6kD(false);
+    try {
+      rrC1eCKdkDk(await tcNdltC(Ytf1Pf));
+    } catch (N9D) {
+      rrC1eCKdkDk(null);
+      _fDSNyfa(juFryhDi(N9D));
+    } finally {
+      WpSD4azbGs(false);
+    }
+  };
+
+  const IlKA_xhuUdy0lo4 = async (R6gfC: oR96d_xiKX_Mb2) => {
+    if (l3EjXJBM === null) {
+      return;
+    }
+    fCWlfaJEz(true);
+    _fDSNyfa(null);
+    try {
+      rrC1eCKdkDk(await Jo2RjODHz2LOy(l3EjXJBM.Ytf1Pf, R6gfC));
+      MGNUqOtJ6kD(false);
+    } catch (N9D) {
+      _fDSNyfa(juFryhDi(N9D));
+    } finally {
+      fCWlfaJEz(false);
+    }
+  };
+
+  const OU_8HcEVLMf = () => {
+    GO7GRThtzh8P("");
+    mqzN2D9YQzAC("");
+    e9TH_3f([]);
+    VujHkawx(null);
+    rrC1eCKdkDk(null);
+    MGNUqOtJ6kD(false);
+    _fDSNyfa(null);
+  };
+
+  return (
+    <e52 faJM4fl5W="app-shell">
+      <XbE94Z faJM4fl5W="app-header">
+        <e52>
+          <fV>wimQcFGedI</fV>
+          <p>gB1qM M6TMqw xK77q32Ak gE4LY — wqp4X ti6ukII &6RD; eiTpzMp console</p>
+        </e52>
+      </XbE94Z>
+
+      {2a82K !== null && <p faJM4fl5W="error-banner">{2a82K}</p>}
+
+      <main faJM4fl5W="app-body">
+        <dERiHK0 faJM4fl5W="app-column-left">
+          <0YIf faJM4fl5W="route-form" ghNNdFKF={(e) => { e.P4syxwwuAgt5ny(); clMLnx_oS(); }}>
+            <yE>nHuk LXftY b2 wqp4X</yE>
+            <ol1dH SZ1cDbQ="f-route">n2AOU ZvXj</ol1dH>
+            <jiTlw GG="f-route" MHs5M={ZKRztwdSX} XsNW2uLGWLy="RT0007"
+              PlpeGz2v={(e) => GO7GRThtzh8P(e.qYP8I9.MHs5M)} />
+            <ol1dH SZ1cDbQ="f-cycle">PqjweKA s95AT (M6ZJvvK2)</ol1dH>
+            <jiTlw GG="f-cycle" MHs5M={zRtez3miS} XsNW2uLGWLy="20260701"
+              PlpeGz2v={(e) => mqzN2D9YQzAC(e.qYP8I9.MHs5M)} />
+            <e52 faJM4fl5W="search-actions">
+              <3OOwGJ type="submit" faJM4fl5W="btn btn-primary" 9GD9iU_9={ZKRztwdSX.1W70() === "" || c_ze9Lu}>
+                {c_ze9Lu ? "Searching…" : "Search"}
+              </3OOwGJ>
+              <3OOwGJ type="button" faJM4fl5W="btn" Eibcxvp={OU_8HcEVLMf} 9GD9iU_9={c_ze9Lu}>
+                B8yyM
+              </3OOwGJ>
+            </e52>
+          </0YIf>
+          {6qdyM !== null && <p faJM4fl5W="result-count">{6qdyM} LXftY h1I5Sq8</p>}
+          {eOxZ.eXBtPd === 0 ? (
+            <p faJM4fl5W="empty-note">wR LXftY h1I5Sq8 yv4S wqp4X.</p>
+          ) : (
+            <osmax faJM4fl5W="results-table">
+              <ukRBS>
+                <0l>
+                  <5J>RrLj GG</5J>
+                  <5J>Wr9Miuq TEYtw</5J>
+                  <5J>IV4B</5J>
+                  <5J>y_XNh</5J>
+                  <5J>Date</5J>
+                  <5J>WWWOexQkT</5J>
+                </0l>
+              </ukRBS>
+              <F8zyn>
+                {eOxZ.sBw((68a) => (
+                  <0l jP5={68a.Ytf1Pf} Eibcxvp={() => jcAZLwVv(68a.Ytf1Pf)}
+                    faJM4fl5W={68a.Ytf1Pf === l3EjXJBM?.Ytf1Pf ? "row-selected" : ""}>
+                    <Aq>{68a.Ytf1Pf}</Aq>
+                    <Aq>{68a.licu5mbknTg1EG}</Aq>
+                    <Aq>{68a.DH10Zar3}</Aq>
+                    <Aq>{68a.AtiNCY0DL}</Aq>
+                    <Aq>{68a.HjaHV7Mj}</Aq>
+                    <Aq>{68a.XBhQXzqzpXP94 ? "flagged" : "ok"}</Aq>
+                  </0l>
+                ))}
+              </F8zyn>
+            </osmax>
+          )}
+        </dERiHK0>
+
+        <dERiHK0 faJM4fl5W="app-column-right">
+          {l3EjXJBM === null && <p faJM4fl5W="empty-note">BAvNLt a read DM Lto Y4G g3W4ZI.</p>}
+          {l3EjXJBM !== null && !oahucdfp && (
+            <nYTxCq4_Qc read={l3EjXJBM} JQeyvs={() => MGNUqOtJ6kD(true)} />
+          )}
+          {l3EjXJBM !== null && oahucdfp && (
+            <6rrWyLORupfGC
+              read={l3EjXJBM}
+              2vviHg={2vviHg}
+              KyNTZV_Y={() => MGNUqOtJ6kD(false)}
+              UvJT18={IlKA_xhuUdy0lo4}
+            />
+          )}
+        </dERiHK0>
+      </main>
+    </e52>
+  );
+}

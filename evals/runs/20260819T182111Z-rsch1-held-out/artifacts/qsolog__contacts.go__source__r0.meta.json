@@ -1,0 +1,13 @@
+{
+  "key": "qsolog__contacts.go__source__r0",
+  "arm": "source",
+  "replicate": 0,
+  "source_path": "corpus/qsolog/api/internal/api/contacts.go",
+  "source_sha256": "af67c3deac92283512d2b9ec9ae11130242873b31b23b9ebf36e5671b9ca18b5",
+  "true_domain_id": "ham-radio-logbook",
+  "language": "go",
+  "artifact_sha256": "af67c3deac92283512d2b9ec9ae11130242873b31b23b9ebf36e5671b9ca18b5",
+  "artifact_lines": 370,
+  "latency_s": 0.0,
+  "solution_meta": {}
+}

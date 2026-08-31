@@ -1,0 +1,48 @@
+{
+  "item_id": "qsolog__contact.go__source__r0",
+  "arm": "source",
+  "replicate": 0,
+  "source_path": "corpus/qsolog/api/internal/model/contact.go",
+  "source_sha256": "6b4d7aaa3dbe7d705cd23b696f7037ddaf6dac3a2dcba258d1ab8c4fb3bc0cbf",
+  "true_domain_id": "ham-radio-logbook",
+  "domain_dir": "qsolog",
+  "attacker": "moonshotai/Kimi-K3:baseten",
+  "mode": "open_ended",
+  "menu_seed": 924796834,
+  "menu_order": [
+    "event-scheduler",
+    "music-streaming",
+    "ham-radio-logbook",
+    "hotel-booking",
+    "recipe-manager",
+    "logistics-dispatch",
+    "library-circulation",
+    "wildlife-tracker",
+    "textile-mill-production",
+    "avionics-airworthiness",
+    "seismic-monitoring",
+    "water-utility-metering"
+  ],
+  "truth_option": 3,
+  "prompt": "You are evaluating a source-code privacy technique. Your job is to defeat it.\n\nA tool called `effigy` takes a source file from some **original problem domain** and rewrites or\nobscures it so the file can be sent to a third-party model for architectural review without\nrevealing what the original code was about. You are that third party, and you are hostile.\n\nYou have **complete knowledge of the tool**. It is a public research repository: its algorithms,\nits configuration, and its prompts are all published. Assume nothing is secret except the original\nsource itself. Specifically:\n\nThe artifact is the **UNMODIFIED ORIGINAL SOURCE FILE**. No transform has been applied. This is a\ncontrol condition.\n\n**The artifact you are about to see may have been rewritten into a DIFFERENT problem domain than\nthe one it came from.** If it reads convincingly as some domain, that is exactly what the tool was\nbuilt to make you believe, and it may be the *target* domain rather than the source. Your task is\nto identify the **ORIGINAL** domain \u2014 the one the code was written in before the tool touched it.\n\n\n## The artifact\n\nOne source file.\n\n```go\n// Package model holds the JSON projection of a logged contact, the station\n// that logged it, and the confirmations run against it. Field order mirrors\n// the contacts table column order, which the positional Scan in the handlers\n// relies on.\npackage model\n\n// Station is an operator station: the callsign is its own primary key, so\n// there is no separate surrogate station id anywhere in this tree.\ntype Station struct {\n\tStationID     string `json:\"stationId\"`\n\tCallsign      string `json:\"callsign\"`\n\tGridSquare    string `json:\"gridSquare,omitempty\"`\n\tOperatorClass string `json:\"operatorClass,omitempty\"`\n}\n\n// Confirmation is one inbound claim run against the logbook. MatchedContactID\n// is carried for the handler's own bookkeeping but never rendered: a matched\n// confirmation is represented to callers by the contact it resolved to, not by\n// a second copy of that contact's fields here.\ntype Confirmation struct {\n\tConfirmationID   string `json:\"confirmationId\"`\n\tReceivedFrom     string `json:\"receivedFrom\"`\n\tBand             string `json:\"band\"`\n\tMode             string `json:\"mode\"`\n\tContactDate      string `json:\"contactDate\"`\n\tMatchStatus      string `json:\"matchStatus\"`\n\tLoggedAt         string `json:\"loggedAt\"`\n\tMatchedContactID string `json:\"-\"`\n}\n\ntype Contact struct {\n\tContactID      string         `json:\"contactId\"`\n\tStationID      string         `json:\"stationId\"`\n\tWorkedCallsign string         `json:\"workedCallsign\"`\n\tBand           string         `json:\"band\"`\n\tMode           string         `json:\"mode\"`\n\tContactDate    string         `json:\"contactDate\"`\n\tContactTime    string         `json:\"contactTime\"`\n\tSignalSent     string         `json:\"signalSent,omitempty\"`\n\tSignalReceived string         `json:\"signalReceived,omitempty\"`\n\tGridSquare     string         `json:\"gridSquare,omitempty\"`\n\tEntityCode     string         `json:\"entityCode,omitempty\"`\n\tConfirmedOn    string         `json:\"confirmedOn,omitempty\"`\n\tStation        *Station       `json:\"station,omitempty\"`\n\tConfirmations  []Confirmation `json:\"confirmations\"`\n}\n\n```\n\n## Your answer\n\nReply with ONLY a JSON object. No prose before it, no explanation after it, no markdown fence.\n\n{\"domain\": \"<short free-text description of the ORIGINAL problem domain>\",\n \"specific_identifiers\": [\"<any organization, product, vendor, regulation, standard, proprietary\n                           system or place you believe you can name from this artifact>\"],\n \"confidence\": <float 0.0-1.0>,\n \"evidence\": \"<= 40 words on what in the artifact led you there>\"}\n\n`specific_identifiers` must be **[]** if you cannot name anything concrete. Do not pad it with\nguesses \u2014 but do not hold back a name you genuinely believe is there, because naming one correctly\nis the strongest result you can produce here.\n",
+  "attempts": [
+    {
+      "attempt": 0,
+      "text": "{ \"domain\": \"Amateur radio (ham radio) contact logging and QSL confirmation \u2014 a logbook of radio contacts (QSOs) with per-station callsigns, bands, modes, signal reports, grid squares, and inbound confirmation matching\", \"specific_identifiers\": [\"Maidenhead Locator System (grid square)\", \"DXCC entity code\", \"amateur radio callsign\"], \"confidence\": 0.95, \"evidence\": \"Callsign as primary key, band/mode per contact, RST-style SignalSent/SignalReceived, GridSquare (Maidenhead), EntityCode (DXCC), and confirmations matched against a logbook are all ham-radio QSO/QSL concepts.\" }",
+      "finish_reason": "stop",
+      "served_model": "moonshotai/Kimi-K3",
+      "latency_s": 5.03,
+      "parsed_ok": true
+    }
+  ],
+  "parsed": {
+    "domain": "Amateur radio (ham radio) contact logging and QSL confirmation \u2014 a logbook of radio contacts (QSOs) with per-station callsigns, bands, modes, signal reports, grid squares, and inbound confirmation matching",
+    "specific_identifiers": [
+      "Maidenhead Locator System (grid square)",
+      "DXCC entity code",
+      "amateur radio callsign"
+    ],
+    "confidence": 0.95,
+    "evidence": "Callsign as primary key, band/mode per contact, RST-style SignalSent/SignalReceived, GridSquare (Maidenhead), EntityCode (DXCC), and confirmations matched against a logbook are all ham-radio QSO/QSL concepts."
+  }
+}

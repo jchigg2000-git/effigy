@@ -1,0 +1,42 @@
+{
+  "key": "tremorline__event.go__structure-only__r0",
+  "arm": "structure-only",
+  "replicate": 0,
+  "source_path": "corpus/tremorline/api/internal/model/event.go",
+  "source_sha256": "caf3cbdda9e55a7712fecdaa82dc273dd32d3c975e262edf096e96e4038c9e33",
+  "true_domain_id": "seismic-monitoring",
+  "language": "go",
+  "artifact_sha256": "4e346fc3f9c36813d87d79a4d78866dda0749e6194a69c66235ae9f6a00fbf84",
+  "artifact_lines": 69,
+  "latency_s": 0.0,
+  "solution_meta": {
+    "generated_by": "evals/canonicalize.py",
+    "preserved_tokens": [
+      "float64",
+      "int",
+      "string"
+    ],
+    "preserved_import_paths": [],
+    "n_idents_canonicalised": 40,
+    "n_strings_canonicalised": 35,
+    "n_runes_canonicalised": 0,
+    "n_numbers_canonicalised": 0,
+    "counters_delta": {
+      "lines": 0,
+      "bytes": -1144,
+      "funcs": 0,
+      "structs": 0,
+      "interfaces": 0,
+      "imports": 0,
+      "exports": 0,
+      "string_literals": 0,
+      "max_brace_depth": 0
+    },
+    "blind_delta": {
+      "bytes": [
+        2710,
+        1566
+      ]
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "key": "meterworks__main.go__composed__r0",
+  "arm": "composed",
+  "replicate": 0,
+  "source_path": "corpus/meterworks/api/cmd/meterworksd/main.go",
+  "source_sha256": "ff23a7603ab82c6b61085b74ea86249f6eac78e802f3d3f0f8c537513fb04497",
+  "true_domain_id": "water-utility-metering",
+  "language": "go",
+  "artifact_sha256": "1776eb3a708a4b267fec888a852bd161c9601a97abc1de6f8b78c39a20726b62",
+  "artifact_lines": 98,
+  "latency_s": 0.3,
+  "solution_meta": {
+    "chain": [
+      "literal-tagging",
+      "fpe"
+    ]
+  }
+}

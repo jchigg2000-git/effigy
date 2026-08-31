@@ -1,0 +1,449 @@
+{
+  "summary": {
+    "label": "v4",
+    "model": "Qwen/Qwen2.5-Coder-7B-Instruct",
+    "target": "music-streaming",
+    "replicates": 3,
+    "term_set": "electric-transmission",
+    "domain_retention": {
+      "mean": 0.111,
+      "min": 0.087,
+      "max": 0.137,
+      "range": 0.05,
+      "values": [
+        0.137,
+        0.108,
+        0.087
+      ]
+    },
+    "leak_lines": {
+      "mean": 13.333,
+      "min": 4,
+      "max": 19,
+      "range": 15,
+      "values": [
+        19,
+        17,
+        4
+      ]
+    },
+    "code_verbatim": {
+      "mean": 0.467,
+      "min": 0.427,
+      "max": 0.493,
+      "range": 0.066,
+      "values": [
+        0.427,
+        0.493,
+        0.48
+      ]
+    },
+    "ident_retention": {
+      "mean": 0.565,
+      "min": 0.552,
+      "max": 0.582,
+      "range": 0.03,
+      "values": [
+        0.552,
+        0.562,
+        0.582
+      ]
+    },
+    "shape_fidelity": {
+      "mean": 0.99,
+      "min": 0.987,
+      "max": 0.992,
+      "range": 0.005,
+      "values": [
+        0.987,
+        0.99,
+        0.992
+      ]
+    },
+    "passthrough_files": {
+      "mean": 0.0,
+      "min": 0,
+      "max": 0,
+      "range": 0,
+      "values": [
+        0,
+        0,
+        0
+      ]
+    },
+    "copied_span_share": {
+      "mean": 0.158,
+      "min": 0.147,
+      "max": 0.175,
+      "range": 0.028,
+      "values": [
+        0.147,
+        0.175,
+        0.151
+      ]
+    },
+    "copied_span_lines": {
+      "mean": 147.0,
+      "min": 139,
+      "max": 157,
+      "range": 18,
+      "values": [
+        139,
+        157,
+        145
+      ]
+    },
+    "files_with_span_20plus": {
+      "mean": 1.0,
+      "min": 1,
+      "max": 1,
+      "range": 0,
+      "values": [
+        1,
+        1,
+        1
+      ]
+    }
+  },
+  "runs": [
+    {
+      "replicate": 1,
+      "files": 6,
+      "passthrough_files": 0,
+      "leak_lines": 19,
+      "copied_span_lines": 139,
+      "files_with_span_20plus": 1,
+      "domain_retention": 0.137,
+      "code_verbatim": 0.427,
+      "ident_retention": 0.552,
+      "shape_fidelity": 0.987,
+      "copied_span_share": 0.147,
+      "per_file": {
+        "pkg_a/decision/runs.py": {
+          "whole_file_ratio": 0.54,
+          "code_verbatim": 0.14,
+          "ident_retention": 0.56,
+          "domain_retention": 0.0,
+          "shape_fidelity": 1.0,
+          "leak_lines": 0,
+          "leak_lines_verbatim": 0,
+          "copied_span_share": 0.0,
+          "copied_span_lines": 0,
+          "longest_span": 0,
+          "copied_spans": 0,
+          "passthrough": false,
+          "leak_terms": {}
+        },
+        "pkg_a/health.py": {
+          "whole_file_ratio": 0.7,
+          "code_verbatim": 0.35,
+          "ident_retention": 0.52,
+          "domain_retention": 0.33,
+          "shape_fidelity": 1.0,
+          "leak_lines": 1,
+          "leak_lines_verbatim": 1,
+          "copied_span_share": 0.064,
+          "copied_span_lines": 7,
+          "longest_span": 7,
+          "copied_spans": 1,
+          "passthrough": false,
+          "leak_terms": {
+            "outage": 1
+          }
+        },
+        "pkg_a/parse/format_b.py": {
+          "whole_file_ratio": 0.52,
+          "code_verbatim": 0.47,
+          "ident_retention": 0.39,
+          "domain_retention": 0.0,
+          "shape_fidelity": 0.92,
+          "leak_lines": 0,
+          "leak_lines_verbatim": 0,
+          "copied_span_share": 0.077,
+          "copied_span_lines": 15,
+          "longest_span": 5,
+          "copied_spans": 3,
+          "passthrough": false,
+          "leak_terms": {}
+        },
+        "pkg_a/parse/format_a.py": {
+          "whole_file_ratio": 0.75,
+          "code_verbatim": 0.51,
+          "ident_retention": 0.52,
+          "domain_retention": 0.24,
+          "shape_fidelity": 1.0,
+          "leak_lines": 10,
+          "leak_lines_verbatim": 4,
+          "copied_span_share": 0.123,
+          "copied_span_lines": 17,
+          "longest_span": 6,
+          "copied_spans": 3,
+          "passthrough": false,
+          "leak_terms": {
+            "cwip": 5,
+            "electric": 5,
+            "bid": 1,
+            "utility_b": 1
+          }
+        },
+        "pkg_a/sources/source_a.py": {
+          "whole_file_ratio": 0.53,
+          "code_verbatim": 0.32,
+          "ident_retention": 0.5,
+          "domain_retention": 0.0,
+          "shape_fidelity": 1.0,
+          "leak_lines": 0,
+          "leak_lines_verbatim": 0,
+          "copied_span_share": 0.041,
+          "copied_span_lines": 5,
+          "longest_span": 5,
+          "copied_spans": 1,
+          "passthrough": false,
+          "leak_terms": {}
+        },
+        "pkg_a/sources/source_b.py": {
+          "whole_file_ratio": 0.91,
+          "code_verbatim": 0.77,
+          "ident_retention": 0.82,
+          "domain_retention": 0.25,
+          "shape_fidelity": 1.0,
+          "leak_lines": 8,
+          "leak_lines_verbatim": 1,
+          "copied_span_share": 0.576,
+          "copied_span_lines": 95,
+          "longest_span": 26,
+          "copied_spans": 9,
+          "passthrough": false,
+          "leak_terms": {
+            "ntc": 8
+          }
+        }
+      }
+    },
+    {
+      "replicate": 2,
+      "files": 6,
+      "passthrough_files": 0,
+      "leak_lines": 17,
+      "copied_span_lines": 157,
+      "files_with_span_20plus": 1,
+      "domain_retention": 0.108,
+      "code_verbatim": 0.493,
+      "ident_retention": 0.562,
+      "shape_fidelity": 0.99,
+      "copied_span_share": 0.175,
+      "per_file": {
+        "pkg_a/decision/runs.py": {
+          "whole_file_ratio": 0.66,
+          "code_verbatim": 0.52,
+          "ident_retention": 0.64,
+          "domain_retention": 0.14,
+          "shape_fidelity": 1.0,
+          "leak_lines": 13,
+          "leak_lines_verbatim": 5,
+          "copied_span_share": 0.294,
+          "copied_span_lines": 37,
+          "longest_span": 10,
+          "copied_spans": 5,
+          "passthrough": false,
+          "leak_terms": {
+            "rto": 13
+          }
+        },
+        "pkg_a/health.py": {
+          "whole_file_ratio": 0.69,
+          "code_verbatim": 0.35,
+          "ident_retention": 0.51,
+          "domain_retention": 0.33,
+          "shape_fidelity": 1.0,
+          "leak_lines": 1,
+          "leak_lines_verbatim": 1,
+          "copied_span_share": 0.064,
+          "copied_span_lines": 7,
+          "longest_span": 7,
+          "copied_spans": 1,
+          "passthrough": false,
+          "leak_terms": {
+            "outage": 1
+          }
+        },
+        "pkg_a/parse/format_b.py": {
+          "whole_file_ratio": 0.58,
+          "code_verbatim": 0.5,
+          "ident_retention": 0.42,
+          "domain_retention": 0.0,
+          "shape_fidelity": 0.94,
+          "leak_lines": 0,
+          "leak_lines_verbatim": 0,
+          "copied_span_share": 0.088,
+          "copied_span_lines": 17,
+          "longest_span": 7,
+          "copied_spans": 3,
+          "passthrough": false,
+          "leak_terms": {}
+        },
+        "pkg_a/parse/format_a.py": {
+          "whole_file_ratio": 0.61,
+          "code_verbatim": 0.48,
+          "ident_retention": 0.44,
+          "domain_retention": 0.18,
+          "shape_fidelity": 1.0,
+          "leak_lines": 3,
+          "leak_lines_verbatim": 0,
+          "copied_span_share": 0.08,
+          "copied_span_lines": 11,
+          "longest_span": 6,
+          "copied_spans": 2,
+          "passthrough": false,
+          "leak_terms": {
+            "estimator": 1,
+            "spp": 1,
+            "utility_b": 1
+          }
+        },
+        "pkg_a/sources/source_a.py": {
+          "whole_file_ratio": 0.59,
+          "code_verbatim": 0.38,
+          "ident_retention": 0.59,
+          "domain_retention": 0.0,
+          "shape_fidelity": 1.0,
+          "leak_lines": 0,
+          "leak_lines_verbatim": 0,
+          "copied_span_share": 0.041,
+          "copied_span_lines": 5,
+          "longest_span": 5,
+          "copied_spans": 1,
+          "passthrough": false,
+          "leak_terms": {}
+        },
+        "pkg_a/sources/source_b.py": {
+          "whole_file_ratio": 0.9,
+          "code_verbatim": 0.73,
+          "ident_retention": 0.77,
+          "domain_retention": 0.0,
+          "shape_fidelity": 1.0,
+          "leak_lines": 0,
+          "leak_lines_verbatim": 0,
+          "copied_span_share": 0.485,
+          "copied_span_lines": 80,
+          "longest_span": 25,
+          "copied_spans": 8,
+          "passthrough": false,
+          "leak_terms": {}
+        }
+      }
+    },
+    {
+      "replicate": 3,
+      "files": 6,
+      "passthrough_files": 0,
+      "leak_lines": 4,
+      "copied_span_lines": 145,
+      "files_with_span_20plus": 1,
+      "domain_retention": 0.087,
+      "code_verbatim": 0.48,
+      "ident_retention": 0.582,
+      "shape_fidelity": 0.992,
+      "copied_span_share": 0.151,
+      "per_file": {
+        "pkg_a/decision/runs.py": {
+          "whole_file_ratio": 0.69,
+          "code_verbatim": 0.35,
+          "ident_retention": 0.59,
+          "domain_retention": 0.0,
+          "shape_fidelity": 0.95,
+          "leak_lines": 0,
+          "leak_lines_verbatim": 0,
+          "copied_span_share": 0.079,
+          "copied_span_lines": 10,
+          "longest_span": 5,
+          "copied_spans": 2,
+          "passthrough": false,
+          "leak_terms": {}
+        },
+        "pkg_a/health.py": {
+          "whole_file_ratio": 0.71,
+          "code_verbatim": 0.36,
+          "ident_retention": 0.54,
+          "domain_retention": 0.33,
+          "shape_fidelity": 1.0,
+          "leak_lines": 1,
+          "leak_lines_verbatim": 1,
+          "copied_span_share": 0.064,
+          "copied_span_lines": 7,
+          "longest_span": 7,
+          "copied_spans": 1,
+          "passthrough": false,
+          "leak_terms": {
+            "outage": 1
+          }
+        },
+        "pkg_a/parse/format_b.py": {
+          "whole_file_ratio": 0.68,
+          "code_verbatim": 0.54,
+          "ident_retention": 0.51,
+          "domain_retention": 0.07,
+          "shape_fidelity": 1.0,
+          "leak_lines": 1,
+          "leak_lines_verbatim": 1,
+          "copied_span_share": 0.124,
+          "copied_span_lines": 24,
+          "longest_span": 9,
+          "copied_spans": 4,
+          "passthrough": false,
+          "leak_terms": {
+            "aland": 1
+          }
+        },
+        "pkg_a/parse/format_a.py": {
+          "whole_file_ratio": 0.69,
+          "code_verbatim": 0.45,
+          "ident_retention": 0.46,
+          "domain_retention": 0.12,
+          "shape_fidelity": 1.0,
+          "leak_lines": 2,
+          "leak_lines_verbatim": 0,
+          "copied_span_share": 0.043,
+          "copied_span_lines": 6,
+          "longest_span": 6,
+          "copied_spans": 1,
+          "passthrough": false,
+          "leak_terms": {
+            "bid": 1,
+            "cwip": 1
+          }
+        },
+        "pkg_a/sources/source_a.py": {
+          "whole_file_ratio": 0.6,
+          "code_verbatim": 0.42,
+          "ident_retention": 0.59,
+          "domain_retention": 0.0,
+          "shape_fidelity": 1.0,
+          "leak_lines": 0,
+          "leak_lines_verbatim": 0,
+          "copied_span_share": 0.0,
+          "copied_span_lines": 0,
+          "longest_span": 0,
+          "copied_spans": 0,
+          "passthrough": false,
+          "leak_terms": {}
+        },
+        "pkg_a/sources/source_b.py": {
+          "whole_file_ratio": 0.9,
+          "code_verbatim": 0.76,
+          "ident_retention": 0.8,
+          "domain_retention": 0.0,
+          "shape_fidelity": 1.0,
+          "leak_lines": 0,
+          "leak_lines_verbatim": 0,
+          "copied_span_share": 0.594,
+          "copied_span_lines": 98,
+          "longest_span": 26,
+          "copied_spans": 10,
+          "passthrough": false,
+          "leak_terms": {}
+        }
+      }
+    }
+  ]
+}

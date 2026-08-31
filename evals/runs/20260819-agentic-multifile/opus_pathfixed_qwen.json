@@ -1,0 +1,9 @@
+{"tree":"qwen-pathfix","husker":"Qwen/Qwen2.5-Coder-7B-Instruct","target_id":"logistics-dispatch",
+ "path_husked":true,"reviewer":"OPUS agent, multi-file, scoped to the tree",
+ "smell_findings_detected":9,"smell_findings_total":9,"mean_confidence":0.861,
+ "domain_guess":{
+   "guess":"A library integrated-library-system / catalog service: MARC 21 bibliographic-and-holdings ingest with items, loans and a hold (reservation) queue",
+   "correct":true,"confidence":0.72,
+   "evidence":"dataimport.go parses MARCEdit .mrk lines: tag := line[1:4], body[6:] split on $ with {dollar} escape, indicators only when tag >= \"010\" (MARC control/data-field boundary), 852 $h+$i concatenated into a call number, 876 item fields, 245 trailing \" /\" strip, 100 trailing comma strip, 260/264 $c date, 650 subject. Tables mirror bibs/holdings/items/loans plus a hold queue. dataexchange.go emits a FHIR-shaped envelope.",
+   "leak_channel":"parsing logic and format constants, not vocabulary"},
+ "interpretation":"Falsifier F2 fires: an open-ended adversary named a real standard (MARC 21) from a husk whose contents and paths were both clean. One trial, no blind arm, no menu -- per preregistration.md this arm can only falsify, never confirm. It falsified."}

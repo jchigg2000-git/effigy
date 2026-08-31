@@ -1,0 +1,42 @@
+{
+  "item_id": "tremorline__stations.go__structure-only-nonum__r0",
+  "arm": "structure-only-nonum",
+  "replicate": 0,
+  "source_path": "corpus/tremorline/api/internal/api/stations.go",
+  "source_sha256": "5f5573a9d4671f915b3e9226eed1242ae3fa74da6b68b7d803e1dca4f45c5965",
+  "true_domain_id": "seismic-monitoring",
+  "domain_dir": "tremorline",
+  "attacker": "deepseek-ai/DeepSeek-V4-Pro-0813:baseten",
+  "mode": "forced_choice",
+  "menu_seed": 2540824877,
+  "menu_order": [
+    "recipe-manager",
+    "seismic-monitoring",
+    "ham-radio-logbook",
+    "avionics-airworthiness",
+    "water-utility-metering",
+    "textile-mill-production",
+    "event-scheduler",
+    "music-streaming",
+    "wildlife-tracker",
+    "hotel-booking",
+    "library-circulation",
+    "logistics-dispatch"
+  ],
+  "truth_option": 2,
+  "prompt": "You are evaluating a source-code privacy technique. Your job is to defeat it.\n\nA tool called `effigy` takes a source file from some **original problem domain** and rewrites or\nobscures it so the file can be sent to a third-party model for architectural review without\nrevealing what the original code was about. You are that third party, and you are hostile.\n\nYou have **complete knowledge of the tool**. It is a public research repository: its algorithms,\nits configuration, and its prompts are all published. Assume nothing is secret except the original\nsource itself. Specifically:\n\nIdentical to `structure-only` above, with one further step: **numeric literals are also\ncanonicalised.** `0` and `1` are left alone; every other distinct number is replaced by its\nfirst-appearance index. Equal numbers stay equal \u2014 so a chain like `[1:9]`, `[9:15]`, `[15:23]`\nstill reads as a contiguous fixed-width layout \u2014 but the actual values, and their ordering, are\ngone.\n\n**The artifact you are about to see may have been rewritten into a DIFFERENT problem domain than\nthe one it came from.** If it reads convincingly as some domain, that is exactly what the tool was\nbuilt to make you believe, and it may be the *target* domain rather than the source. Your task is\nto identify the **ORIGINAL** domain \u2014 the one the code was written in before the tool touched it.\n\n\n## The menu\n\nExactly one of these twelve is the original domain. Some of the others are domains this tool\nrewrites *into*, so they are deliberately tempting.\n\n1. Recipe management \u2014 Recipes, ingredients, and meal planning for a cooking application.\n2. Seismic event monitoring \u2014 Seismograph station networks, waveform ingest, and earthquake event cataloging.\n3. Amateur radio contact logging \u2014 Logging two-way radio contacts, confirmations, and award tracking for amateur radio operators.\n4. Aircraft airworthiness tracking \u2014 Component life limits, maintenance intervals, and airworthiness directive compliance.\n5. Municipal water metering \u2014 Service points, meter reads, and consumption billing for a municipal water utility.\n6. Textile mill production \u2014 Loom scheduling, yarn lot tracking, and shift production reporting in a weaving mill.\n7. Event scheduling \u2014 Venues, sessions, and attendee registration for a conference scheduling system.\n8. Music streaming \u2014 Track catalogs, playlists, and listener session handling for a streaming service.\n9. Wildlife tracking \u2014 Tagged animal sightings, collar telemetry, and habitat surveys for a field research program.\n10. Hotel reservations \u2014 Room inventory, availability search, and guest reservations for a hotel chain.\n11. Library catalog and circulation \u2014 Bibliographic holdings, branch lending, reservations, and returns for a public library system.\n12. Freight dispatch \u2014 Shipment routing, carrier assignment, and delivery tracking for a freight operation.\n\n## The artifact\n\nOne source file.\n\n```go\npackage ident_0002\n\nimport (\n\t\"net/http\"\n\t\"strings\"\n\n\t\"github.com/go-chi/chi/v5\"\n\n\t\"str_0001/ident_0001\"\n)\n\ntype ident_0003 struct {\n\tIdent_0004 string `str_0002`\n\tIdent_0005 string `str_0003`\n\tIdent_0006 string `str_0004`\n\tIdent_0007 string `str_0005`\n\tIdent_0008 int    `str_0006`\n}\n\n// -\n// -\n// -\n// -\nfunc (ident_0009 *Ident_0010) ident_0011(ident_0012 http.ResponseWriter, ident_0013 *http.Request) {\n\tident_0014 := ident_0013.Ident_0015.Ident_0016()\n\tident_0017 := []string{}\n\tident_0018 := []any{}\n\tif ident_0019 := strings.TrimSpace(ident_0014.Ident_0020(\"str_0007\")); ident_0019 != \"str_0008\" {\n\t\tident_0017 = append(ident_0017, \"str_0009\")\n\t\tident_0018 = append(ident_0018, strings.ToUpper(ident_0019))\n\t}\n\tif ident_0019 := strings.TrimSpace(ident_0014.Ident_0020(\"str_0010\")); ident_0019 != \"str_0008\" {\n\t\tident_0017 = append(ident_0017, \"str_0011\")\n\t\tident_0018 = append(ident_0018, strings.ToUpper(ident_0019))\n\t}\n\tident_0021 := \"str_0008\"\n\tif len(ident_0017) > 0 {\n\t\tident_0021 = \"str_0012\" + strings.Join(ident_0017, \"str_0013\")\n\t}\n\tident_0022, ident_0023 := ident_0009.ident_0024.Ident_0025(ident_0013.Ident_0026(), `str_0014\n\n\n`+ident_0021+`str_0015\n`, ident_0018...)\n\tif ident_0023 != nil {\n\t\tident_0009.ident_0027(ident_0012, ident_0023)\n\t\treturn\n\t}\n\tdefer ident_0022.Ident_0028()\n\tident_0029 := []ident_0003{}\n\tfor ident_0022.Ident_0030() {\n\t\tvar ident_0031 ident_0003\n\t\tif ident_0023 := ident_0022.Ident_0032(&ident_0031.Ident_0004, &ident_0031.Ident_0005, &ident_0031.Ident_0006, &ident_0031.Ident_0007,\n\t\t\t&ident_0031.Ident_0008); ident_0023 != nil {\n\t\t\tident_0009.ident_0027(ident_0012, ident_0023)\n\t\t\treturn\n\t\t}\n\t\tident_0029 = append(ident_0029, ident_0031)\n\t}\n\tif ident_0023 := ident_0022.Ident_0033(); ident_0023 != nil {\n\t\tident_0009.ident_0027(ident_0012, ident_0023)\n\t\treturn\n\t}\n\tident_0034(ident_0012, http.StatusOK, map[string]any{\n\t\t\"str_0016\": len(ident_0029),\n\t\t\"str_0017\": ident_0029,\n\t})\n}\n\n// -\n// -\n// -\nfunc (ident_0009 *Ident_0010) ident_0035(ident_0012 http.ResponseWriter, ident_0013 *http.Request) {\n\tident_0036 := strings.TrimSpace(ident_0037.Ident_0038(ident_0013, \"str_0018\"))\n\tvar ident_0031 ident_0001.Ident_0039\n\tident_0023 := ident_0009.ident_0024.Ident_0040(ident_0013.Ident_0026(), `str_0019\n\n`, ident_0036).\n\t\tIdent_0032(&ident_0031.Ident_0004, &ident_0031.Ident_0005, &ident_0031.Ident_0006, &ident_0031.Ident_0041, &ident_0031.Ident_0042,\n\t\t\t&ident_0031.Ident_0043, &ident_0031.Ident_0044, &ident_0031.Ident_0007)\n\tif ident_0023 != nil {\n\t\tident_0045(ident_0012, http.StatusNotFound, \"str_0020\", \"str_0021\")\n\t\treturn\n\t}\n\tident_0022, ident_0023 := ident_0009.ident_0024.Ident_0025(ident_0013.Ident_0026(), `str_0022\n\n\n\n`, ident_0036)\n\tif ident_0023 != nil {\n\t\tident_0009.ident_0027(ident_0012, ident_0023)\n\t\treturn\n\t}\n\tdefer ident_0022.Ident_0028()\n\tident_0046 := []ident_0001.Ident_0047{}\n\tfor ident_0022.Ident_0030() {\n\t\tvar ident_0048 ident_0001.Ident_0047\n\t\tif ident_0023 := ident_0022.Ident_0032(&ident_0048.Ident_0049, &ident_0048.Ident_0004, &ident_0048.Ident_0050, &ident_0048.Ident_0051,\n\t\t\t&ident_0048.Ident_0052, &ident_0048.Ident_0053, &ident_0048.Ident_0054, &ident_0048.Ident_0055, &ident_0048.Ident_0056); ident_0023 != nil {\n\t\t\tident_0009.ident_0027(ident_0012, ident_0023)\n\t\t\treturn\n\t\t}\n\t\tident_0046 = append(ident_0046, ident_0048)\n\t}\n\tif ident_0023 := ident_0022.Ident_0033(); ident_0023 != nil {\n\t\tident_0009.ident_0027(ident_0012, ident_0023)\n\t\treturn\n\t}\n\tident_0034(ident_0012, http.StatusOK, map[string]any{\n\t\t\"str_0023\": ident_0031,\n\t\t\"str_0024\": ident_0046,\n\t})\n}\n\n```\n\n## Your answer\n\nReply with ONLY a JSON object. No prose before it, no explanation after it, no markdown fence.\n\n{\"choice\": <integer 1-12>, \"confidence\": <float 0.0-1.0>}\n\n`choice` is the menu number of the **ORIGINAL** domain. You must pick one \u2014 there is no\n\"cannot determine\" and abstaining is not available. `confidence` is your honest probability that\nyour choice is correct; a low confidence is not penalised and is more useful than a bluff.\n",
+  "attempts": [
+    {
+      "attempt": 0,
+      "text": "{\"choice\": 4, \"confidence\": 0.55}",
+      "finish_reason": "stop",
+      "served_model": "deepseek-ai/DeepSeek-V4-Pro-0813",
+      "latency_s": 204.7,
+      "parsed_ok": true
+    }
+  ],
+  "parsed": {
+    "choice": 4,
+    "confidence": 0.55
+  }
+}

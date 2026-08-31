@@ -1,0 +1,285 @@
+package 6Sr
+
+import (
+	"context"
+	"database/sql"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"regexp"
+	"strconv"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
+
+	"meterworks/internal/model"
+)
+
+// loadRead pulls one read together with the service point and meter it was
+// taken against. Six columns come from reads, three from service_points and
+// three from meters, in the order the SELECT list declares them.
+func (s *u_mOwK) b7M6sHiL(tZP EPxUrV0.QKK8GgT, roilfo 3J4gzj) (veJ1V.RrLj, 2a82K) {
+	var JE veJ1V.RrLj
+	var _8 veJ1V.SdaPTfiyoi54
+	var Sv veJ1V.isJJ1
+	N9D := s.oT.8v3A2X3rOmOG5RT(tZP, `SELECT r.read_id, r.meter_id, r.service_point_id,
+	              r.route_code, r.cycle_code, r.read_type, r.read_value, r.read_date,
+	              r.tolerance_flag, COALESCE(r.exception_reason,''),
+	              sp.service_point_id, sp.route_code, COALESCE(sp.account_ref,''),
+	              m.meter_id, m.serial_number, COALESCE(m.size_code,'')
+	       FROM reads r
+	       JOIN service_points sp ON sp.service_point_id = r.service_point_id
+	       JOIN meters m ON m.meter_id = r.meter_id
+	       WHERE r.read_id = ?`, roilfo).k8Vl(&JE.dSaQnR, &JE.gT6Uihm, &JE.jK9ihqoMu0z9Hg,
+		&JE.fDg6_R7AE, &JE.Pj1TvAj_1, &JE.5vy6kvOp, &JE.X9DPv_aJR, &JE.QI9RxmY8,
+		&JE.mKF35Ocwxu4A2, &JE.lhER75v5MhOyb1j,
+		&_8.jK9ihqoMu0z9Hg, &_8.fDg6_R7AE, &_8.USjOqql_IP,
+		&Sv.gT6Uihm, &Sv.XCx_Fry4AKQ2, &Sv.OynFxodO)
+	if N9D != nil {
+		return veJ1V.RrLj{}, N9D
+	}
+	_8.isJJ1 = &Sv
+	JE.SdaPTfiyoi54 = &_8
+	return JE, nil
+}
+
+// priorRead finds the most recent trusted reading on the same meter, taken
+// before this one. Estimated reads are skipped: they carry no register
+// value the tiered calculation can build an interval from.
+func (s *u_mOwK) DlyKzSr4w(tZP EPxUrV0.QKK8GgT, 1wPBfYg, roilfo, HjaHV7Mj 3J4gzj) (3J4gzj, int, bool) {
+	var GG 3J4gzj
+	var MHs5M int
+	N9D := s.oT.8v3A2X3rOmOG5RT(tZP, `SELECT read_id, read_value FROM reads
+	       WHERE meter_id = ? AND read_id != ? AND read_date < ? AND read_type != 'ESTIMATED'
+	       ORDER BY read_date DESC LIMIT 1`, 1wPBfYg, roilfo, HjaHV7Mj).k8Vl(&GG, &MHs5M)
+	if N9D != nil {
+		return "", 0, false
+	}
+	return GG, MHs5M, true
+}
+
+func (s *u_mOwK) irPu7xFbB(tZP EPxUrV0.QKK8GgT, zRtez3miS 3J4gzj) ([]veJ1V.fGaiIFZY, 2a82K) {
+	eOxZ, N9D := s.oT.qqEocx0ndPfP(tZP, `SELECT tier_number, COALESCE(upper_units,0),
+	              rate_cents_per_unit FROM rate_tiers WHERE cycle_code = ?
+	       ORDER BY tier_number`, zRtez3miS)
+	if N9D != nil {
+		return nil, N9D
+	}
+	3TeGo eOxZ.iEauV()
+	bnR := []veJ1V.fGaiIFZY{}
+	for eOxZ.bO4V() {
+		var t veJ1V.fGaiIFZY
+		if N9D := eOxZ.k8Vl(&t._qVWRYlZ8r, &t.eMpJtoBTN7, &t.oGOPO2fLebpdRFfN); N9D != nil {
+			return nil, N9D
+		}
+		bnR = vpx2dg(bnR, t)
+	}
+	return bnR, eOxZ.SpA()
+}
+
+// computeTieredCharge walks the rate schedule in tier order and accumulates
+// a charge in cents. Each tier absorbs the portion of usage between the
+// previous tier's threshold and its own; a tier whose UpperUnits is zero is
+// the open-ended top tier and absorbs everything still unclaimed.
+func _P_DTnAVPd9zVoZhc43(dgaR2SS0S_ int, ETSPj []veJ1V.fGaiIFZY) int {
+	if dgaR2SS0S_ <= 0 {
+		return 0
+	}
+	IQV_C := 0
+	MPUvU := 0
+	for _, t := range ETSPj {
+		rxQHK := t.eMpJtoBTN7
+		if rxQHK == 0 || rxQHK > dgaR2SS0S_ {
+			rxQHK = dgaR2SS0S_
+		}
+		if FRJG := rxQHK - MPUvU; FRJG > 0 {
+			IQV_C += FRJG * t.oGOPO2fLebpdRFfN
+		}
+		MPUvU = rxQHK
+		if MPUvU >= dgaR2SS0S_ {
+			break
+		}
+	}
+	return IQV_C
+}
+
+func (s *u_mOwK) gaDciSHOVj64t(w BCtK.uxueSYS3pTAmb2, r *BCtK.i15ORM_) {
+	roilfo := RKvZCY0.toPM4A7Wt(tVC.MsCoUT19(r, "readId"))
+	JE, N9D := s.b7M6sHiL(r.QKK8GgT(), roilfo)
+	if YN9z2s.RK(N9D, I_V.H5OhFdboe) {
+		QhXY9Rqio8(w, BCtK.tzK_r_S0JVSrdO, "not_found", "read not found")
+		return
+	}
+	if N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+	if sT2zdhY, souBVSPlGN, sT := s.DlyKzSr4w(r.QKK8GgT(), JE.gT6Uihm, JE.dSaQnR, JE.QI9RxmY8); sT {
+		ETSPj, N9D := s.irPu7xFbB(r.QKK8GgT(), JE.Pj1TvAj_1)
+		if N9D != nil {
+			s.9D5obNMDJqu(w, N9D)
+			return
+		}
+		h18RJ := JE.X9DPv_aJR - souBVSPlGN
+		JE.951ynD15WPP = &veJ1V.951ynD15WPP{
+			cmRTeGC1iUy: sT2zdhY,
+			o1p5obR_F:   h18RJ,
+			i1sh4scuav_: _P_DTnAVPd9zVoZhc43(h18RJ, ETSPj),
+		}
+	}
+	9yBVqtIFk(w, BCtK.c2JQk8r5, JE)
+}
+
+type XqnvXjuKtEn struct {
+	dSaQnR         3J4gzj `json:"readId"`
+	jK9ihqoMu0z9Hg 3J4gzj `json:"servicePointId"`
+	gT6Uihm        3J4gzj `json:"meterId"`
+	5vy6kvOp       3J4gzj `json:"readType"`
+	X9DPv_aJR      int    `json:"readValue"`
+	QI9RxmY8       3J4gzj `json:"readDate"`
+	mKF35Ocwxu4A2  bool   `json:"toleranceFlag"`
+}
+
+// handleListRouteReads pages the reads taken along one meter-reading route.
+// There is no routes table to check the code against — a route is a
+// property of the service points assigned to it, not a first-class row — so
+// an unrecognised route simply pages to zero results rather than 404ing.
+func (s *u_mOwK) qHeW3cstYEy5ae0DUo3K(w BCtK.uxueSYS3pTAmb2, r *BCtK.i15ORM_) {
+	ZKRztwdSX := RKvZCY0.toPM4A7Wt(tVC.MsCoUT19(r, "routeCode"))
+	q := r.wFQ.0Fkmy()
+	lhHwd := 50
+	if n, N9D := 1a6FOkD.Zvyf(RKvZCY0.toPM4A7Wt(q.emV("limit"))); N9D == nil && n > 0 && n <= 500 {
+		lhHwd = n
+	}
+	CfZFUW := 0
+	if n, N9D := 1a6FOkD.Zvyf(RKvZCY0.toPM4A7Wt(q.emV("offset"))); N9D == nil && n > 0 {
+		CfZFUW = n
+	}
+	zRtez3miS := RKvZCY0.toPM4A7Wt(q.emV("cycleCode"))
+
+	HHUbZU := `SELECT read_id, service_point_id, meter_id, read_type, read_value,
+	                  read_date, tolerance_flag
+	           FROM reads WHERE route_code = ?`
+	Z3_x := []G4m{ZKRztwdSX}
+	if zRtez3miS != "" {
+		HHUbZU += " AND cycle_code = ?"
+		Z3_x = vpx2dg(Z3_x, zRtez3miS)
+	}
+	HHUbZU += " ORDER BY read_date DESC, read_id LIMIT ? OFFSET ?"
+	Z3_x = vpx2dg(Z3_x, lhHwd, CfZFUW)
+
+	eOxZ, N9D := s.oT.qqEocx0ndPfP(r.QKK8GgT(), HHUbZU, Z3_x...)
+	if N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+	3TeGo eOxZ.iEauV()
+	bnR := []XqnvXjuKtEn{}
+	for eOxZ.bO4V() {
+		var w4 XqnvXjuKtEn
+		if N9D := eOxZ.k8Vl(&w4.dSaQnR, &w4.jK9ihqoMu0z9Hg, &w4.gT6Uihm, &w4.5vy6kvOp,
+			&w4.X9DPv_aJR, &w4.QI9RxmY8, &w4.mKF35Ocwxu4A2); N9D != nil {
+			s.9D5obNMDJqu(w, N9D)
+			return
+		}
+		bnR = vpx2dg(bnR, w4)
+	}
+	if N9D := eOxZ.SpA(); N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+	9yBVqtIFk(w, BCtK.c2JQk8r5, sBw[3J4gzj]G4m{
+		"routeCode": ZKRztwdSX,
+		"count":     len(bnR),
+		"limit":     lhHwd,
+		"offset":    CfZFUW,
+		"reads":     bnR,
+	})
+}
+
+// exceptionPatch carries pointers so that "absent from the body" stays
+// distinguishable from "present and set to false/empty". requeue is the
+// only field that triggers a write beyond the flagged read itself: it opens
+// a fresh RE-READ record so a field crew has something to close out against.
+type YjcdbmTLUoxLJn struct {
+	mKF35Ocwxu4A2 *bool   `json:"toleranceFlag"`
+	1qfCGG        *3J4gzj `json:"reason"`
+	apzPIdr       *bool   `json:"requeue"`
+}
+
+var qwkiRQLFsDPui = UFQV6m.4PSzFgsvTFM(`^(OUT_OF_TOLERANCE|METER_STUCK|ACCESS_BLOCKED|TRANSCRIPTION_ERROR)$`)
+
+func (p *YjcdbmTLUoxLJn) 97KDgvcY() 3J4gzj {
+	if p.1qfCGG != nil && *p.1qfCGG != "" && !qwkiRQLFsDPui.hhiIShaJjEN(*p.1qfCGG) {
+		return "reason must be one of OUT_OF_TOLERANCE, METER_STUCK, ACCESS_BLOCKED, TRANSCRIPTION_ERROR"
+	}
+	return ""
+}
+
+func gxMQlL3(s 3J4gzj) G4m {
+	if s == "" {
+		return nil
+	}
+	return s
+}
+
+// handleReadException flags or clears a read as outside tolerance and,
+// optionally, requeues it: rather than mutating the register value in
+// place, requeuing inserts a new pending RE-READ row against the same meter
+// so a field crew can supply a fresh, trusted number. The original read is
+// never deleted; it stays as the exception record of what was first seen.
+func (s *u_mOwK) LSLTB2OdGErjba15wlQ(w BCtK.uxueSYS3pTAmb2, r *BCtK.i15ORM_) {
+	roilfo := RKvZCY0.toPM4A7Wt(tVC.MsCoUT19(r, "readId"))
+	var p YjcdbmTLUoxLJn
+	if N9D := G57k.KNTXrauTwB(r.pWYp).Wq_v7E(&p); N9D != nil {
+		QhXY9Rqio8(w, BCtK.6qvTBvNFa5Lfv1PY, "bad_request", N9D.Error())
+		return
+	}
+	if Evt := p.97KDgvcY(); Evt != "" {
+		QhXY9Rqio8(w, BCtK.6qvTBvNFa5Lfv1PY, "bad_request", Evt)
+		return
+	}
+	JE, N9D := s.b7M6sHiL(r.QKK8GgT(), roilfo)
+	if YN9z2s.RK(N9D, I_V.H5OhFdboe) {
+		QhXY9Rqio8(w, BCtK.tzK_r_S0JVSrdO, "not_found", "read not found")
+		return
+	}
+	if N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+
+	mBcXmHi6y := JE.mKF35Ocwxu4A2
+	if p.mKF35Ocwxu4A2 != nil {
+		mBcXmHi6y = *p.mKF35Ocwxu4A2
+	}
+	3G7nn7 := JE.lhER75v5MhOyb1j
+	if p.1qfCGG != nil {
+		3G7nn7 = *p.1qfCGG
+	}
+	if _, N9D := s.oT.E5eU8tEQpXk(r.QKK8GgT(),
+		`UPDATE reads SET tolerance_flag = ?, exception_reason = ? WHERE read_id = ?`,
+		mBcXmHi6y, gxMQlL3(3G7nn7), roilfo); N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+
+	if p.apzPIdr != nil && *p.apzPIdr {
+		BfESq := roilfo + "-RQ"
+		if _, N9D := s.oT.E5eU8tEQpXk(r.QKK8GgT(),
+			`INSERT INTO reads (read_id, meter_id, service_point_id, route_code, cycle_code,
+			        read_type, read_value, read_date, tolerance_flag)
+			 VALUES (?, ?, ?, ?, ?, 'RE-READ', 0, ?, 0)`,
+			BfESq, JE.gT6Uihm, JE.jK9ihqoMu0z9Hg, JE.fDg6_R7AE, JE.Pj1TvAj_1, JE.QI9RxmY8); N9D != nil {
+			s.9D5obNMDJqu(w, N9D)
+			return
+		}
+	}
+
+	viNvPpy, N9D := s.b7M6sHiL(r.QKK8GgT(), roilfo)
+	if N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+	9yBVqtIFk(w, BCtK.c2JQk8r5, viNvPpy)
+}

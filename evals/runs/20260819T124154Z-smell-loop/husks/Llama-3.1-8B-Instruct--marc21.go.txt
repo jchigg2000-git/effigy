@@ -1,0 +1,297 @@
+Here is the translated code in the hotel booking platform with rooms, reservations, and guests domain:
+
+```go
+package booking
+
+import (
+	"context"
+	"database/sql"
+	"os"
+	"strings"
+)
+
+type Counts struct {
+	Rooms      int `json:"rooms"`
+	Reservations int `json:"reservations"`
+	Guests     int `json:"guests"`
+	ReservationsCount int `json:"reservations_count"`
+}
+
+type subfield struct {
+	Code  byte
+	Value string
+}
+
+// guestRegisters registers a guest id if it is new, tallying into the shared count.
+func guestRegisters(ctx context.Context, tx *sql.Tx, guestID, roomID string, c *Counts) error {
+	if guestID == "" {
+		return nil
+	}
+	res, err := tx.ExecContext(ctx,
+		`INSERT OR IGNORE INTO guests (guest_id, home_room_id) VALUES (?, ?)`,
+		guestID, nullStr(roomID))
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n > 0 {
+		c.Guests++
+	}
+	return nil
+}
+
+// parsedReservation doubles as the accumulator for a queued request: a reservation is a
+// room that has not started, so the same fields carry it.
+type parsedReservation struct {
+	RoomID, Type, Level, PolicyCode, GuestID string
+	PickupRoom, EffectiveStart, EffectiveEnd  string
+}
+
+type parsedGuest struct {
+	GuestID, Name, Address, Phone, Email  string
+	Reservations                          []parsedReservation
+}
+
+type parsedRoom struct {
+	RoomID, Name, Description, Capacity string
+	Reservations                          []parsedReservation
+}
+
+type parsedFile struct {
+	RoomID, RoomName, GuestID, GuestName string
+	Reservations                          []parsedReservation
+}
+
+func sub(sfs []subfield, code byte) string {
+	for _, sf := range sfs {
+		if sf.Code == code {
+			return strings.TrimSpace(sf.Value)
+		}
+	}
+	return ""
+}
+
+// isoDate turns YYYYMMDD into YYYY-MM-DD and passes anything else back untouched.
+func isoDate(d8 string) string {
+	if len(d8) != 8 {
+		return d8
+	}
+	return d8[0:4] + "-" + d8[4:6] + "-" + d8[6:8]
+}
+
+func nullStr(s string) any {
+	if s == "" {
+		return nil
+	}
+	return s
+}
+
+// Parse walks the file a line at a time. The record and the reservation under construction are
+// held in this scope and mutated from inside the tag switch; the two flush closures take
+// no arguments and read those variables directly, so a case arm closes a record blind.
+func Parse(data []byte) *parsedFile {
+	pf := &parsedFile{}
+	var cur *parsedGuest
+	var curReservation *parsedReservation
+	flushReservation := func() {
+		if cur != nil && curReservation != nil {
+			cur.Reservations = append(cur.Reservations, *curReservation)
+			curReservation = nil
+		}
+	}
+	flushRecord := func() {
+		flushReservation()
+		if cur != nil {
+			pf.Reservations = append(pf.Reservations, *cur)
+			cur = nil
+		}
+	}
+	for _, raw := range strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n") {
+		line := strings.TrimRight(raw, " \t")
+		if strings.TrimSpace(line) == "" {
+			flushRecord()
+			continue
+		}
+		if !strings.HasPrefix(line, "=") || len(line) < 6 {
+			continue
+		}
+		tag := line[1:4]
+		body := line[6:]
+		if tag == "RES" {
+			flushRecord()
+			cur = &parsedGuest{}
+			if len(body) > 6 {
+				cur.Name = string(body[5]) + string(body[6])
+			}
+			continue
+		}
+		if cur == nil {
+			cur = &parsedGuest{}
+		}
+		var ind1 byte
+		var sfs []subfield
+		if tag >= "010" && len(body) >= 2 {
+			ind1 = body[0]
+			for _, chunk := range strings.Split(body[2:], "$") {
+				if chunk != "" {
+					sfs = append(sfs, subfield{chunk[0], strings.ReplaceAll(chunk[1:], "{dollar}", "$")})
+				}
+			}
+		}
+		switch tag {
+		case "001":
+			cur.GuestID = strings.TrimSpace(body)
+		case "010":
+			if pf.RoomID == "" {
+				pf.RoomID = sub(sfs, 'a')
+			}
+		case "020":
+			cur.Email = sub(sfs, 'a')
+		case "035":
+			if pf.GuestName == "" {
+				pf.GuestName = sub(sfs, 'a')
+			}
+		case "100":
+			if len(sfs) > 0 {
+				cur.Address = strings.TrimSuffix(sub(sfs, 'a'), ",")
+			}
+		case "245":
+			if len(sfs) > 0 {
+				cur.Name = strings.TrimSuffix(strings.TrimSpace(sfs[0].Value), " /")
+			}
+			if len(sfs) > 1 {
+				cur.Description = sfs[1].Value
+			}
+		case "260", "264":
+			cur.Phone = isoDate(strings.Trim(sub(sfs, 'c'), "."))
+			cur.RoomName = strings.TrimSuffix(sub(sfs, 'b'), ",")
+		case "270":
+			if len(sfs) > 1 {
+				cur.Phone = strings.Map(func(r rune) rune {
+					if r >= '0' && r <= '9' {
+						return r
+					}
+					return -1
+				}, sfs[1].Value)
+			}
+		case "590":
+			cur.Capacity = sub(sfs, 'a')
+		case "650":
+			cur.RoomID = strings.TrimSuffix(sub(sfs, 'a'), ".")
+		case "852":
+			for _, sf := range sfs {
+				switch sf.Code {
+				case 'a':
+					cur.RoomID = strings.TrimSpace(sf.Value)
+					if pf.RoomID == "" {
+						pf.RoomID = cur.RoomID
+					}
+				case 'b':
+					cur.RoomName = sf.Value
+				case 'c':
+					cur.Description = sf.Value
+				case 'h':
+					cur.Capacity = sf.Value
+				case 'i':
+					cur.RoomName = strings.TrimSpace(cur.RoomName + " " + sf.Value)
+				}
+			}
+		case "876":
+			flushReservation()
+			curReservation = &parsedReservation{ItemID: sub(sfs, 'a'), Type: sub(sfs, 'h'), Level: sub(sfs, 'j'),
+				PolicyCode: sub(sfs, 'x'), GuestID: sub(sfs, '3'), PickupRoom: cur.RoomID}
+		case "583":
+			if curReservation != nil && len(sfs) >= 3 && sub(sfs, 'b') == "D8" {
+				switch sub(sfs, 'a') {
+				case "RESSTART":
+					curReservation.EffectiveStart = isoDate(sub(sfs, 'c'))
+				case "RESEND":
+					curReservation.EffectiveEnd = isoDate(sub(sfs, 'c'))
+				}
+			}
+			if sub(sfs, 'a') == "RESPLACED" {
+				cur.Reservations = append(cur.Reservations, parsedReservation{Type: "QUEUED",
+					GuestID: sub(sfs, '3'), PickupRoom: cur.RoomID,
+					EffectiveStart: isoDate(sub(sfs, 'c'))})
+			}
+		case "110":
+			if ind1 == '2' || ind1 == '\\' {
+				switch sub(sfs, '4') {
+				case "room":
+					pf.RoomID = sub(sfs, '0')
+					pf.RoomName = sub(sfs, 'a')
+				}
+			}
+		}
+		// The policy-code path: the local profile lets it arrive on either line.
+		if curReservation != nil && curReservation.PolicyCode == "" {
+			if v := sub(sfs, 'x'); v != "" {
+				curReservation.PolicyCode = v
+			}
+		}
+	}
+	flushRecord()
+	return pf
+}
+
+// FromFile reloads the whole catalog from one seed file inside a transaction.
+func FromFile(ctx context.Context, db *sql.DB, path string) (Counts, error) {
+	var c Counts
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return c, err
+	}
+	pf := Parse(data)
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return c, err
+	}
+	defer tx.Rollback()
+	for _, t := range []string{"reservations", "rooms", "guests", "reservations_count"} {
+		if _, err := tx.ExecContext(ctx, "DELETE FROM "+t); err != nil {
+			return c, err
+		}
+	}
+	if pf.RoomID != "" {
+		if _, err := tx.ExecContext(ctx, `INSERT INTO rooms (room_id, name) VALUES (?, ?)`,
+			pf.RoomID, pf.RoomName); err != nil {
+			return c, err
+		}
+		c.Rooms++
+	}
+	if pf.GuestID != "" {
+		if _, err := tx.ExecContext(ctx,
+			`INSERT OR REPLACE INTO guests (guest_id, name) VALUES (?, ?)`, pf.GuestID, pf.GuestName); err != nil {
+			return c, err
+		}
+		c.Guests++
+	}
+	for _, r := range pf.Reservations {
+		if r.GuestID == "" {
+			continue
+		}
+		if err := guestRegisters(ctx, tx, r.GuestID, pf.RoomID, &c); err != nil {
+			return c, err
+		}
+		if _, err := tx.ExecContext(ctx,
+			`INSERT INTO reservations (guest_id, room_id, placed_on, queue_position, status) VALUES (?, ?, ?, ?, ?)`,
+			r.GuestID, pf.RoomID, r.EffectiveStart, 1, r.Type); err != nil {
+			return c, err
+		}
+		c.Reservations++
+	}
+	return c, tx.Commit()
+}
+
+// EnsureSeeded loads the seed only when the catalog is empty.
+func EnsureSeeded(ctx context.Context, db *sql.DB, path string) (bool, Counts, error) {
+	var n int
+	if err := db.QueryRowContext(ctx, `SELECT count(*) FROM reservations`).Scan(&n); err != nil {
+		return false, Counts{}, err
+	}
+	if n != 0 {
+		return false, Counts{}, nil
+	}
+	c, err := FromFile(ctx, db, path)
+	return err == nil, c, err
+}
+```

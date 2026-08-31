@@ -1,0 +1,63 @@
+// Package model holds the JSON projection of the seismic catalog. Field order
+// mirrors each table's column order, which the positional Scan calls in the
+// handlers rely on.
+package model
+
+// NodeLabel values are drawn from the RR0-RR9 block, an invented range
+// chosen because no real-world node label registry assigns it to a
+// permanent or temporary node. Nothing in this tree should be read as
+// identifying an actual seismic node.
+type Node struct {
+	NodeID   string  `json:"nodeId"`
+	Label    string  `json:"label"`
+	Name     string  `json:"name"`
+	Latitude float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
+	ElevationM float64 `json:"elevationM"`
+	Operator   string  `json:"operator"`
+	Status     string  `json:"status"`
+}
+
+// Edge represents a connection between two nodes with associated metadata.
+type Edge struct {
+	EdgeID     string  `json:"edgeId"`
+	StartNodeID string  `json:"startNodeId"`
+	EndNodeID   string  `json:"endNodeId"`
+	SampleRateHz float64 `json:"sampleRateHz"`
+	AzimuthDeg   float64 `json:"azimuthDeg"`
+	DipDeg       float64 `json:"dipDeg"`
+	DepthM       float64 `json:"depthM"`
+	ValidityStart string  `json:"validityStart"`
+	ValidityEnd   string  `json:"validityEnd,omitempty"`
+}
+
+type Observation struct {
+	ObservationID string  `json:"observationId"`
+	EdgeID        string  `json:"edgeId"`
+	NodeID        string  `json:"nodeId"`
+	ObservedAt    string  `json:"observedAt"`
+	Value         float64 `json:"value"`
+	Type          string  `json:"type"`
+}
+
+type Measurement struct {
+	MeasurementID string  `json:"measurementId"`
+	ObservationID string  `json:"observationId"`
+	NodeID        string  `json:"nodeId"`
+	Value         float64 `json:"value"`
+	Unit          string  `json:"unit"`
+}
+
+type Incident struct {
+	IncidentID        string              `json:"incidentId"`
+	TimeOfOccurrence  string              `json:"timeOfOccurrence"`
+	Latitude          float64             `json:"latitude"`
+	Longitude         float64             `json:"longitude"`
+	DepthKm           float64             `json:"depthKm"`
+	Magnitude         float64             `json:"magnitude,omitempty"`
+	MagnitudeType     string              `json:"magnitudeType,omitempty"`
+	ReviewStatus      string              `json:"reviewStatus"`
+	ObservationCount  int                 `json:"observationCount"`
+	Measurements      []Measurement       `json:"measurements,omitempty"`
+	Observations      []Observation       `json:"observations,omitempty"`
+}

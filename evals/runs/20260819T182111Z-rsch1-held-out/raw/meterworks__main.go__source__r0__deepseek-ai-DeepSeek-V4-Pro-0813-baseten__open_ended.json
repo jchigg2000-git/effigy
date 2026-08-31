@@ -1,0 +1,48 @@
+{
+  "item_id": "meterworks__main.go__source__r0",
+  "arm": "source",
+  "replicate": 0,
+  "source_path": "corpus/meterworks/api/cmd/meterworksd/main.go",
+  "source_sha256": "ff23a7603ab82c6b61085b74ea86249f6eac78e802f3d3f0f8c537513fb04497",
+  "true_domain_id": "water-utility-metering",
+  "domain_dir": "meterworks",
+  "attacker": "deepseek-ai/DeepSeek-V4-Pro-0813:baseten",
+  "mode": "open_ended",
+  "menu_seed": 2553417939,
+  "menu_order": [
+    "event-scheduler",
+    "music-streaming",
+    "logistics-dispatch",
+    "recipe-manager",
+    "wildlife-tracker",
+    "ham-radio-logbook",
+    "hotel-booking",
+    "library-circulation",
+    "textile-mill-production",
+    "seismic-monitoring",
+    "water-utility-metering",
+    "avionics-airworthiness"
+  ],
+  "truth_option": 11,
+  "prompt": "You are evaluating a source-code privacy technique. Your job is to defeat it.\n\nA tool called `effigy` takes a source file from some **original problem domain** and rewrites or\nobscures it so the file can be sent to a third-party model for architectural review without\nrevealing what the original code was about. You are that third party, and you are hostile.\n\nYou have **complete knowledge of the tool**. It is a public research repository: its algorithms,\nits configuration, and its prompts are all published. Assume nothing is secret except the original\nsource itself. Specifically:\n\nThe artifact is the **UNMODIFIED ORIGINAL SOURCE FILE**. No transform has been applied. This is a\ncontrol condition.\n\n**The artifact you are about to see may have been rewritten into a DIFFERENT problem domain than\nthe one it came from.** If it reads convincingly as some domain, that is exactly what the tool was\nbuilt to make you believe, and it may be the *target* domain rather than the source. Your task is\nto identify the **ORIGINAL** domain \u2014 the one the code was written in before the tool touched it.\n\n\n## The artifact\n\nOne source file.\n\n```go\n// Command meterworksd serves the Cedar Hollow Municipal Water metering API.\n//\n// Everything it needs is inside this tree: the seed file is ./testdata, the\n// database is created under ./data, and the listen address is a literal\n// below rather than an allocation looked up in some table living somewhere\n// else. Clone the repository, run this, and it works.\n//\n// Three environment variables override the defaults, each read at its use site:\n//\n//\tMETERWORKS_ADDR         listen address       (default :8320)\n//\tMETERWORKS_DB_PATH      SQLite file          (default ./data/meterworks.db)\n//\tMETERWORKS_SEED_PATH    MRIF seed file       (default ./testdata/route_seed.mrif)\n//\n// The seed is loaded once, on the first boot against an empty database.\npackage main\n\nimport (\n\t\"context\"\n\t\"database/sql\"\n\t\"errors\"\n\t\"log/slog\"\n\t\"net/http\"\n\t\"os\"\n\t\"os/signal\"\n\t\"path/filepath\"\n\t\"strings\"\n\t\"syscall\"\n\t\"time\"\n\n\t_ \"modernc.org/sqlite\"\n\n\t\"meterworks/internal/api\"\n\t\"meterworks/internal/ingest\"\n)\n\nfunc envOr(key, fallback string) string {\n\tif v := strings.TrimSpace(os.Getenv(key)); v != \"\" {\n\t\treturn v\n\t}\n\treturn fallback\n}\n\nfunc run(logger *slog.Logger) error {\n\taddr := envOr(\"METERWORKS_ADDR\", \":8320\")\n\tdbPath := envOr(\"METERWORKS_DB_PATH\", \"./data/meterworks.db\")\n\tseedPath := envOr(\"METERWORKS_SEED_PATH\", \"./testdata/route_seed.mrif\")\n\n\tif err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {\n\t\treturn err\n\t}\n\tdb, err := sql.Open(\"sqlite\", dbPath)\n\tif err != nil {\n\t\treturn err\n\t}\n\tdefer db.Close()\n\n\tctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)\n\tdefer stop()\n\n\tloaded, counts, err := ingest.EnsureSeeded(ctx, db, seedPath)\n\tif err != nil {\n\t\treturn err\n\t}\n\tif loaded {\n\t\tlogger.Info(\"seeded metering database\", \"seed\", seedPath, \"servicePoints\", counts.ServicePoints,\n\t\t\t\"meters\", counts.Meters, \"reads\", counts.Reads, \"billingCycles\", counts.BillingCycles)\n\t}\n\n\tsrv := &http.Server{\n\t\tAddr:              addr,\n\t\tHandler:           api.NewServer(db, logger).Handler(),\n\t\tReadHeaderTimeout: 10 * time.Second,\n\t}\n\tgo func() {\n\t\t<-ctx.Done()\n\t\tshutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)\n\t\tdefer cancel()\n\t\t_ = srv.Shutdown(shutdownCtx)\n\t}()\n\n\tlogger.Info(\"listening\", \"addr\", addr, \"db\", dbPath, \"seed\", seedPath)\n\tif err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {\n\t\treturn err\n\t}\n\tlogger.Info(\"stopped\")\n\treturn nil\n}\n\nfunc main() {\n\tlogger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{\n\t\tLevel: slog.LevelInfo,\n\t}))\n\tif err := run(logger); err != nil {\n\t\tlogger.Error(\"meterworksd exited\", \"err\", err)\n\t\tos.Exit(1)\n\t}\n}\n\n```\n\n## Your answer\n\nReply with ONLY a JSON object. No prose before it, no explanation after it, no markdown fence.\n\n{\"domain\": \"<short free-text description of the ORIGINAL problem domain>\",\n \"specific_identifiers\": [\"<any organization, product, vendor, regulation, standard, proprietary\n                           system or place you believe you can name from this artifact>\"],\n \"confidence\": <float 0.0-1.0>,\n \"evidence\": \"<= 40 words on what in the artifact led you there>\"}\n\n`specific_identifiers` must be **[]** if you cannot name anything concrete. Do not pad it with\nguesses \u2014 but do not hold back a name you genuinely believe is there, because naming one correctly\nis the strongest result you can produce here.\n",
+  "attempts": [
+    {
+      "attempt": 0,
+      "text": "{\"domain\": \"Municipal water metering and billing API service\", \"specific_identifiers\": [\"Cedar Hollow Municipal Water\", \"MRIF\", \"MeterWorks\"], \"confidence\": 0.95, \"evidence\": \"No transform applied; source explicitly documents a water metering API, MRIF seed file, and counts service points, meters, reads, and billing cycles.\"}",
+      "finish_reason": "stop",
+      "served_model": "deepseek-ai/DeepSeek-V4-Pro-0813",
+      "latency_s": 15.83,
+      "parsed_ok": true
+    }
+  ],
+  "parsed": {
+    "domain": "Municipal water metering and billing API service",
+    "specific_identifiers": [
+      "Cedar Hollow Municipal Water",
+      "MRIF",
+      "MeterWorks"
+    ],
+    "confidence": 0.95,
+    "evidence": "No transform applied; source explicitly documents a water metering API, MRIF seed file, and counts service points, meters, reads, and billing cycles."
+  }
+}

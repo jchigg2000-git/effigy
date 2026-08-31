@@ -1,0 +1,21 @@
+{
+  "key": "qsolog__qlif.go__fpe__r0",
+  "arm": "fpe",
+  "replicate": 0,
+  "source_path": "corpus/qsolog/api/internal/ingest/qlif.go",
+  "source_sha256": "df83a2d22150eac7dbe2b5d052c717d14b46a8cd38c58e68fb888f6aa74fe4c9",
+  "true_domain_id": "ham-radio-logbook",
+  "language": "go",
+  "artifact_sha256": "d326089109caefb0045ebe3554ff7c00a91a03cf7b34335f93242625332d822b",
+  "artifact_lines": 225,
+  "latency_s": 0.0,
+  "solution_meta": {
+    "cipher_backend": "pyffx",
+    "identifiers_replaced": 317,
+    "identifiers_skipped": 128,
+    "unique_tokens_replaced": 81,
+    "key_id": "insecure-demo",
+    "pseudonym_collisions": 0,
+    "key_warning": "PUBLIC source-baked demo key; output is trivially reversible"
+  }
+}

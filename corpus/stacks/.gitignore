@@ -1,0 +1,8 @@
+# Build output and the developer database. The seed file, go.sum and the
+# lockfiles are deliberately NOT ignored: this tree has to be clonable.
+api/bin/
+api/data/
+node_modules/
+dist/
+*.tsbuildinfo
+.DS_Store

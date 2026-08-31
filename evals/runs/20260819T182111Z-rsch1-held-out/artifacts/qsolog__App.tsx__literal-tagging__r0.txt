@@ -1,0 +1,180 @@
+// Root screen: contact search on the left, and either the selected contact's
+// record or the confirmation form on the right. All request orchestration and
+// all user-facing error text live in this file; this domain has no separate
+// results-table or search-form component, unlike the library-catalog corpus.
+import { useState } from "<MSG:0>";
+import {
+  ApiError,
+  getContact,
+  searchContacts,
+  submitConfirmation,
+  type ConfirmationRequest,
+  type ConfirmationResult,
+  type Contact,
+  type ContactSummary,
+  type SearchFilters,
+} from "<PATH:0>";
+import { ConfirmationForm } from "<PATH:1>";
+import { ContactDetail } from "<PATH:2>";
+
+const EMPTY_FILTERS: SearchFilters = {
+  band: "<EMPTY:0>",
+  mode: "<EMPTY:0>",
+  stationId: "<EMPTY:0>",
+  from: "<EMPTY:0>",
+  to: "<EMPTY:0>",
+  limit: 50,
+};
+
+export function App() {
+  const [filters, setFilters] = useState<SearchFilters>(EMPTY_FILTERS);
+  const [rows, setRows] = useState<ContactSummary[]>([]);
+  const [count, setCount] = useState<number | null>(null);
+  const [selected, setSelected] = useState<Contact | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [confirmResult, setConfirmResult] = useState<ConfirmationResult | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const describe = (err: unknown): string => {
+    if (err instanceof ApiError) {
+      return `<MSG:1>`;
+    }
+    return "<MSG:2>";
+  };
+
+  const runSearch = async () => {
+    setLoading(true);
+    setError(null);
+    setSelected(null);
+    setConfirming(false);
+    try {
+      const res = await searchContacts(filters);
+      setRows(res.contacts);
+      setCount(res.count);
+    } catch (err) {
+      setRows([]);
+      setCount(null);
+      setError(describe(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openContact = async (contactId: string) => {
+    setLoading(true);
+    setError(null);
+    setConfirming(false);
+    setConfirmResult(null);
+    try {
+      setSelected(await getContact(contactId));
+    } catch (err) {
+      setSelected(null);
+      setError(describe(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const runConfirmation = async (req: ConfirmationRequest) => {
+    setError(null);
+    try {
+      const result = await submitConfirmation(req);
+      setConfirmResult(result);
+      setConfirming(false);
+      if (result.matchedContactId) {
+        setSelected(await getContact(result.matchedContactId));
+      }
+    } catch (err) {
+      setError(describe(err));
+    }
+  };
+
+  const setText = (key: keyof SearchFilters, value: string) => {
+    setFilters({ ...filters, [key]: value });
+  };
+
+  return (
+    <div className="<MSG:3>">
+      <header className="<MSG:4>">
+        <div>
+          <h1>qsolog</h1>
+          <p>Contact log, confirmations and award progress</p>
+        </div>
+        <button type="<MSG:5>" className="<MSG:6>" onClick={() => setConfirming(true)}>
+          Log a confirmation
+        </button>
+      </header>
+
+      {error !== null && <p className="<MSG:7>">{error}</p>}
+      {confirmResult !== null && (
+        <p className="<MSG:8>">confirmation {confirmResult.confirmationId}: {confirmResult.matchStatus}</p>
+      )}
+
+      <main className="<MSG:9>">
+        <section className="<MSG:10>">
+          <form
+            className="<MSG:11>"
+            onSubmit={(e) => {
+              e.preventDefault();
+              runSearch();
+            }}
+          >
+            <h2>Find contacts</h2>
+            <label htmlFor="<MSG:12>">Band</label>
+            <input id="<MSG:12>" value={filters.band ?? "<EMPTY:0>"} onChange={(e) => setText("<MSG:13>", e.target.value)} />
+            <label htmlFor="<MSG:14>">Mode</label>
+            <input id="<MSG:14>" value={filters.mode ?? "<EMPTY:0>"} onChange={(e) => setText("<MSG:15>", e.target.value)} />
+            <label htmlFor="<SQL:0>">From date</label>
+            <input id="<SQL:0>" value={filters.from ?? "<EMPTY:0>"} onChange={(e) => setText("<SQL:1>", e.target.value)} />
+            <label htmlFor="<MSG:16>">To date</label>
+            <input id="<MSG:16>" value={filters.to ?? "<EMPTY:0>"} onChange={(e) => setText("<MSG:17>", e.target.value)} />
+            <button type="<MSG:18>" className="<MSG:6>" disabled={loading}>
+              {loading ? "<MSG:19>" : "<MSG:20>"}
+            </button>
+          </form>
+
+          {count !== null && <p className="<MSG:8>">{count} contacts matched</p>}
+          {rows.length === 0 ? (
+            <p className="<MSG:21>">No contacts matched those filters.</p>
+          ) : (
+            <table className="<MSG:22>">
+              <thead>
+                <tr>
+                  <th>Contact id</th>
+                  <th>Worked</th>
+                  <th>Band</th>
+                  <th>Mode</th>
+                  <th>Date</th>
+                  <th>Confirmed</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr
+                    key={row.contactId}
+                    className={row.contactId === selected?.contactId ? "<MSG:23>" : "<EMPTY:0>"}
+                    onClick={() => openContact(row.contactId)}
+                  >
+                    <td>{row.contactId}</td>
+                    <td>{row.workedCallsign}</td>
+                    <td>{row.band}</td>
+                    <td>{row.mode}</td>
+                    <td>{row.contactDate}</td>
+                    <td>{row.confirmed ? "<MSG:24>" : "<MSG:25>"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </section>
+
+        <section className="<MSG:26>">
+          {confirming && <ConfirmationForm onSubmit={runConfirmation} onCancel={() => setConfirming(false)} />}
+          {!confirming && selected === null && <p className="<MSG:21>">Select a contact to see its record.</p>}
+          {!confirming && selected !== null && <ContactDetail contact={selected} />}
+        </section>
+      </main>
+    </div>
+  );
+}

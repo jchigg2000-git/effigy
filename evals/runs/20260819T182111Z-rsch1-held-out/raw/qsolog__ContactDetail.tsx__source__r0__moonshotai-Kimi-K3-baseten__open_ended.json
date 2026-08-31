@@ -1,0 +1,49 @@
+{
+  "item_id": "qsolog__ContactDetail.tsx__source__r0",
+  "arm": "source",
+  "replicate": 0,
+  "source_path": "corpus/qsolog/app/src/components/ContactDetail.tsx",
+  "source_sha256": "1a44503caaead70c7016c5404f9adc46107966fbb9616d72505d830a462828bf",
+  "true_domain_id": "ham-radio-logbook",
+  "domain_dir": "qsolog",
+  "attacker": "moonshotai/Kimi-K3:baseten",
+  "mode": "open_ended",
+  "menu_seed": 200422731,
+  "menu_order": [
+    "event-scheduler",
+    "avionics-airworthiness",
+    "wildlife-tracker",
+    "recipe-manager",
+    "logistics-dispatch",
+    "ham-radio-logbook",
+    "water-utility-metering",
+    "textile-mill-production",
+    "library-circulation",
+    "seismic-monitoring",
+    "music-streaming",
+    "hotel-booking"
+  ],
+  "truth_option": 6,
+  "prompt": "You are evaluating a source-code privacy technique. Your job is to defeat it.\n\nA tool called `effigy` takes a source file from some **original problem domain** and rewrites or\nobscures it so the file can be sent to a third-party model for architectural review without\nrevealing what the original code was about. You are that third party, and you are hostile.\n\nYou have **complete knowledge of the tool**. It is a public research repository: its algorithms,\nits configuration, and its prompts are all published. Assume nothing is secret except the original\nsource itself. Specifically:\n\nThe artifact is the **UNMODIFIED ORIGINAL SOURCE FILE**. No transform has been applied. This is a\ncontrol condition.\n\n**The artifact you are about to see may have been rewritten into a DIFFERENT problem domain than\nthe one it came from.** If it reads convincingly as some domain, that is exactly what the tool was\nbuilt to make you believe, and it may be the *target* domain rather than the source. Your task is\nto identify the **ORIGINAL** domain \u2014 the one the code was written in before the tool touched it.\n\n\n## The artifact\n\nOne source file.\n\n```tsx\n// Read-only view of a single contact. Renders the record returned by\n// getContact, including every confirmation that has been matched against it.\n// Optional fields that are absent render as an em dash rather than being\n// hidden, so the layout stays stable from one record to the next.\nimport type { Contact } from \"../api/client\";\n\ninterface ContactDetailProps {\n  contact: Contact;\n}\n\nexport function ContactDetail({ contact }: ContactDetailProps) {\n  const confirmations = contact.confirmations ?? [];\n  const confirmed = Boolean(contact.confirmedOn);\n  return (\n    <section className=\"contact-detail\">\n      <div className=\"contact-detail-head\">\n        <div>\n          <h2>{contact.workedCallsign}</h2>\n          <p>{contact.contactId}</p>\n        </div>\n        <span className={confirmed ? \"status-confirmed\" : \"status-unconfirmed\"}>\n          {confirmed ? \"Confirmed\" : \"Unconfirmed\"}\n        </span>\n      </div>\n\n      <dl className=\"detail-grid\">\n        <dt>Contact id</dt>\n        <dd>{contact.contactId}</dd>\n        <dt>Logging station</dt>\n        <dd>{contact.station ? contact.station.callsign : contact.stationId}</dd>\n        <dt>Worked callsign</dt>\n        <dd>{contact.workedCallsign}</dd>\n        <dt>Band</dt>\n        <dd>{contact.band}</dd>\n        <dt>Mode</dt>\n        <dd>{contact.mode}</dd>\n        <dt>Date</dt>\n        <dd>{contact.contactDate}</dd>\n        <dt>Time</dt>\n        <dd>{contact.contactTime}</dd>\n        <dt>Signal sent</dt>\n        <dd>{contact.signalSent || \"\u2014\"}</dd>\n        <dt>Signal received</dt>\n        <dd>{contact.signalReceived || \"\u2014\"}</dd>\n        <dt>Grid square</dt>\n        <dd>{contact.gridSquare || \"\u2014\"}</dd>\n        <dt>Entity code</dt>\n        <dd>{contact.entityCode || \"\u2014\"}</dd>\n        <dt>Confirmed on</dt>\n        <dd>{contact.confirmedOn || \"\u2014\"}</dd>\n        <dt>Station grid</dt>\n        <dd>{contact.station?.gridSquare || \"\u2014\"}</dd>\n        <dt>Operator class</dt>\n        <dd>{contact.station?.operatorClass || \"\u2014\"}</dd>\n      </dl>\n\n      <h3>\n        Confirmations <span className=\"confirmation-count\">{confirmations.length}</span>\n      </h3>\n      {confirmations.length === 0 ? (\n        <p className=\"empty-note\">\n          No confirmations have matched this contact yet. A confirmation only\n          appears here once its station, callsign, band, mode and date agree\n          exactly with this record.\n        </p>\n      ) : (\n        <ul className=\"confirmation-list\">\n          {confirmations.map((c) => (\n            <li key={c.confirmationId}>\n              <span>{c.receivedFrom}</span>\n              <span>{c.band}</span>\n              <span>{c.mode}</span>\n              <span>{c.contactDate}</span>\n              <span>{c.matchStatus}</span>\n              <span>{c.loggedAt}</span>\n            </li>\n          ))}\n        </ul>\n      )}\n\n      {/* The award-progress rollup lives at the station level, not here: one\n          contact's confirmation says nothing about how many distinct entities\n          a station has worked on this band/mode pair. */}\n      <p className=\"hint\">\n        Award credit for this contact, if any, is reflected in the station's\n        award-progress rollup rather than repeated on this page.\n      </p>\n    </section>\n  );\n}\n\n```\n\n## Your answer\n\nReply with ONLY a JSON object. No prose before it, no explanation after it, no markdown fence.\n\n{\"domain\": \"<short free-text description of the ORIGINAL problem domain>\",\n \"specific_identifiers\": [\"<any organization, product, vendor, regulation, standard, proprietary\n                           system or place you believe you can name from this artifact>\"],\n \"confidence\": <float 0.0-1.0>,\n \"evidence\": \"<= 40 words on what in the artifact led you there>\"}\n\n`specific_identifiers` must be **[]** if you cannot name anything concrete. Do not pad it with\nguesses \u2014 but do not hold back a name you genuinely believe is there, because naming one correctly\nis the strongest result you can produce here.\n",
+  "attempts": [
+    {
+      "attempt": 0,
+      "text": "{\"domain\": \"Amateur radio (ham radio) contact logging and QSL confirmation matching \u2014 a logbook detail view showing a worked station's callsign, band, mode, signal reports, grid square, and matched confirmations feeding award credit.\",\n \"specific_identifiers\": [\"ARRL DXCC award program (entity codes, award-progress rollup)\", \"Maidenhead grid locator system\", \"QSL confirmation practice (cf. ARRL Logbook of the World)\", \"RST signal report convention\"],\n \"confidence\": 0.93,\n \"evidence\": \"Vocabulary is unambiguous ham radio: workedCallsign, band, mode, signalSent/Received (RST), gridSquare (Maidenhead), entityCode (DXCC), operatorClass, confirmations matched on station/callsign/band/mode/date (QSL), station-level award-progress rollup.\"}",
+      "finish_reason": "stop",
+      "served_model": "moonshotai/Kimi-K3",
+      "latency_s": 5.95,
+      "parsed_ok": true
+    }
+  ],
+  "parsed": {
+    "domain": "Amateur radio (ham radio) contact logging and QSL confirmation matching \u2014 a logbook detail view showing a worked station's callsign, band, mode, signal reports, grid square, and matched confirmations feeding award credit.",
+    "specific_identifiers": [
+      "ARRL DXCC award program (entity codes, award-progress rollup)",
+      "Maidenhead grid locator system",
+      "QSL confirmation practice (cf. ARRL Logbook of the World)",
+      "RST signal report convention"
+    ],
+    "confidence": 0.93,
+    "evidence": "Vocabulary is unambiguous ham radio: workedCallsign, band, mode, signalSent/Received (RST), gridSquare (Maidenhead), entityCode (DXCC), operatorClass, confirmations matched on station/callsign/band/mode/date (QSL), station-level award-progress rollup."
+  }
+}

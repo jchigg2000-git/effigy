@@ -1,0 +1,133 @@
+package compute
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"net/http"
+	"strconv"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
+)
+
+type ServicePointHandler struct{}
+
+func (h *ServicePointHandler) GetServicePoint(ctx context.Context, spID string) (*ServicePoint, error) {
+	var sp ServicePoint
+	var mt Meter
+	err := queryRow(ctx, `SELECT service_point_id, route_code,
+	              COALESCE(account_ref,''), meter_id, serial_number,
+	              COALESCE(size_code,'')
+	       FROM service_points WHERE service_point_id = $1`, spID).Scan(&sp.ID, &sp.RouteCode,
+		&sp.AccountRef, &mt.ID, &mt.SerialNumber, &mt.SizeCode)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, fmt.Errorf("%w: %s", ErrNotFound, "service point not found")
+	}
+	if err != nil {
+		return nil, fmt.Errorf("server error: %v", err)
+	}
+	sp.Meter = &mt
+	return &sp, nil
+}
+
+// HandleServicePointReads returns the read history at one service point,
+// most recent first. Unlike the route listing, a service point that does
+// not exist is a 404: it is a first-class row, not an inferred grouping.
+func (h *ServicePointHandler) HandleServicePointReads(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	spID := strings.TrimSpace(chi.URLParam(r, "spId"))
+	q := r.URL.Query()
+	limit := 50
+	if n, err := strconv.Atoi(strings.TrimSpace(q.Get("limit"))); err == nil && n > 0 && n <= 500 {
+		limit = n
+	}
+	offset := 0
+	if n, err := strconv.Atoi(strings.TrimSpace(q.Get("offset"))); err == nil && n > 0 {
+		offset = n
+	}
+
+	var known string
+	err = queryRow(ctx, `SELECT service_point_id FROM service_points WHERE service_point_id = $1`, spID).Scan(&known)
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, http.StatusNotFound, "not_found", "service point not found")
+		return
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal_error", fmt.Sprintf("server error: %v", err))
+		return
+	}
+
+	rows, err := query(ctx, `SELECT read_id, meter_id, read_type,
+	              read_value, read_date, tolerance_flag
+	       FROM reads WHERE service_point_id = $1
+	       ORDER BY read_date DESC LIMIT $2 OFFSET $3`, spID, limit, offset)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal_error", fmt.Sprintf("server error: %v", err))
+		return
+	}
+	defer rows.Close()
+	out := []ReadSummary{}
+	for rows.Next() {
+		var it ReadSummary
+		it.ServicePointID = spID
+		if err := rows.Scan(&it.ReadID, &it.MeterID, &it.ReadType, &it.ReadValue,
+			&it.ReadDate, &it.ToleranceFlag); err != nil {
+			writeError(w, http.StatusInternalServerError, "internal_error", fmt.Sprintf("server error: %v", err))
+			return
+		}
+		out = append(out, it)
+	}
+	if err := rows.Err(); err != nil {
+		writeError(w, http.StatusInternalServerError, "internal_error", fmt.Sprintf("server error: %v", err))
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"servicePointId": spID,
+		"count":          len(out),
+		"limit":          limit,
+		"offset":         offset,
+		"reads":          out,
+	})
+}
+
+type ServicePoint struct {
+	ID            string
+	RouteCode     string
+	AccountRef    string
+	Meter         *Meter
+}
+
+type Meter struct {
+	ID        string
+	SerialNumber string
+	SizeCode  string
+}
+
+type ReadSummary struct {
+	ReadID        string
+	MeterID       string
+	ReadType      string
+	ReadValue     float64
+	ReadDate      string
+	ToleranceFlag bool
+}
+
+var ErrNotFound = errors.New("not_found")
+
+func queryRow(ctx context.Context, query string, args ...interface{}) *sql.Row {
+	// Implementation details omitted
+	return nil
+}
+
+func query(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
+	// Implementation details omitted
+	return nil, nil
+}
+
+func writeError(w http.ResponseWriter, status int, code string, message string) {
+	// Implementation details omitted
+}
+
+func writeJSON(w http.ResponseWriter, status int, data interface{}) {
+	// Implementation details omitted
+}

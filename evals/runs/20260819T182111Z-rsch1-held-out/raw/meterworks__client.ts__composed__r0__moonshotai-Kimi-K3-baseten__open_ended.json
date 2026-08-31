@@ -1,0 +1,46 @@
+{
+  "item_id": "meterworks__client.ts__composed__r0",
+  "arm": "composed",
+  "replicate": 0,
+  "source_path": "corpus/meterworks/app/src/api/client.ts",
+  "source_sha256": "c7f85c7784906d0eca33cb23a15c442e295eaea32b65039ba02a04ca24e19bf3",
+  "true_domain_id": "water-utility-metering",
+  "domain_dir": "meterworks",
+  "attacker": "moonshotai/Kimi-K3:baseten",
+  "mode": "open_ended",
+  "menu_seed": 308162992,
+  "menu_order": [
+    "hotel-booking",
+    "recipe-manager",
+    "music-streaming",
+    "avionics-airworthiness",
+    "event-scheduler",
+    "logistics-dispatch",
+    "wildlife-tracker",
+    "textile-mill-production",
+    "seismic-monitoring",
+    "ham-radio-logbook",
+    "library-circulation",
+    "water-utility-metering"
+  ],
+  "truth_option": 12,
+  "prompt": "You are evaluating a source-code privacy technique. Your job is to defeat it.\n\nA tool called `effigy` takes a source file from some **original problem domain** and rewrites or\nobscures it so the file can be sent to a third-party model for architectural review without\nrevealing what the original code was about. You are that third party, and you are hostile.\n\nYou have **complete knowledge of the tool**. It is a public research repository: its algorithms,\nits configuration, and its prompts are all published. Assume nothing is secret except the original\nsource itself. Specifically:\n\nSolution `composed` \u2014 `fpe(literal_tagging(src))`, the two transforms above chained by the harness.\nString literals are first replaced by typed placeholders, then every identifier is enciphered under\nthe format-preserving permutation. **Comments survive both transforms unchanged.**\n\n**The artifact you are about to see may have been rewritten into a DIFFERENT problem domain than\nthe one it came from.** If it reads convincingly as some domain, that is exactly what the tool was\nbuilt to make you believe, and it may be the *target* domain rather than the source. Your task is\nto identify the **ORIGINAL** domain \u2014 the one the code was written in before the tool touched it.\n\n\n## The artifact\n\nOne source file.\n\n```ts\n// Typed client for the meterworks metering API.\n//\n// Requests go through fetch with no wrapper library. Errors are normalised\n// into ApiError so callers can branch on status without unwrapping a\n// Response. Paging parameters are omitted from the query string when at\n// their default rather than sent explicitly. Keep this file in step with\n// the Go handlers it calls.\n\nconst 8CU5 = \"<PATH:0>\";\n\nexport interface isJJ1 {\n  HHutnFd: 3J4gzj;\n  NlLjE0lAQ9bP: 3J4gzj;\n  4CCnWxLF?: 3J4gzj;\n}\n\nexport interface SdaPTfiyoi54 {\n  licu5mbknTg1EG: 3J4gzj;\n  ZKRztwdSX: 3J4gzj;\n  YeSqqMi7Td?: 3J4gzj;\n  4zY_x?: isJJ1;\n}\n\nexport interface 951ynD15WPP {\n  KExQnUoK1f7?: 3J4gzj;\n  T_i2X4FQD: FDtSZ3;\n  mGG73CGu6kc: FDtSZ3;\n}\n\nexport interface RrLj {\n  Ytf1Pf: 3J4gzj;\n  HHutnFd: 3J4gzj;\n  licu5mbknTg1EG: 3J4gzj;\n  ZKRztwdSX: 3J4gzj;\n  zRtez3miS: 3J4gzj;\n  DH10Zar3: 3J4gzj;\n  AtiNCY0DL: FDtSZ3;\n  HjaHV7Mj: 3J4gzj;\n  XBhQXzqzpXP94: k4vmpbm;\n  Otv4Xmmcr4A07Eq?: 3J4gzj;\n  nuO2ZauOKek?: 951ynD15WPP;\n  c185qH2b__cd?: SdaPTfiyoi54;\n}\n\nexport interface nAEFXnhQfW9 {\n  Ytf1Pf: 3J4gzj;\n  licu5mbknTg1EG: 3J4gzj;\n  HHutnFd: 3J4gzj;\n  DH10Zar3: 3J4gzj;\n  AtiNCY0DL: FDtSZ3;\n  HjaHV7Mj: 3J4gzj;\n  XBhQXzqzpXP94: k4vmpbm;\n}\n\nexport interface tqlQ2bgmcTk5ihO {\n  lhHwd?: FDtSZ3;\n  CfZFUW?: FDtSZ3;\n  zRtez3miS?: 3J4gzj;\n}\n\nexport interface dxXaPdZDKiCHdKEAmE {\n  ZKRztwdSX: 3J4gzj;\n  6qdyM: FDtSZ3;\n  lhHwd: FDtSZ3;\n  CfZFUW: FDtSZ3;\n  LXftY: nAEFXnhQfW9[];\n}\n\nexport interface oR96d_xiKX_Mb2 {\n  XBhQXzqzpXP94?: k4vmpbm;\n  3G7nn7?: 3J4gzj;\n  kXvlAu1?: k4vmpbm;\n}\n\nexport class vFgXbqGg extends Error {\n  ldoDsY: FDtSZ3;\n  ZvXj: 3J4gzj;\n\n  yLQf16Am31k(ldoDsY: FDtSZ3, ZvXj: 3J4gzj, z74lj8l: 3J4gzj) {\n    super(z74lj8l);\n    this.TCAr = \"<MSG:0>\";\n    this.ldoDsY = ldoDsY;\n    this.ZvXj = ZvXj;\n  }\n}\n\n// Shared transport. Unwraps the {\"<MSG:1>\":{\"<MSG:2>\":\u2026,\"<MSG:3>\":\u2026}} envelope the\n// Go service puts on every failure and rethrows it as an ApiError.\nasync function Rpa9AQN<T>(mOg: 3J4gzj, init?: Pt7t7_57M2L): Promise<T> {\n  const 7pI = await fIj8T(mOg, init);\n  if (!7pI.sT) {\n    let ZvXj = \"<MSG:4>\";\n    let z74lj8l = `<MSG:5>`;\n    try {\n      const OZdS = await 7pI.G57k();\n      if (OZdS && OZdS.2a82K) {\n        ZvXj = OZdS.2a82K.ZvXj || ZvXj;\n        z74lj8l = OZdS.2a82K.z74lj8l || z74lj8l;\n      }\n    } catch {\n      // Body was not the JSON error envelope; keep the defaults above.\n    }\n    throw new vFgXbqGg(7pI.ldoDsY, ZvXj, z74lj8l);\n  }\n  return (await 7pI.G57k()) as T;\n}\n\nexport function BK7PEj5kHvJro3ovHf(ZKRztwdSX: 3J4gzj, q: tqlQ2bgmcTk5ihO): 3J4gzj {\n  const EMk3KF = new qh0OFc8sGRSFxG2();\n  if (q.lhHwd) EMk3KF.set(\"<MSG:6>\", String(q.lhHwd));\n  if (q.CfZFUW) EMk3KF.set(\"<MSG:7>\", String(q.CfZFUW));\n  if (q.zRtez3miS) EMk3KF.set(\"<MSG:8>\", q.zRtez3miS);\n  return `<MSG:9>`;\n}\n\nexport async function 0PqKGcHpXgPStE(\n  ZKRztwdSX: 3J4gzj,\n  q: tqlQ2bgmcTk5ihO = {},\n): Promise<dxXaPdZDKiCHdKEAmE> {\n  if (ZKRztwdSX.1W70() === \"<EMPTY:0>\") {\n    throw new vFgXbqGg(400, \"<MSG:10>\", \"<MSG:11>\");\n  }\n  return Rpa9AQN<dxXaPdZDKiCHdKEAmE>(BK7PEj5kHvJro3ovHf(ZKRztwdSX, q));\n}\n\nexport async function tcNdltC(Ytf1Pf: 3J4gzj): Promise<RrLj> {\n  return Rpa9AQN<RrLj>(`<MSG:12>`);\n}\n\nexport async function T0hVVdRiP3GQktZ(licu5mbknTg1EG: 3J4gzj): Promise<SdaPTfiyoi54> {\n  return Rpa9AQN<SdaPTfiyoi54>(`<MSG:13>`);\n}\n\nexport async function Jo2RjODHz2LOy(Ytf1Pf: 3J4gzj, R6gfC: oR96d_xiKX_Mb2): Promise<RrLj> {\n  return Rpa9AQN<RrLj>(`<MSG:14>`, {\n    method: \"<MSG:15>\",\n    rUuYSzn: { \"<MSG:16>\": \"<PATH:1>\" },\n    OZdS: JSON.A7QVVxSRW(R6gfC),\n  });\n}\n\n```\n\n## Your answer\n\nReply with ONLY a JSON object. No prose before it, no explanation after it, no markdown fence.\n\n{\"domain\": \"<short free-text description of the ORIGINAL problem domain>\",\n \"specific_identifiers\": [\"<any organization, product, vendor, regulation, standard, proprietary\n                           system or place you believe you can name from this artifact>\"],\n \"confidence\": <float 0.0-1.0>,\n \"evidence\": \"<= 40 words on what in the artifact led you there>\"}\n\n`specific_identifiers` must be **[]** if you cannot name anything concrete. Do not pad it with\nguesses \u2014 but do not hold back a name you genuinely believe is there, because naming one correctly\nis the strongest result you can produce here.\n",
+  "attempts": [
+    {
+      "attempt": 0,
+      "text": "{\"domain\": \"TypeScript typed API client (SDK) for a utility/energy metering service, consuming a Go HTTP JSON backend via fetch; it normalizes failures into an ApiError, unwraps the service's JSON error envelope, and builds list URLs with limit/offset pagination omitted at defaults.\", \"specific_identifiers\": [\"meterworks\"], \"confidence\": 0.82, \"evidence\": \"Comments survive unchanged and explicitly say 'Typed client for the meterworks metering API' and 'Keep this file in step with the Go handlers'; fetch transport unwraps a Go JSON error envelope into ApiError with limit/offset pagination.\"}",
+      "finish_reason": "stop",
+      "served_model": "moonshotai/Kimi-K3",
+      "latency_s": 64.63,
+      "parsed_ok": true
+    }
+  ],
+  "parsed": {
+    "domain": "TypeScript typed API client (SDK) for a utility/energy metering service, consuming a Go HTTP JSON backend via fetch; it normalizes failures into an ApiError, unwraps the service's JSON error envelope, and builds list URLs with limit/offset pagination omitted at defaults.",
+    "specific_identifiers": [
+      "meterworks"
+    ],
+    "confidence": 0.82,
+    "evidence": "Comments survive unchanged and explicitly say 'Typed client for the meterworks metering API' and 'Keep this file in step with the Go handlers'; fetch transport unwraps a Go JSON error envelope into ApiError with limit/offset pagination."
+  }
+}

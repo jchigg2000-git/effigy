@@ -1,0 +1,21 @@
+graph TD
+    main["app/main.py<br/>FastAPI app, routes, CORS, static mount"]
+    contract["app/contract.py<br/>Pydantic request/response models"]
+    registry["app/registry.py<br/>solution decorator + registry"]
+    solinit["app/solutions/__init__.py<br/>auto-discovery import"]
+    fpe["app/solutions/fpe.py<br/>O1 FPE"]
+    lit["app/solutions/literal_tagging.py<br/>I3 tagging"]
+    llm["app/solutions/llm_translation.py<br/>I4 translation"]
+    static["static/<br/>index.html, app.js, style.css"]
+
+    main --> contract
+    main --> registry
+    main --> solinit
+    solinit --> fpe
+    solinit --> lit
+    solinit --> llm
+    fpe --> registry
+    lit --> registry
+    llm --> registry
+    llm -.->|deferred import| main
+    main --> static

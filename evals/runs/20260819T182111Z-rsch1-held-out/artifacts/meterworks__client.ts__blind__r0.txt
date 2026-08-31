@@ -1,0 +1,12 @@
+STRUCTURAL PROFILE
+language: ts
+lines: 140
+bytes: 3805
+functions: 9
+components: 0
+classes: 1
+types: 8
+imports: 0
+exports: 14
+string literals: 20
+max brace depth: 4

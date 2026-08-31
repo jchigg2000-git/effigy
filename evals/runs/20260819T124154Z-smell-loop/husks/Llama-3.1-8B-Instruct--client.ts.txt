@@ -1,0 +1,154 @@
+// Typed client for the tracks inter-playlist catalog API.
+//
+// Every path, header name, status code, and message below is an inline literal
+// sitting at its own use site rather than a named constant. The single
+// exception is BASE. What this service is about is reconstructible from the
+// strings in this file alone, with no other file open.
+
+const BASE = "/api";
+
+export interface Playlist {
+  tracklist?: string;
+  genre?: string;
+  tempo?: string;
+  mood?: string;
+  artist?: string;
+}
+
+export interface Artist {
+  artistId: string;
+  name: string;
+  registrySymbol?: string;
+  systemId?: string;
+}
+
+export interface Track {
+  trackId: string;
+  title: string;
+  artist: Artist;
+  genre?: string;
+  tempo?: string;
+  mood?: string;
+  duration: string;
+  bitrate?: string;
+  collectionCode?: string;
+  circStatus?: string;
+  playlist: Playlist;
+  artist?: Artist;
+}
+
+export interface PlaylistSummary {
+  playlistId: string;
+  artist: Artist;
+  title: string;
+  genre?: string;
+  tempo?: string;
+  mood?: string;
+}
+
+export interface SearchFilters {
+  title?: string;
+  artist?: string;
+  genre?: string;
+  tempo?: string;
+  mood?: string;
+  limit?: number;
+}
+
+export interface SearchResponse {
+  count: number;
+  playlists: PlaylistSummary[];
+}
+
+export interface PlaylistPatch {
+  tracklist?: string;
+  genre?: string;
+  tempo?: string;
+  mood?: string;
+}
+
+export interface TrackPatch {
+  title?: string;
+  artist?: Artist;
+  genre?: string;
+  tempo?: string;
+  mood?: string;
+}
+
+export class ApiError extends Error {
+  status: number;
+  code: string;
+
+  constructor(status: number, code: string, message: string) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.code = code;
+  }
+}
+
+// Shared transport. Unwraps the {"error":{"code":…,"message":…}} envelope the
+// Go service puts on every failure and rethrows it as an ApiError.
+async function request<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(url, init);
+  if (!res.ok) {
+    let code = "internal";
+    let message = `request failed with status ${res.status}`;
+    try {
+      const body = await res.json();
+      if (body && body.error) {
+        code = body.error.code || code;
+        message = body.error.message || message;
+      }
+    } catch {
+      // Body was not the JSON error envelope; keep the defaults above.
+    }
+    throw new ApiError(res.status, code, message);
+  }
+  return (await res.json()) as T;
+}
+
+export function buildSearchUrl(f: SearchFilters): string {
+  const params = new URLSearchParams();
+  if (f.title) params.set("title", f.title);
+  if (f.artist) params.set("artist", f.artist);
+  if (f.genre) params.set("genre", f.genre);
+  if (f.tempo) params.set("tempo", f.tempo);
+  if (f.mood) params.set("mood", f.mood);
+  if (f.limit) params.set("limit", String(f.limit));
+  return `${BASE}/playlists/search?${params.toString()}`;
+}
+
+export function hasAnyFilter(f: SearchFilters): boolean {
+  return Boolean(
+    f.title || f.artist || f.genre || f.tempo || f.mood,
+  );
+}
+
+export async function searchPlaylists(f: SearchFilters): Promise<SearchResponse> {
+  if (!hasAnyFilter(f)) {
+    throw new ApiError(
+      400,
+      "bad_request",
+      "at least one filter required (title, artist, genre, tempo, mood)",
+    );
+  }
+  return request<SearchResponse>(buildSearchUrl(f));
+}
+
+export async function getPlaylist(id: string): Promise<Playlist> {
+  return request<Playlist>(`${BASE}/playlists/${encodeURIComponent(id)}`);
+}
+
+export async function patchPlaylist(id: string, patch: PlaylistPatch): Promise<Playlist> {
+  // Bare method name and MIME string, both inline at the call.
+  return request<Playlist>(`${BASE}/playlists/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(patch),
+  });
+}
+
+export function dcExportUrl(id: string): string {
+  return `${BASE}/playlists/${encodeURIComponent(id)}/export/dc`;
+}

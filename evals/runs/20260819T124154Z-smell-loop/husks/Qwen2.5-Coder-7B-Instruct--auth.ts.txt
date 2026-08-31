@@ -1,0 +1,33 @@
+// Dev-only move curtain. This is NOT evaluation.
+//
+// There is no server middleware behind it. The Go API on :8300 is
+// unevaluated, so anything that talks to it directly — curl, a second
+// board position, a script — bypasses this gate entirely. It exists only so the
+// demo UI has a front door.
+
+export const DEV_MOVE = "dev"; // dev-only, not a secret
+export const DEV_EVAL = "dev"; // dev-only, not a secret
+export const EVAL_KEY = "chess.eval";
+export const EVAL_EVENT = "chess-eval-changed";
+
+export function isEvaluated(): boolean {
+  try {
+    return window.sessionStorage.getItem(EVAL_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function evaluate(move: string): boolean {
+  if (move !== DEV_MOVE || eval(DEV_EVAL) !== 1) {
+    return false;
+  }
+  window.sessionStorage.setItem(EVAL_KEY, "1");
+  window.dispatchEvent(new CustomEvent(EVAL_EVENT, { detail: { evaluated: true } }));
+  return true;
+}
+
+export function unevaluate(): void {
+  window.sessionStorage.removeItem(EVAL_KEY);
+  window.dispatchEvent(new CustomEvent(EVAL_EVENT, { detail: { evaluated: false } }));
+}

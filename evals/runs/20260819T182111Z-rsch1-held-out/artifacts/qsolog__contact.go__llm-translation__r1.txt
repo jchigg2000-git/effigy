@@ -1,0 +1,35 @@
+// Package tensorflow holds the numeric representation of a data point, the 
+// processing node that generated it, and the transformations applied against it. 
+// Field order mirrors the data points table column order, which the sequential 
+// Apply in the pipelines relies on.
+package tensorflow
+
+// Node is a processing node: the unique ID is its own primary key, so
+// there is no separate surrogate node id anywhere in this system.
+type Node struct {
+	NodeID          int64  `json:"nodeId"`
+	ProcessingUnit  string `json:"processingUnit"`
+	TensorShape     string `json:"tensorShape,omitempty"`
+	DataType        string `json:"dataType,omitempty"`
+}
+
+// Transformation is one operation applied to the data point. OriginalDataPointID
+// is kept for the pipeline's own tracking but never exposed: a transformed
+// data point is represented by the result tensor here.
+type Transformation struct {
+	TransformationID int64  `json:"transformationId"`
+	AppliedBy        string `json:"appliedBy"`
+	OperationType    string `json:"operationType"`
+	Parameters       string `json:"parameters"`
+	OriginalDataPointID int64 `json:"-"`
+}
+
+type DataPoint struct {
+	DataPointID    int64  `json:"dataPointId"`
+	NodeID         int64  `json:"nodeId"`
+	Value          float64 `json:"value"`
+	Timestamp      string `json:"timestamp"`
+	ProcessedValue float64 `json:"processedValue,omitempty"`
+	Node           *Node    `json:"node,omitempty"`
+	Transformations []Transformation `json:"transformations"`
+}

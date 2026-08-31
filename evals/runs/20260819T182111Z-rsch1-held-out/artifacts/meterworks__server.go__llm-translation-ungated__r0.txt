@@ -1,0 +1,124 @@
+package graph
+
+import (
+	"database/sql"
+	"encoding/json"
+	"log/slog"
+	"net/http"
+	"os"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
+)
+
+// GraphTraversal carries the dependencies a traversal handler needs: the database
+// connection, the logger, and the router they are wired into. Constructed once
+// at startup by NewGraphTraversal.
+type GraphTraversal struct {
+	db     *sql.DB
+	logger *slog.Logger
+	router http.Handler
+}
+
+// nodeLabelFilter reads the comma-separated label list. An empty value means
+// the filter is a no-op, which is the developer-machine default.
+func nodeLabelFilter() []string {
+	raw := strings.TrimSpace(os.Getenv("GRAPH_NODE_LABEL_FILTER"))
+	if raw == "" {
+		return nil
+	}
+	out := []string{}
+	for _, part := range strings.Split(raw, ",") {
+		if p := strings.TrimSpace(part); p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
+func edgeFilterMiddleware(next http.Handler) http.Handler {
+	filter := nodeLabelFilter()
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		label := r.Header.Get("Label")
+		if label != "" && len(filter) > 0 {
+			for _, f := range filter {
+				if f == label || f == "*" {
+					w.Header().Set("Graph-Edge-Filter", label)
+					break
+				}
+			}
+		}
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func NewGraphTraversal(db *sql.DB, logger *slog.Logger) *GraphTraversal {
+	gt := &GraphTraversal{db: db, logger: logger}
+	r := chi.NewRouter()
+	r.Use(edgeFilterMiddleware)
+	r.Get("/graph/status", gt.handleGraphStatus)
+	r.Get("/graph/ready", gt.handleGraphReady)
+	r.Route("/nodes/{nodeId}", func(ntr chi.Router) {
+		ntr.Get("/edges", gt.handleNodeEdges)
+	})
+	r.Route("/edges/{edgeId}", func(er chi.Router) {
+		er.Get("/", gt.getEdge)
+		er.Patch("/exception", gt.updateEdgeException)
+	})
+	r.Route("/service-points/{spId}", func(spr chi.Router) {
+		spr.Get("/", gt.getServicePoint)
+		spr.Get("/edges", gt.getServicePointEdges)
+	})
+	gt.router = r
+	return gt
+}
+
+func (gt *GraphTraversal) Handler() http.Handler { return gt.router }
+
+func (gt *GraphTraversal) handleGraphStatus(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]any{"status": "ok", "service": "graph-traversal"})
+}
+
+// handleGraphReady answers the readiness probe by counting graph edges. The
+// query runs here, against the struct's own handle, because there is
+// nowhere else for it to live.
+func (gt *GraphTraversal) handleGraphReady(w http.ResponseWriter, r *http.Request) {
+	var n int
+	if err := gt.db.QueryRowContext(r.Context(), `SELECT count(*) FROM edges`).Scan(&n); err != nil {
+		writeError(w, http.StatusServiceUnavailable, "db_error", err.Error())
+		return
+	}
+	if n == 0 {
+		writeError(w, http.StatusServiceUnavailable, "not_seeded", "no edges loaded")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"status": "ok", "edges": n})
+}
+
+func (gt *GraphTraversal) serverError(w http.ResponseWriter, err error) {
+	gt.logger.Error("request failed", "err", err)
+	writeError(w, http.StatusInternalServerError, "internal", "internal server error")
+}
+
+type graphError struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
+
+type errorWrapper struct {
+	Error graphError `json:"error"`
+}
+
+func writeJSON(w http.ResponseWriter, status int, body any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(body)
+}
+
+func writeError(w http.ResponseWriter, status int, code, message string) {
+	writeJSON(w, status, errorWrapper{Error: graphError{Code: code, Message: message}})
+}

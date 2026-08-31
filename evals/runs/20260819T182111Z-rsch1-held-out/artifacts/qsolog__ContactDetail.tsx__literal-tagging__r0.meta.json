@@ -1,0 +1,19 @@
+{
+  "key": "qsolog__ContactDetail.tsx__literal-tagging__r0",
+  "arm": "literal-tagging",
+  "replicate": 0,
+  "source_path": "corpus/qsolog/app/src/components/ContactDetail.tsx",
+  "source_sha256": "1a44503caaead70c7016c5404f9adc46107966fbb9616d72505d830a462828bf",
+  "true_domain_id": "ham-radio-logbook",
+  "language": "tsx",
+  "artifact_sha256": "71b684cbdba8001f51e2ab29ca67d5c44ae622e88717d9f9b6d31c31e925b2e1",
+  "artifact_lines": 88,
+  "latency_s": 0.0,
+  "solution_meta": {
+    "literals_by_class": {
+      "PATH": 1,
+      "MSG": 18
+    },
+    "total_literals_replaced": 19
+  }
+}

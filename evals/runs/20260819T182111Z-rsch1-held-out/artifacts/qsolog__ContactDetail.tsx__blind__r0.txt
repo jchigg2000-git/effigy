@@ -1,0 +1,12 @@
+STRUCTURAL PROFILE
+language: tsx
+lines: 90
+bytes: 3265
+functions: 1
+components: 1
+classes: 0
+types: 1
+imports: 1
+exports: 1
+string literals: 19
+max brace depth: 4

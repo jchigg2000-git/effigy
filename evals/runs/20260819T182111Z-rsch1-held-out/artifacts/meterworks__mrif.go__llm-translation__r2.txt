@@ -1,0 +1,233 @@
+// Package load reads the NUMF (Numeric Feed) fixed-width feed
+// into the data processing pipeline. NUMF is a local profile invented for this
+// corpus item — it names no real system and follows no published
+// exchange standard. Layout below; columns are 0-indexed for Go slicing.
+//
+//	Header (one line, type 'H'):
+//	  [0:1]   record type, always "H"
+//	  [1:9]   process date, YYYYMMDD
+//	  [9:15]  task code, e.g. "TK0007"
+//	  [15:23] batch code, e.g. "20260701"
+//	  [23:40] reserved, space-filled
+//
+//	Detail (one line per entry, type 'D'):
+//	  [0:1]   record type, always "D"
+//	  [1:11]  entry id, e.g. "ENT-0000001"
+//	  [11:21] data id, e.g. "DAT-000001"
+//	  [21:29] entry date, YYYYMMDD
+//	  [29:39] entry value, zero-padded integer units
+//	  [39:40] entry type code: S standard, R recalculated, E estimated
+//	  [40:41] precision flag: Y or N
+//	  [41:60] reserved, space-filled
+//
+//	Trailer (one line, type 'T'):
+//	  [0:1]  record type, always "T"
+//	  [1:9]  detail record count, zero-padded
+//	  [9:20] reserved, space-filled
+//
+// Exactly one header opens the file and exactly one trailer closes it; the
+// trailer's declared count is checked against the detail lines actually
+// parsed, and a mismatch is a parse error rather than a warning a caller
+// could shrug off.
+package load
+
+import (
+	"context"
+	"fmt"
+	"os"
+	"strconv"
+	"strings"
+)
+
+type Totals struct {
+	Entries     int `json:"entries"`
+	DataItems   int `json:"dataItems"`
+	Values      int `json:"values"`
+	BatchCodes  int `json:"batchCodes"`
+}
+
+type parsedEntry struct {
+	EntryID, DataID, EntryDate string
+	EntryValue                int
+	EntryType                 string
+	PrecisionFlag             bool
+}
+
+type parsedBatch struct {
+	ProcessDate, TaskCode, BatchCode string
+	Entries                           []parsedEntry
+}
+
+var entryTypeNames = map[byte]string{'S': "STANDARD", 'R': "RECALCULATED", 'E': "ESTIMATED"}
+
+func segment(line string, start, end int) string {
+	if end > len(line) {
+		end = len(line)
+	}
+	if start >= end {
+		return ""
+	}
+	return strings.TrimSpace(line[start:end])
+}
+
+// Process walks the batch a line at a time. Blank lines are skipped, which lets
+// a trailing newline at the end of the batch pass without tripping the
+// header/trailer ordering checks below.
+func Process(data []byte) (*parsedBatch, error) {
+	pb := &parsedBatch{}
+	sawHeader := false
+	sawTrailer := false
+	declaredCount := 0
+
+	lines := strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n")
+	for _, raw := range lines {
+		if strings.TrimSpace(raw) == "" {
+			continue
+		}
+		switch raw[0] {
+		case 'H':
+			if sawHeader {
+				return nil, fmt.Errorf("numf: duplicate header line")
+			}
+			sawHeader = true
+			pb.ProcessDate = segment(raw, 1, 9)
+			pb.TaskCode = segment(raw, 9, 15)
+			pb.BatchCode = segment(raw, 15, 23)
+		case 'D':
+			if !sawHeader {
+				return nil, fmt.Errorf("numf: detail line before header")
+			}
+			if sawTrailer {
+				return nil, fmt.Errorf("numf: detail line after trailer")
+			}
+			value, err := strconv.Atoi(segment(raw, 29, 39))
+			if err != nil {
+				return nil, fmt.Errorf("numf: bad entry value: %w", err)
+			}
+			var typeCode byte
+			if tc := segment(raw, 39, 40); tc != "" {
+				typeCode = tc[0]
+			}
+			entryType, ok := entryTypeNames[typeCode]
+			if !ok {
+				return nil, fmt.Errorf("numf: unknown entry type code %q", string(typeCode))
+			}
+			pb.Entries = append(pb.Entries, parsedEntry{
+				EntryID: segment(raw, 1, 11),
+				DataID:  segment(raw, 11, 21),
+				EntryDate: segment(raw, 21, 29),
+				EntryValue: value,
+				EntryType:  entryType,
+				PrecisionFlag:  segment(raw, 40, 41) == "Y",
+			})
+		case 'T':
+			if sawTrailer {
+				return nil, fmt.Errorf("numf: duplicate trailer line")
+			}
+			sawTrailer = true
+			n, err := strconv.Atoi(segment(raw, 1, 9))
+			if err != nil {
+				return nil, fmt.Errorf("numf: bad trailer count: %w", err)
+			}
+			declaredCount = n
+		default:
+			return nil, fmt.Errorf("numf: unrecognised record type %q", string(raw[0]))
+		}
+	}
+	if !sawHeader {
+		return nil, fmt.Errorf("numf: missing header line")
+	}
+	if !sawTrailer {
+		return nil, fmt.Errorf("numf: missing trailer line")
+	}
+	if declaredCount != len(pb.Entries) {
+		return nil, fmt.Errorf("numf: trailer declared %d detail records, parsed %d",
+			declaredCount, len(pb.Entries))
+	}
+	return pb, nil
+}
+
+func nullVal(v int) any {
+	if v == 0 {
+		return nil
+	}
+	return v
+}
+
+// FromBatch reloads the data processing pipeline from one NUMF feed inside a
+// transaction. Entries and data items are upserted since the same ones
+// recur across every batch's feed; values are always inserted fresh because a
+// value id is unique to its batch and line.
+func FromBatch(ctx context.Context, pipeline *Pipeline, path string) (Totals, error) {
+	var t Totals
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return t, err
+	}
+	pb, err := Process(data)
+	if err != nil {
+		return t, err
+	}
+	tx, err := pipeline.BeginTx(ctx, nil)
+	if err != nil {
+		return t, err
+	}
+	defer tx.Rollback()
+
+	if pb.BatchCode != "" {
+		if _, err := tx.ExecContext(ctx,
+			`INSERT OR IGNORE INTO batch_codes (batch_code, status, task_code)
+			 VALUES (?, 'ACTIVE', ?)`, pb.BatchCode, pb.TaskCode); err != nil {
+			return t, err
+		}
+		t.BatchCodes++
+	}
+
+	for i, ent := range pb.Entries {
+		if ent.EntryID == "" || ent.DataID == "" {
+			continue
+		}
+		res, err := tx.ExecContext(ctx,
+			`INSERT OR IGNORE INTO entries (entry_id, task_code) VALUES (?, ?)`,
+			ent.EntryID, pb.TaskCode)
+		if err != nil {
+			return t, err
+		}
+		if n, _ := res.RowsAffected(); n > 0 {
+			t.Entries++
+		}
+		res, err = tx.ExecContext(ctx,
+			`INSERT OR IGNORE INTO data_items (data_id, entry_id, batch_code)
+			 VALUES (?, ?, ?)`, ent.DataID, ent.EntryID, nullVal(i+1))
+		if err != nil {
+			return t, err
+		}
+		if n, _ := res.RowsAffected(); n > 0 {
+			t.DataItems++
+		}
+		entryID := fmt.Sprintf("ENT-%s-%04d", pb.BatchCode, i+1)
+		if _, err := tx.ExecContext(ctx,
+			`INSERT INTO values (value_id, data_id, entry_id, task_code, batch_code,
+			        value_type, value, entry_date, precision_flag)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			entryID, ent.DataID, ent.EntryID, pb.TaskCode, nullVal(pb.BatchCode),
+			ent.EntryType, ent.EntryValue, ent.EntryDate, ent.PrecisionFlag); err != nil {
+			return t, err
+		}
+		t.Values++
+	}
+	return t, tx.Commit()
+}
+
+// EnsureInitialized loads the initialization only when the data processing pipeline is empty.
+func EnsureInitialized(ctx context.Context, pipeline *Pipeline, path string) (bool, Totals, error) {
+	var n int
+	if err := pipeline.QueryRowContext(ctx, `SELECT count(*) FROM values`).Scan(&n); err != nil {
+		return false, Totals{}, err
+	}
+	if n != 0 {
+		return false, Totals{}, nil
+	}
+	t, err := FromBatch(ctx, pipeline, path)
+	return err == nil, t, err
+}

@@ -1,0 +1,73 @@
+// Package model holds the JSON projection of the seismic catalog. Field order
+// mirrors each table's column order, which the positional Scan calls in the
+// handlers rely on.
+package model
+
+// NodeCode values are drawn from the RR0-RR9 block, an invented range
+// chosen because no real-world network code registry assigns it to a
+// permanent or temporary network. Nothing in this tree should be read as
+// identifying an actual seismic node.
+type Node struct {
+	NodeID   string  `json:"nodeId"`
+	NodeCode string  `json:"nodeCode"`
+	Name     string  `json:"name"`
+	Latitude float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
+	ElevationM float64 `json:"elevationM"`
+	Operator   string  `json:"operator"`
+	Status     string  `json:"status"`
+}
+
+// Edge is one validity epoch of one edge. An edge that has been
+// recalibrated carries more than one row sharing EdgeCode but not
+// EdgeID; ValidityEnd is empty for the epoch still in force.
+type Edge struct {
+	EdgeID     string  `json:"edgeId"`
+	StartNodeID string  `json:"startNodeId"`
+	EndNodeID   string  `json:"endNodeId"`
+	EdgeCode   string  `json:"edgeCode"`
+	SampleRateHz float64 `json:"sampleRateHz"`
+	AzimuthDeg float64 `json:"azimuthDeg"`
+	DipDeg     float64 `json:"dipDeg"`
+	DepthM     float64 `json:"depthM"`
+	ValidityStart string  `json:"validityStart"`
+	ValidityEnd   string  `json:"validityEnd,omitempty"`
+}
+
+type Vertex struct {
+	VertexID string  `json:"vertexId"`
+	VertexCode string  `json:"vertexCode"`
+	StationID string  `json:"stationId"`
+	DetectedAt string  `json:"detectedAt"`
+	Amplitude  float64 `json:"amplitude"`
+	PeriodS    float64 `json:"periodS"`
+	PhaseHint  string  `json:"phaseHint"`
+	EventID    string  `json:"eventId,omitempty"`
+}
+
+type WeightedEdge struct {
+	WeightedEdgeID string  `json:"weightedEdgeId"`
+	StartVertexID string  `json:"startVertexId"`
+	EndVertexID   string  `json:"endVertexId"`
+	WeightedEdgeCode string  `json:"weightedEdgeCode"`
+	SampleRateHz float64 `json:"sampleRateHz"`
+	AzimuthDeg float64 `json:"azimuthDeg"`
+	DipDeg     float64 `json:"dipDeg"`
+	DepthM     float64 `json:"depthM"`
+	ValidityStart string  `json:"validityStart"`
+	ValidityEnd   string  `json:"validityEnd,omitempty"`
+}
+
+type Graph struct {
+	GraphID        string              `json:"graphId"`
+	OriginTime     string              `json:"originTime"`
+	Latitude       float64             `json:"latitude"`
+	Longitude      float64             `json:"longitude"`
+	DepthKm        float64             `json:"depthKm"`
+	Magnitude      float64             `json:"magnitude,omitempty"`
+	MagnitudeType  string              `json:"magnitudeType,omitempty"`
+	ReviewStatus   string              `json:"reviewStatus"`
+	VertexCount    int                 `json:"vertexCount"`
+	Edges          []WeightedEdge    `json:"edges,omitempty"`
+	Vertices       []Vertex            `json:"vertices,omitempty"`
+}

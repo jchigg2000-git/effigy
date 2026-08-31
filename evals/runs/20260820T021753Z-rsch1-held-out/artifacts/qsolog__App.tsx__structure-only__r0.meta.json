@@ -1,0 +1,67 @@
+{
+  "key": "qsolog__App.tsx__structure-only__r0",
+  "arm": "structure-only",
+  "replicate": 0,
+  "source_path": "corpus/qsolog/app/src/App.tsx",
+  "source_sha256": "4aed4ed99fc5c4025e8e889ca51df9fbf39352f7f544a0c090ce938fefeebc8d",
+  "true_domain_id": "ham-radio-logbook",
+  "language": "tsx",
+  "artifact_sha256": "c532eacde37ef1f480182de7e673d5b3fe1fdf7035f60b5a5719da7150a4290e",
+  "artifact_lines": 181,
+  "latency_s": 0.7,
+  "solution_meta": {
+    "generated_by": "evals/canonicalize.py",
+    "preserved_tokens": [
+      "button",
+      "className",
+      "disabled",
+      "div",
+      "form",
+      "h1",
+      "h2",
+      "header",
+      "htmlFor",
+      "id",
+      "input",
+      "key",
+      "label",
+      "main",
+      "onChange",
+      "onClick",
+      "onSubmit",
+      "p",
+      "section",
+      "table",
+      "tbody",
+      "td",
+      "th",
+      "thead",
+      "tr",
+      "type",
+      "useState",
+      "value"
+    ],
+    "preserved_import_paths": [],
+    "n_idents_canonicalised": 65,
+    "n_strings_canonicalised": 51,
+    "n_runes_canonicalised": 0,
+    "n_numbers_canonicalised": 0,
+    "counters_delta": {
+      "lines": 0,
+      "bytes": 52,
+      "funcs": 0,
+      "structs": 0,
+      "interfaces": 0,
+      "imports": 0,
+      "exports": 0,
+      "string_literals": 0,
+      "max_brace_depth": 0
+    },
+    "blind_delta": {
+      "bytes": [
+        6082,
+        6134
+      ]
+    }
+  }
+}

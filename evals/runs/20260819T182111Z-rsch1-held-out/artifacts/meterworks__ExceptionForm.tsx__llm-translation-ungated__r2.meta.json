@@ -1,0 +1,45 @@
+{
+  "key": "meterworks__ExceptionForm.tsx__llm-translation-ungated__r2",
+  "arm": "llm-translation-ungated",
+  "replicate": 2,
+  "source_path": "corpus/meterworks/app/src/components/ExceptionForm.tsx",
+  "source_sha256": "62b832b7fda329a2f785c58d35e36afc898b5bcc21246f35777454c338d3c191",
+  "true_domain_id": "water-utility-metering",
+  "language": "tsx",
+  "artifact_sha256": "19b08d7a475b531e38f1a8249386b4935c88844433d95b41059166af123c57f1",
+  "artifact_lines": 133,
+  "latency_s": 9.1,
+  "solution_meta": {
+    "model": "Qwen/Qwen2.5-Coder-7B-Instruct",
+    "base_url": "https://router.huggingface.co/v1",
+    "target_domain": "a chess engine with positions, moves, and evaluations",
+    "target_id": "chess-engine",
+    "temperature": 0.2,
+    "postcondition": {
+      "src_code_lines": 112,
+      "husk_code_lines": 112,
+      "similarity_ratio": 0.813,
+      "ident_retention": 0.819,
+      "code_verbatim": 0.464,
+      "longest_identical_run": 12,
+      "longest_identical_run_share": 0.107,
+      "copied_spans": 1,
+      "copied_span_lines": 12,
+      "copied_span_share": 0.107,
+      "thresholds": {
+        "run_lines": 999999,
+        "run_share": 9.0,
+        "copied_share": 9.0,
+        "retention": 9.0,
+        "ratio": 9.0,
+        "min_code_lines": 12
+      },
+      "verdict": "ok"
+    },
+    "usage": {
+      "prompt_tokens": 2142,
+      "completion_tokens": 1135,
+      "total_tokens": 3277
+    }
+  }
+}

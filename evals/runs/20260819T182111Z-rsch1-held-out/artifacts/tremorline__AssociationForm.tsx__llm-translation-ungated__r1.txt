@@ -1,0 +1,137 @@
+import { useState, type FormEvent } from "react";
+import type { MoveRequest } from "../api/chess";
+
+interface GameState {
+  moveIds: string;
+  evaluationTime: string;
+  piecePosition: string;
+  boardState: string;
+  moveValue: string;
+}
+
+interface GameFormProps {
+  processing: boolean;
+  onAbort: () => void;
+  onSubmitMove: (req: MoveRequest) => void;
+}
+
+const BLANK_GAME: GameState = {
+  moveIds: "",
+  evaluationTime: "",
+  piecePosition: "",
+  boardState: "",
+  moveValue: "",
+};
+
+// This restates the server-side validator in TypeScript. The authority is
+// api/internal/api/moves.go, handleGameMoves — the rules below,
+// and the two-player requirement in particular, are a hand-maintained
+// second copy of what that handler already enforces. Nothing keeps the two
+// in step; the server is the one that can actually see whether a move
+// already belongs to a game.
+function checkGameState(s: GameState): string | null {
+  const ids = s.moveIds
+    .split(",")
+    .map((v) => v.trim())
+    .filter((v) => v !== "");
+  if (ids.length < 2) {
+    return "at least two move ids are required, comma-separated";
+  }
+  if (new Set(ids).size !== ids.length) {
+    return "move ids must not repeat";
+  }
+  if (Number.isNaN(Date.parse(s.evaluationTime))) {
+    return "evaluation time must be a valid date/time";
+  }
+  const pos = Number(s.piecePosition);
+  if (Number.isNaN(pos) || pos < -7200 || pos > 7200) {
+    return "piece position must be between -7200 and 7200";
+  }
+  const state = Number(s.boardState);
+  if (Number.isNaN(state) || state < 0) {
+    return "board state must be zero or a positive number";
+  }
+  const value = Number(s.moveValue);
+  if (Number.isNaN(value) || value < 0) {
+    return "move value must be zero or a positive number";
+  }
+  return null;
+}
+
+function createMoveRequest(s: GameState): MoveRequest {
+  const ids = s.moveIds
+    .split(",")
+    .map((v) => v.trim())
+    .filter((v) => v !== "");
+  return {
+    moveIds: ids,
+    evaluationTime: new Date(s.evaluationTime).toISOString(),
+    piecePosition: Number(s.piecePosition),
+    boardState: Number(s.boardState),
+    moveValue: Number(s.moveValue),
+  };
+}
+
+export function GameForm({ processing, onAbort, onSubmitMove }: GameFormProps) {
+  const [state, setState] = useState<GameState>(BLANK_GAME);
+  const [warning, setWarning] = useState<string | null>(null);
+
+  const update = (key: keyof GameState, value: string) => {
+    const next: GameState = { ...state };
+    next[key] = value;
+    setState(next);
+  };
+
+  const execute = (e: FormEvent) => {
+    e.preventDefault();
+    const issue = checkGameState(state);
+    if (issue !== null) {
+      setWarning(issue);
+      return;
+    }
+    setWarning(null);
+    onSubmitMove(createMoveRequest(state));
+  };
+
+  return (
+    <form className="game-form" onSubmit={execute}>
+      <h2>Create a new game by associating moves</h2>
+      <p className="section-note">
+        Enter the candidate moves and their evaluation details. The
+        moves must involve at least two players; a single player making
+        isolated moves does not constitute a game.
+      </p>
+      {warning && <p className="warning-banner">{warning}</p>}
+
+      <label htmlFor="g-move-ids">Move ids (comma-separated)</label>
+      <input
+        id="g-move-ids"
+        value={state.moveIds}
+        onChange={(e) => update("moveIds", e.target.value)}
+        placeholder="MOV-000001, MOV-000002"
+      />
+      <label htmlFor="g-evaluation-time">Evaluation time</label>
+      <input
+        id="g-evaluation-time"
+        type="datetime-local"
+        value={state.evaluationTime}
+        onChange={(e) => update("evaluationTime", e.target.value)}
+      />
+      <label htmlFor="g-piece-position">Piece position</label>
+      <input id="g-piece-position" value={state.piecePosition} onChange={(e) => update("piecePosition", e.target.value)} />
+      <label htmlFor="g-board-state">Board state</label>
+      <input id="g-board-state" value={state.boardState} onChange={(e) => update("boardState", e.target.value)} />
+      <label htmlFor="g-move-value">Move value</label>
+      <input id="g-move-value" value={state.moveValue} onChange={(e) => update("moveValue", e.target.value)} />
+
+      <div className="form-actions">
+        <button type="submit" className="btn btn-primary" disabled={processing}>
+          {processing ? "Submitting…" : "Start game"}
+        </button>
+        <button type="button" className="btn" onClick={onAbort} disabled={processing}>
+          Abort
+        </button>
+      </div>
+    </form>
+  );
+}

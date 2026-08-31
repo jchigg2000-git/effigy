@@ -1,0 +1,110 @@
+// Typed client for the tremorline seismic catalog API.
+//
+// Requests go through fetch with no wrapper library. Errors are normalised
+// into ApiError so callers can branch on status without unwrapping a
+// Response. Keep this file in step with the Go handlers it calls.
+
+const BASE = "/api";
+
+export interface Node {
+  nodeId: string;
+  label: string;
+  properties: Record<string, any>;
+}
+
+export interface Edge {
+  edgeId: string;
+  sourceNodeId: string;
+  targetNodeId: string;
+  weight: number;
+  properties: Record<string, any>;
+}
+
+export interface Graph {
+  nodes: Node[];
+  edges: Edge[];
+}
+
+export interface Query {
+  queryId: string;
+  startNodeId: string;
+  endNodeId: string;
+  criteria: Record<string, any>;
+}
+
+export interface Result {
+  resultId: string;
+  nodes: Node[];
+  edges: Edge[];
+  summary: Record<string, any>;
+}
+
+export class ApiError extends Error {
+  status: number;
+  code: string;
+
+  constructor(status: number, code: string, message: string) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.code = code;
+  }
+}
+
+// Shared transport. Unwraps the {"error":{"code":…,"message":…}} envelope the
+// Go service puts on every failure and rethrows it as an ApiError.
+async function request<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(url, init);
+  if (!res.ok) {
+    let code = "internal";
+    let message = `request failed with status ${res.status}`;
+    try {
+      const body = await res.json();
+      if (body && body.error) {
+        code = body.error.code || code;
+        message = body.error.message || message;
+      }
+    } catch {
+      // Body was not the JSON error envelope; keep the defaults above.
+    }
+    throw new ApiError(res.status, code, message);
+  }
+  return (await res.json()) as T;
+}
+
+export function buildSearchUrl(b: Query): string {
+  const params = new URLSearchParams();
+  params.set("startNodeId", b.startNodeId);
+  params.set("endNodeId", b.endNodeId);
+  params.set("criteria", JSON.stringify(b.criteria));
+  return `${BASE}/graph/search?${params.toString()}`;
+}
+
+export async function searchGraph(q: Query): Promise<Result> {
+  return request<Result>(buildSearchUrl(q));
+}
+
+export async function getNode(nodeId: string): Promise<Node> {
+  return request<Node>(`${BASE}/graph/node/${encodeURIComponent(nodeId)}`);
+}
+
+export async function associateEdges(req: Query): Promise<Result> {
+  return request<Result>(`${BASE}/graph/edges/associate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(req),
+  });
+}
+
+export async function listNodes(criteria?: Record<string, any>): Promise<Node[]> {
+  const params = new URLSearchParams();
+  if (criteria) params.set("criteria", JSON.stringify(criteria));
+  const res = await request<{ nodes: Node[] }>(
+    `${BASE}/graph/nodes?${params.toString()}`,
+  );
+  return res.nodes;
+}
+
+export async function getEdge(edgeId: string): Promise<Edge> {
+  return request<Edge>(`${BASE}/graph/edge/${encodeURIComponent(edgeId)}`);
+}

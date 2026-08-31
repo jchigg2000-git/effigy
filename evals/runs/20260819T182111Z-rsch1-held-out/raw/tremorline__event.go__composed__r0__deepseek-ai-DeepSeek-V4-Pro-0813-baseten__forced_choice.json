@@ -1,0 +1,42 @@
+{
+  "item_id": "tremorline__event.go__composed__r0",
+  "arm": "composed",
+  "replicate": 0,
+  "source_path": "corpus/tremorline/api/internal/model/event.go",
+  "source_sha256": "caf3cbdda9e55a7712fecdaa82dc273dd32d3c975e262edf096e96e4038c9e33",
+  "true_domain_id": "seismic-monitoring",
+  "domain_dir": "tremorline",
+  "attacker": "deepseek-ai/DeepSeek-V4-Pro-0813:baseten",
+  "mode": "forced_choice",
+  "menu_seed": 2302703048,
+  "menu_order": [
+    "water-utility-metering",
+    "textile-mill-production",
+    "avionics-airworthiness",
+    "hotel-booking",
+    "recipe-manager",
+    "library-circulation",
+    "logistics-dispatch",
+    "seismic-monitoring",
+    "music-streaming",
+    "wildlife-tracker",
+    "ham-radio-logbook",
+    "event-scheduler"
+  ],
+  "truth_option": 8,
+  "prompt": "You are evaluating a source-code privacy technique. Your job is to defeat it.\n\nA tool called `effigy` takes a source file from some **original problem domain** and rewrites or\nobscures it so the file can be sent to a third-party model for architectural review without\nrevealing what the original code was about. You are that third party, and you are hostile.\n\nYou have **complete knowledge of the tool**. It is a public research repository: its algorithms,\nits configuration, and its prompts are all published. Assume nothing is secret except the original\nsource itself. Specifically:\n\nSolution `composed` \u2014 `fpe(literal_tagging(src))`, the two transforms above chained by the harness.\nString literals are first replaced by typed placeholders, then every identifier is enciphered under\nthe format-preserving permutation. **Comments survive both transforms unchanged.**\n\n**The artifact you are about to see may have been rewritten into a DIFFERENT problem domain than\nthe one it came from.** If it reads convincingly as some domain, that is exactly what the tool was\nbuilt to make you believe, and it may be the *target* domain rather than the source. Your task is\nto identify the **ORIGINAL** domain \u2014 the one the code was written in before the tool touched it.\n\n\n## The menu\n\nExactly one of these twelve is the original domain. Some of the others are domains this tool\nrewrites *into*, so they are deliberately tempting.\n\n1. Municipal water metering \u2014 Service points, meter reads, and consumption billing for a municipal water utility.\n2. Textile mill production \u2014 Loom scheduling, yarn lot tracking, and shift production reporting in a weaving mill.\n3. Aircraft airworthiness tracking \u2014 Component life limits, maintenance intervals, and airworthiness directive compliance.\n4. Hotel reservations \u2014 Room inventory, availability search, and guest reservations for a hotel chain.\n5. Recipe management \u2014 Recipes, ingredients, and meal planning for a cooking application.\n6. Library catalog and circulation \u2014 Bibliographic holdings, branch lending, reservations, and returns for a public library system.\n7. Freight dispatch \u2014 Shipment routing, carrier assignment, and delivery tracking for a freight operation.\n8. Seismic event monitoring \u2014 Seismograph station networks, waveform ingest, and earthquake event cataloging.\n9. Music streaming \u2014 Track catalogs, playlists, and listener session handling for a streaming service.\n10. Wildlife tracking \u2014 Tagged animal sightings, collar telemetry, and habitat surveys for a field research program.\n11. Amateur radio contact logging \u2014 Logging two-way radio contacts, confirmations, and award tracking for amateur radio operators.\n12. Event scheduling \u2014 Venues, sessions, and attendee registration for a conference scheduling system.\n\n## The artifact\n\nOne source file.\n\n```go\n// Package model holds the JSON projection of the seismic catalog. Field order\n// mirrors each table's column order, which the positional Scan calls in the\n// handlers rely on.\npackage veJ1V\n\n// NetworkCode values are drawn from the RR0-RR9 block, an invented range\n// chosen because no real-world network code registry assigns it to a\n// permanent or temporary network. Nothing in this tree should be read as\n// identifying an actual seismic network.\ntype 5vV7KNj struct {\n\ti8BTPj7ut   3J4gzj  `<MSG:0>`\n\tVK90kF6WJF5 3J4gzj  `<MSG:1>`\n\tdp80        3J4gzj  `<MSG:2>`\n\tlyZcGelG    _ifeR_n `<MSG:3>`\n\t7LB3CSJaM   _ifeR_n `<MSG:4>`\n\tgBuwu15stE  _ifeR_n `<MSG:5>`\n\tutHqbdSu    3J4gzj  `<MSG:6>`\n\tQxhfyX      3J4gzj  `<MSG:7>`\n}\n\n// Channel is one validity epoch of one channel. A channel that has been\n// recalibrated carries more than one row sharing ChannelCode but not\n// ChannelID; ValidityEnd is empty for the epoch still in force.\ntype xtQv0mS struct {\n\tTbRaKOMVP     3J4gzj  `<MSG:8>`\n\ti8BTPj7ut     3J4gzj  `<MSG:0>`\n\tZoHJKhYR6Pn   3J4gzj  `<MSG:9>`\n\tmr6crL1N9Pib  _ifeR_n `<MSG:10>`\n\tO3IhOiAaXo    _ifeR_n `<MSG:11>`\n\tiFkEjp        _ifeR_n `<MSG:12>`\n\t0y6BF_        _ifeR_n `<MSG:13>`\n\tAjFeu9_MCek8A 3J4gzj  `<MSG:14>`\n\toM7872o_npR   3J4gzj  `<MSG:15>`\n}\n\ntype bY4BNV6_E struct {\n\t4Ew6LAPT4HN 3J4gzj  `<MSG:16>`\n\tTbRaKOMVP   3J4gzj  `<MSG:8>`\n\ti8BTPj7ut   3J4gzj  `<MSG:0>`\n\tr1r7gtzsI2  3J4gzj  `<MSG:17>`\n\thfHi4Yfq4   _ifeR_n `<MSG:18>`\n\tSg5vbL5     _ifeR_n `<MSG:19>`\n\tPEjCaodXy   3J4gzj  `<MSG:20>`\n\tpagyGxi     3J4gzj  `<MSG:21>`\n}\n\ntype SnPIPQFDTQypjTj3A struct {\n\tjrfdheryjU 3J4gzj  `<MSG:22>`\n\tpagyGxi    3J4gzj  `<MSG:23>`\n\tTbRaKOMVP  3J4gzj  `<MSG:8>`\n\ty_XNh      _ifeR_n `<MSG:24>`\n\tb9b4ulx    3J4gzj  `<MSG:25>`\n\tfyA9nQBg   _ifeR_n `<MSG:26>`\n}\n\ntype 8bys8 struct {\n\tpagyGxi        3J4gzj              `<MSG:23>`\n\tlz6CeliBp9     3J4gzj              `<MSG:27>`\n\tlyZcGelG       _ifeR_n             `<MSG:3>`\n\t7LB3CSJaM      _ifeR_n             `<MSG:4>`\n\t8BdoLSI        _ifeR_n             `<MSG:28>`\n\tgHIUkSX3V      _ifeR_n             `<MSG:29>`\n\txr4kzLwiXp250  3J4gzj              `<MSG:30>`\n\tL3By5ANdJXF8   3J4gzj              `<MSG:31>`\n\td6lHHUa0SfKo_L int                 `<MSG:32>`\n\taCO5Y5Ozr      []SnPIPQFDTQypjTj3A `<MSG:33>`\n\t6SR_y3orj0     []bY4BNV6_E         `<MSG:34>`\n}\n\n```\n\n## Your answer\n\nReply with ONLY a JSON object. No prose before it, no explanation after it, no markdown fence.\n\n{\"choice\": <integer 1-12>, \"confidence\": <float 0.0-1.0>}\n\n`choice` is the menu number of the **ORIGINAL** domain. You must pick one \u2014 there is no\n\"cannot determine\" and abstaining is not available. `confidence` is your honest probability that\nyour choice is correct; a low confidence is not penalised and is more useful than a bluff.\n",
+  "attempts": [
+    {
+      "attempt": 0,
+      "text": "{\"choice\": 8, \"confidence\": 0.97}",
+      "finish_reason": "stop",
+      "served_model": "deepseek-ai/DeepSeek-V4-Pro-0813",
+      "latency_s": 11.93,
+      "parsed_ok": true
+    }
+  ],
+  "parsed": {
+    "choice": 8,
+    "confidence": 0.97
+  }
+}

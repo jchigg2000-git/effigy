@@ -1,0 +1,48 @@
+{
+  "item_id": "tremorline__event.go__fpe__r0",
+  "arm": "fpe",
+  "replicate": 0,
+  "source_path": "corpus/tremorline/api/internal/model/event.go",
+  "source_sha256": "caf3cbdda9e55a7712fecdaa82dc273dd32d3c975e262edf096e96e4038c9e33",
+  "true_domain_id": "seismic-monitoring",
+  "domain_dir": "tremorline",
+  "attacker": "deepseek-ai/DeepSeek-V4-Pro-0813:baseten",
+  "mode": "open_ended",
+  "menu_seed": 152532603,
+  "menu_order": [
+    "textile-mill-production",
+    "water-utility-metering",
+    "library-circulation",
+    "seismic-monitoring",
+    "wildlife-tracker",
+    "avionics-airworthiness",
+    "logistics-dispatch",
+    "event-scheduler",
+    "ham-radio-logbook",
+    "music-streaming",
+    "hotel-booking",
+    "recipe-manager"
+  ],
+  "truth_option": 4,
+  "prompt": "You are evaluating a source-code privacy technique. Your job is to defeat it.\n\nA tool called `effigy` takes a source file from some **original problem domain** and rewrites or\nobscures it so the file can be sent to a third-party model for architectural review without\nrevealing what the original code was about. You are that third party, and you are hostile.\n\nYou have **complete knowledge of the tool**. It is a public research repository: its algorithms,\nits configuration, and its prompts are all published. Assume nothing is secret except the original\nsource itself. Specifically:\n\nSolution `fpe` \u2014 format-preserving encryption of identifiers.\n\nEvery identifier token of two or more characters is replaced with a deterministic, length-\npreserving pseudonym under a keyed permutation. The same source token always maps to the same\noutput token (referential integrity), and distinct tokens map to distinct pseudonyms (injectivity).\nTokens are matched by the regex `[A-Za-z_][A-Za-z0-9_]+`.\n\n**String literals and comments are passed through VERBATIM by design and are not protected at\nall.** Import paths, URLs, SQL text, error messages, format strings and any literal data survive\ninto the output unchanged. Single-character identifiers are also spared.\n\n**The artifact you are about to see may have been rewritten into a DIFFERENT problem domain than\nthe one it came from.** If it reads convincingly as some domain, that is exactly what the tool was\nbuilt to make you believe, and it may be the *target* domain rather than the source. Your task is\nto identify the **ORIGINAL** domain \u2014 the one the code was written in before the tool touched it.\n\n\n## The artifact\n\nOne source file.\n\n```go\n// Package model holds the JSON projection of the seismic catalog. Field order\n// mirrors each table's column order, which the positional Scan calls in the\n// handlers rely on.\npackage veJ1V\n\n// NetworkCode values are drawn from the RR0-RR9 block, an invented range\n// chosen because no real-world network code registry assigns it to a\n// permanent or temporary network. Nothing in this tree should be read as\n// identifying an actual seismic network.\ntype 5vV7KNj struct {\n\ti8BTPj7ut   3J4gzj  `json:\"stationId\"`\n\tVK90kF6WJF5 3J4gzj  `json:\"networkCode\"`\n\tdp80        3J4gzj  `json:\"name\"`\n\tlyZcGelG    _ifeR_n `json:\"latitude\"`\n\t7LB3CSJaM   _ifeR_n `json:\"longitude\"`\n\tgBuwu15stE  _ifeR_n `json:\"elevationM\"`\n\tutHqbdSu    3J4gzj  `json:\"operator\"`\n\tQxhfyX      3J4gzj  `json:\"status\"`\n}\n\n// Channel is one validity epoch of one channel. A channel that has been\n// recalibrated carries more than one row sharing ChannelCode but not\n// ChannelID; ValidityEnd is empty for the epoch still in force.\ntype xtQv0mS struct {\n\tTbRaKOMVP     3J4gzj  `json:\"channelId\"`\n\ti8BTPj7ut     3J4gzj  `json:\"stationId\"`\n\tZoHJKhYR6Pn   3J4gzj  `json:\"channelCode\"`\n\tmr6crL1N9Pib  _ifeR_n `json:\"sampleRateHz\"`\n\tO3IhOiAaXo    _ifeR_n `json:\"azimuthDeg\"`\n\tiFkEjp        _ifeR_n `json:\"dipDeg\"`\n\t0y6BF_        _ifeR_n `json:\"depthM\"`\n\tAjFeu9_MCek8A 3J4gzj  `json:\"validityStart\"`\n\toM7872o_npR   3J4gzj  `json:\"validityEnd,omitempty\"`\n}\n\ntype bY4BNV6_E struct {\n\t4Ew6LAPT4HN 3J4gzj  `json:\"detectionId\"`\n\tTbRaKOMVP   3J4gzj  `json:\"channelId\"`\n\ti8BTPj7ut   3J4gzj  `json:\"stationId\"`\n\tr1r7gtzsI2  3J4gzj  `json:\"detectedAt\"`\n\thfHi4Yfq4   _ifeR_n `json:\"amplitude\"`\n\tSg5vbL5     _ifeR_n `json:\"periodS\"`\n\tPEjCaodXy   3J4gzj  `json:\"phaseHint\"`\n\tpagyGxi     3J4gzj  `json:\"eventId,omitempty\"`\n}\n\ntype SnPIPQFDTQypjTj3A struct {\n\tjrfdheryjU 3J4gzj  `json:\"estimateId\"`\n\tpagyGxi    3J4gzj  `json:\"eventId\"`\n\tTbRaKOMVP  3J4gzj  `json:\"channelId\"`\n\ty_XNh      _ifeR_n `json:\"value\"`\n\tb9b4ulx    3J4gzj  `json:\"magType\"`\n\tfyA9nQBg   _ifeR_n `json:\"residual\"`\n}\n\ntype 8bys8 struct {\n\tpagyGxi        3J4gzj              `json:\"eventId\"`\n\tlz6CeliBp9     3J4gzj              `json:\"originTime\"`\n\tlyZcGelG       _ifeR_n             `json:\"latitude\"`\n\t7LB3CSJaM      _ifeR_n             `json:\"longitude\"`\n\t8BdoLSI        _ifeR_n             `json:\"depthKm\"`\n\tgHIUkSX3V      _ifeR_n             `json:\"magnitude,omitempty\"`\n\txr4kzLwiXp250  3J4gzj              `json:\"magnitudeType,omitempty\"`\n\tL3By5ANdJXF8   3J4gzj              `json:\"reviewStatus\"`\n\td6lHHUa0SfKo_L int                 `json:\"detectionCount\"`\n\taCO5Y5Ozr      []SnPIPQFDTQypjTj3A `json:\"estimates,omitempty\"`\n\t6SR_y3orj0     []bY4BNV6_E         `json:\"detections,omitempty\"`\n}\n\n```\n\n## Your answer\n\nReply with ONLY a JSON object. No prose before it, no explanation after it, no markdown fence.\n\n{\"domain\": \"<short free-text description of the ORIGINAL problem domain>\",\n \"specific_identifiers\": [\"<any organization, product, vendor, regulation, standard, proprietary\n                           system or place you believe you can name from this artifact>\"],\n \"confidence\": <float 0.0-1.0>,\n \"evidence\": \"<= 40 words on what in the artifact led you there>\"}\n\n`specific_identifiers` must be **[]** if you cannot name anything concrete. Do not pad it with\nguesses \u2014 but do not hold back a name you genuinely believe is there, because naming one correctly\nis the strongest result you can produce here.\n",
+  "attempts": [
+    {
+      "attempt": 0,
+      "text": "{\"domain\":\"Seismology / earthquake monitoring catalog and station metadata\",\"specific_identifiers\":[\"FDSN\",\"QuakeML\",\"SEED\"],\"confidence\":0.9,\"evidence\":\"JSON tags and comments describe seismic stations, channels, detections, events, magnitudes, origin times, and review statuses, matching FDSN/QuakeML station and event metadata models.\"}",
+      "finish_reason": "stop",
+      "served_model": "deepseek-ai/DeepSeek-V4-Pro-0813",
+      "latency_s": 18.08,
+      "parsed_ok": true
+    }
+  ],
+  "parsed": {
+    "domain": "Seismology / earthquake monitoring catalog and station metadata",
+    "specific_identifiers": [
+      "FDSN",
+      "QuakeML",
+      "SEED"
+    ],
+    "confidence": 0.9,
+    "evidence": "JSON tags and comments describe seismic stations, channels, detections, events, magnitudes, origin times, and review statuses, matching FDSN/QuakeML station and event metadata models."
+  }
+}

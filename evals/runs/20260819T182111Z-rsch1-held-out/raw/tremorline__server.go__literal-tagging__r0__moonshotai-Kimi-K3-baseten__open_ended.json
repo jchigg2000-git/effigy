@@ -1,0 +1,54 @@
+{
+  "item_id": "tremorline__server.go__literal-tagging__r0",
+  "arm": "literal-tagging",
+  "replicate": 0,
+  "source_path": "corpus/tremorline/api/internal/api/server.go",
+  "source_sha256": "1a98b1e09afa79566396016a0544c943057266deedc4b26ce9682d83e8a0a494",
+  "true_domain_id": "seismic-monitoring",
+  "domain_dir": "tremorline",
+  "attacker": "moonshotai/Kimi-K3:baseten",
+  "mode": "open_ended",
+  "menu_seed": 2411982605,
+  "menu_order": [
+    "logistics-dispatch",
+    "textile-mill-production",
+    "library-circulation",
+    "avionics-airworthiness",
+    "ham-radio-logbook",
+    "music-streaming",
+    "seismic-monitoring",
+    "recipe-manager",
+    "hotel-booking",
+    "wildlife-tracker",
+    "event-scheduler",
+    "water-utility-metering"
+  ],
+  "truth_option": 7,
+  "prompt": "You are evaluating a source-code privacy technique. Your job is to defeat it.\n\nA tool called `effigy` takes a source file from some **original problem domain** and rewrites or\nobscures it so the file can be sent to a third-party model for architectural review without\nrevealing what the original code was about. You are that third party, and you are hostile.\n\nYou have **complete knowledge of the tool**. It is a public research repository: its algorithms,\nits configuration, and its prompts are all published. Assume nothing is secret except the original\nsource itself. Specifically:\n\nSolution `literal-tagging` \u2014 string-literal and PII tagging with type-class placeholders.\n\nEvery string literal is replaced by a typed placeholder such as `<URL:n>`, `<PATH:n>`, `<MSG:n>`.\nThe same literal content maps to the same placeholder throughout the file, so deduplication and\ncoupling are preserved. Triple-quoted, double-quoted, single-quoted and backtick literals are all\nmatched.\n\n**Identifiers, comments and code structure are untouched.** Every function, variable, type, field,\ntable and column name survives exactly as written in the original.\n\n**The artifact you are about to see may have been rewritten into a DIFFERENT problem domain than\nthe one it came from.** If it reads convincingly as some domain, that is exactly what the tool was\nbuilt to make you believe, and it may be the *target* domain rather than the source. Your task is\nto identify the **ORIGINAL** domain \u2014 the one the code was written in before the tool touched it.\n\n\n## The artifact\n\nOne source file.\n\n```go\npackage api\n\nimport (\n\t\"<PATH:0>\"\n\t\"<PATH:1>\"\n\t\"<PATH:2>\"\n\t\"<PATH:3>\"\n\t\"<MSG:0>\"\n\t\"<MSG:1>\"\n\n\t\"<PATH:4>\"\n)\n\n// Server carries the dependencies a request handler needs: the database\n// handle, the logger, two pieces of runtime configuration, and the router\n// they are wired into. Constructed once at startup by NewServer.\ntype Server struct {\n\tdb         *sql.DB\n\tlogger     *slog.Logger\n\tseedPath   string\n\tadminToken string\n\trouter     http.Handler\n}\n\n// corsAllowList reads the comma-separated origin list. An empty value means\n// the middleware is a no-op, which is the developer-machine default.\nfunc corsAllowList() []string {\n\traw := strings.TrimSpace(os.Getenv(\"<MSG:2>\"))\n\tif raw == \"<EMPTY:0>\" {\n\t\treturn nil\n\t}\n\tout := []string{}\n\tfor _, part := range strings.Split(raw, \"<MSG:3>\") {\n\t\tif p := strings.TrimSpace(part); p != \"<EMPTY:0>\" {\n\t\t\tout = append(out, p)\n\t\t}\n\t}\n\treturn out\n}\n\nfunc corsMiddleware(next http.Handler) http.Handler {\n\tallow := corsAllowList()\n\treturn http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\torigin := r.Header.Get(\"<MSG:4>\")\n\t\tif origin != \"<EMPTY:0>\" && len(allow) > 0 {\n\t\t\tfor _, a := range allow {\n\t\t\t\tif a == origin || a == \"<MSG:5>\" {\n\t\t\t\t\tw.Header().Set(\"<MSG:6>\", origin)\n\t\t\t\t\tw.Header().Set(\"<MSG:7>\", \"<MSG:4>\")\n\t\t\t\t\tw.Header().Set(\"<MSG:8>\", \"<MSG:9>\")\n\t\t\t\t\tw.Header().Set(\"<MSG:10>\", \"<MSG:11>\")\n\t\t\t\t\tw.Header().Set(\"<MSG:12>\", \"<MSG:13>\")\n\t\t\t\t\tbreak\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t\tif r.Method == http.MethodOptions {\n\t\t\tw.WriteHeader(http.StatusNoContent)\n\t\t\treturn\n\t\t}\n\t\tnext.ServeHTTP(w, r)\n\t})\n}\n\nfunc NewServer(db *sql.DB, logger *slog.Logger, seedPath, adminToken string) *Server {\n\ts := &Server{db: db, logger: logger, seedPath: seedPath, adminToken: adminToken}\n\tr := chi.NewRouter()\n\tr.Use(corsMiddleware)\n\tr.Get(\"<PATH:5>\", s.handleHealth)\n\tr.Get(\"<PATH:6>\", s.handleReady)\n\tr.Route(\"<PATH:7>\", func(er chi.Router) {\n\t\ter.Get(\"<PATH:8>\", s.handleSearchEvents)\n\t\ter.Post(\"<PATH:9>\", s.handleAssociateDetections)\n\t\ter.Get(\"<MSG:14>\", s.handleGetEvent)\n\t})\n\tr.Route(\"<PATH:10>\", func(sr chi.Router) {\n\t\tsr.Get(\"<PATH:11>\", s.handleListStations)\n\t\tsr.Get(\"<MSG:15>\", s.handleGetStationInventory)\n\t})\n\ts.router = r\n\treturn s\n}\n\nfunc (s *Server) Handler() http.Handler { return s.router }\n\nfunc (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {\n\twriteJSON(w, http.StatusOK, map[string]any{\"<MSG:16>\": \"<MSG:17>\", \"<MSG:18>\": \"<MSG:19>\"})\n}\n\n// handleReady answers the readiness probe by counting the station inventory.\n// The query runs here, against the struct's own handle, because there is\n// nowhere else for it to live: the store package hands out a raw handle and\n// nothing more.\nfunc (s *Server) handleReady(w http.ResponseWriter, r *http.Request) {\n\tvar n int\n\tif err := s.db.QueryRowContext(r.Context(), `<SQL:0>`).Scan(&n); err != nil {\n\t\twriteError(w, http.StatusServiceUnavailable, \"<MSG:20>\", err.Error())\n\t\treturn\n\t}\n\tif n == 0 {\n\t\twriteError(w, http.StatusServiceUnavailable, \"<MSG:21>\", \"<MSG:22>\")\n\t\treturn\n\t}\n\twriteJSON(w, http.StatusOK, map[string]any{\"<MSG:16>\": \"<MSG:17>\", \"<MSG:23>\": n})\n}\n\nfunc (s *Server) serverError(w http.ResponseWriter, err error) {\n\ts.logger.Error(\"<MSG:24>\", \"<MSG:25>\", err)\n\twriteError(w, http.StatusInternalServerError, \"<MSG:26>\", \"<MSG:27>\")\n}\n\ntype apiError struct {\n\tCode    string `<MSG:28>`\n\tMessage string `<MSG:29>`\n}\n\ntype errorEnvelope struct {\n\tError apiError `<MSG:30>`\n}\n\nfunc writeJSON(w http.ResponseWriter, status int, body any) {\n\tw.Header().Set(\"<MSG:31>\", \"<PATH:12>\")\n\tw.WriteHeader(status)\n\t_ = json.NewEncoder(w).Encode(body)\n}\n\nfunc writeError(w http.ResponseWriter, status int, code, message string) {\n\twriteJSON(w, status, errorEnvelope{Error: apiError{Code: code, Message: message}})\n}\n\n```\n\n## Your answer\n\nReply with ONLY a JSON object. No prose before it, no explanation after it, no markdown fence.\n\n{\"domain\": \"<short free-text description of the ORIGINAL problem domain>\",\n \"specific_identifiers\": [\"<any organization, product, vendor, regulation, standard, proprietary\n                           system or place you believe you can name from this artifact>\"],\n \"confidence\": <float 0.0-1.0>,\n \"evidence\": \"<= 40 words on what in the artifact led you there>\"}\n\n`specific_identifiers` must be **[]** if you cannot name anything concrete. Do not pad it with\nguesses \u2014 but do not hold back a name you genuinely believe is there, because naming one correctly\nis the strongest result you can produce here.\n",
+  "attempts": [
+    {
+      "attempt": 0,
+      "text": "<|open|>tools<|sep|><|open|>call tool=\"response_format\" index=\"1\"<|sep|><|open|>argument key=\"domain\" type=\"string\"<|sep|>Seismic monitoring / earthquake detection: a network of seismic stations produces signal detections that are associated into seismic events, with a station inventory and SEED waveform data.<|close|>argument<|sep|><|open|>argument key=\"specific_identifiers\" type=\"array\"<|sep|>[\"SEED / miniSEED (Standard for the Exchange of Earthquake Data)\", \"FDSN station inventory\"]<|close|>argument<|sep|><|open|>argument key=\"confidence\" type=\"number\"<|sep|>0.8<|close|>argument<|sep|><|open|>argument key=\"evidence\" type=\"string\"<|sep|>Handlers handleSearchEvents, handleAssociateDetections, handleListStations, handleGetStationInventory; readiness counts station inventory; seedPath config implies SEED/miniSEED data \u2014 classic stations\u2192detections\u2192events seismic association pipeline.<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>",
+      "finish_reason": "stop",
+      "served_model": "moonshotai/Kimi-K3",
+      "latency_s": 14.42,
+      "parsed_ok": false
+    },
+    {
+      "attempt": 1,
+      "text": "{\"domain\": \"Seismology / earthquake monitoring: a web API for a seismic network that manages recording stations, station inventory, waveform data in SEED format, and associates signal detections (phase picks) into seismic events\",\n \"specific_identifiers\": [\"SEED (Standard for the Exchange of Earthquake Data) / miniSEED waveform format\"],\n \"confidence\": 0.75,\n \"evidence\": \"Identifiers are untouched by literal-tagging: handleSearchEvents, handleAssociateDetections, handleListStations, handleGetStationInventory, and seedPath (SEED seismic waveform files) describe seismic stations, detections, and event association.\"}",
+      "finish_reason": "stop",
+      "served_model": "moonshotai/Kimi-K3",
+      "latency_s": 9.93,
+      "parsed_ok": true
+    }
+  ],
+  "parsed": {
+    "domain": "Seismology / earthquake monitoring: a web API for a seismic network that manages recording stations, station inventory, waveform data in SEED format, and associates signal detections (phase picks) into seismic events",
+    "specific_identifiers": [
+      "SEED (Standard for the Exchange of Earthquake Data) / miniSEED waveform format"
+    ],
+    "confidence": 0.75,
+    "evidence": "Identifiers are untouched by literal-tagging: handleSearchEvents, handleAssociateDetections, handleListStations, handleGetStationInventory, and seedPath (SEED seismic waveform files) describe seismic stations, detections, and event association."
+  }
+}

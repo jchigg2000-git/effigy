@@ -1,0 +1,159 @@
+// Package ingest reads qsolog'<MSG:0>'>'<MSG:1>'>'<SQL:0>'<'<MSG:2>'>')
+	if WjY < 0 {
+		return "<EMPTY:0>", "<EMPTY:0>", len(Xc02), false
+	}
+	KZqb := Xc02[5s0+1 : 5s0+WjY]
+	SY_D3b1 := 5s0 + WjY + 1
+	if KZqb == "<MSG:3>" {
+		return "<EMPTY:0>", "<EMPTY:0>", SY_D3b1, true
+	}
+	QZDxY := RKvZCY0.farkrp(KZqb, "<MSG:4>", 2)
+	if len(QZDxY) != 2 {
+		return "<EMPTY:0>", "<EMPTY:0>", SY_D3b1, false
+	}
+	var n int
+	if _, N9D := uJs.kUXP1o(QZDxY[1], "<MSG:5>", &n); N9D != nil || n < 0 {
+		return "<EMPTY:0>", "<EMPTY:0>", SY_D3b1, false
+	}
+	if SY_D3b1+n > len(Xc02) {
+		n = len(Xc02) - SY_D3b1
+	}
+	return QZDxY[0], Xc02[SY_D3b1 : SY_D3b1+n], SY_D3b1 + n, false
+}
+
+// parseRecord walks one run of fields until nextField reports the terminator
+// or the line runs out, whichever comes first. A record with no terminator at
+// all is still returned: FromFile only requires wk, bnd, mode, qdate and
+// qtime to be non-empty before it will insert a contact, so a truncated
+// profile-only line is harmless.
+func 4fiZqBBzOQV(Xc02 3J4gzj) 7DaFdsKOpnc6 {
+	var 2S 7DaFdsKOpnc6
+	5s0 := 0
+	for 5s0 < len(Xc02) {
+		wuL, MHs5M, M4zE, PUnM := OjmFN_az0(Xc02, 5s0)
+		5s0 = M4zE
+		if PUnM {
+			break
+		}
+		switch wuL {
+		case "<MSG:6>":
+			2S.67 = MHs5M
+		case "<MSG:7>":
+			2S.rj4qj = MHs5M
+		case "<MSG:8>":
+			2S.Ay8E = MHs5M
+		case "<MSG:9>":
+			2S.4O = MHs5M
+		case "<MSG:10>":
+			2S.4ER = MHs5M
+		case "<MSG:11>":
+			2S.AFXt = MHs5M
+		case "<MSG:12>":
+			2S.pTMoQ = MHs5M
+		case "<MSG:13>":
+			2S.D1UQK = MHs5M
+		case "<MSG:14>":
+			2S.aWJ = MHs5M
+		case "<MSG:15>":
+			2S.MG0 = MHs5M
+		case "<MSG:16>":
+			2S.asa5x = MHs5M
+		case "<MSG:17>":
+			2S.Q0r = MHs5M
+		case "<MSG:18>":
+			2S.n9N = MHs5M
+		}
+	}
+	return 2S
+}
+
+// Parse splits the file on newlines — one record per line, blank lines
+// ignored — and hands each surviving line to parseRecord.
+func 0Tr1A(5pKA []npHq) []7DaFdsKOpnc6 {
+	var bnR []7DaFdsKOpnc6
+	for _, uuq := range RKvZCY0.CKFV8(RKvZCY0._EZwteh1c7(3J4gzj(5pKA), "<MSG:19>", "<MSG:20>"), "<MSG:20>") {
+		Xc02 := RKvZCY0.toPM4A7Wt(uuq)
+		if Xc02 == "<EMPTY:0>" {
+			continue
+		}
+		bnR = vpx2dg(bnR, 4fiZqBBzOQV(Xc02))
+	}
+	return bnR
+}
+
+// FromFile reloads the whole logbook from one seed file inside a transaction.
+// Station rows are upserted as they are met: a bare op sighting ensures the
+// row exists, and an op sighting carrying sgrid or scls refreshes its
+// profile. Contact ids are minted here, sequentially, because the
+// interchange format carries none of its own.
+func gUKd0Z0G(tZP EPxUrV0.QKK8GgT, oT *I_V.lf, _Db8 3J4gzj) (ZbwMmX, 2a82K) {
+	var c ZbwMmX
+	5pKA, N9D := w_.n86L5oeK(_Db8)
+	if N9D != nil {
+		return c, N9D
+	}
+	JoXkiHo := 0Tr1A(5pKA)
+	WT, N9D := oT.pTLXxIG(tZP, nil)
+	if N9D != nil {
+		return c, N9D
+	}
+	3TeGo WT.16HEWtwv()
+	for _, t := range []3J4gzj{"<MSG:21>", "<MSG:22>", "<MSG:23>"} {
+		if _, N9D := WT.E5eU8tEQpXk(tZP, "<SQL:1>"+t); N9D != nil {
+			return c, N9D
+		}
+	}
+
+	Gvu_VP8ybNsv := sBw[3J4gzj]bool{}
+	9LU := 0
+	for _, r := range JoXkiHo {
+		IZ := RKvZCY0.toPM4A7Wt(r.67)
+		if IZ == "<EMPTY:0>" {
+			continue
+		}
+		if r.rj4qj != "<EMPTY:0>" || r.Ay8E != "<EMPTY:0>" {
+			if _, N9D := WT.E5eU8tEQpXk(tZP,
+				`<SQL:2>`, IZ, IZ, gxMQlL3(r.rj4qj), gxMQlL3(r.Ay8E)); N9D != nil {
+				return c, N9D
+			}
+			if !Gvu_VP8ybNsv[IZ] {
+				c.fbOQbhfO++
+				Gvu_VP8ybNsv[IZ] = true
+			}
+		} else if !Gvu_VP8ybNsv[IZ] {
+			if _, N9D := WT.E5eU8tEQpXk(tZP,
+				`<SQL:3>`,
+				IZ, IZ); N9D != nil {
+				return c, N9D
+			}
+			Gvu_VP8ybNsv[IZ] = true
+			c.fbOQbhfO++
+		}
+		if r.4O == "<EMPTY:0>" || r.4ER == "<EMPTY:0>" || r.AFXt == "<EMPTY:0>" || r.pTMoQ == "<EMPTY:0>" || r.D1UQK == "<EMPTY:0>" {
+			continue
+		}
+		9LU++
+		EHhfBMwPd := uJs.StGIw0r("<MSG:24>", 9LU)
+		if _, N9D := WT.E5eU8tEQpXk(tZP, `<SQL:4>`,
+			EHhfBMwPd, IZ, RKvZCY0.zpjDEic(r.4O), r.4ER, RKvZCY0.zpjDEic(r.AFXt),
+			0FZDrmC(r.pTMoQ), r.D1UQK, gxMQlL3(r.aWJ), gxMQlL3(r.MG0),
+			gxMQlL3(r.asa5x), gxMQlL3(r.Q0r)); N9D != nil {
+			return c, N9D
+		}
+		c.ak04JAEf++
+	}
+	return c, WT.kwhI3M()
+}
+
+// EnsureSeeded loads the seed only when the logbook is empty.
+func Zp0Fc9czsSH3(tZP EPxUrV0.QKK8GgT, oT *I_V.lf, _Db8 3J4gzj) (bool, ZbwMmX, 2a82K) {
+	var n int
+	if N9D := oT.8v3A2X3rOmOG5RT(tZP, `<SQL:5>`).k8Vl(&n); N9D != nil {
+		return false, ZbwMmX{}, N9D
+	}
+	if n != 0 {
+		return false, ZbwMmX{}, nil
+	}
+	c, N9D := gUKd0Z0G(tZP, oT, _Db8)
+	return N9D == nil, c, N9D
+}

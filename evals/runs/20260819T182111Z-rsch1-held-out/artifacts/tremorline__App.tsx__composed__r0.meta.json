@@ -1,0 +1,18 @@
+{
+  "key": "tremorline__App.tsx__composed__r0",
+  "arm": "composed",
+  "replicate": 0,
+  "source_path": "corpus/tremorline/app/src/App.tsx",
+  "source_sha256": "d41b409ce24c6323601b6a6b25b7c3c709bb7254b7dfda21d88141bc855c3cab",
+  "true_domain_id": "seismic-monitoring",
+  "language": "tsx",
+  "artifact_sha256": "4b14665634e1a5cffd4886ed75e0a186e006167f8a5fa87cf0fef0cd47f858ac",
+  "artifact_lines": 175,
+  "latency_s": 0.0,
+  "solution_meta": {
+    "chain": [
+      "literal-tagging",
+      "fpe"
+    ]
+  }
+}

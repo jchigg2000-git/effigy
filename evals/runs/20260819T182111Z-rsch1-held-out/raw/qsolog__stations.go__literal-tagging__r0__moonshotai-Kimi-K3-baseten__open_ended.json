@@ -1,0 +1,46 @@
+{
+  "item_id": "qsolog__stations.go__literal-tagging__r0",
+  "arm": "literal-tagging",
+  "replicate": 0,
+  "source_path": "corpus/qsolog/api/internal/api/stations.go",
+  "source_sha256": "0ee9d8e478d6dec639fd77236b8a141b2ea6b982fac5b83ddd05c37626f31dac",
+  "true_domain_id": "ham-radio-logbook",
+  "domain_dir": "qsolog",
+  "attacker": "moonshotai/Kimi-K3:baseten",
+  "mode": "open_ended",
+  "menu_seed": 724033594,
+  "menu_order": [
+    "avionics-airworthiness",
+    "ham-radio-logbook",
+    "hotel-booking",
+    "wildlife-tracker",
+    "textile-mill-production",
+    "logistics-dispatch",
+    "seismic-monitoring",
+    "library-circulation",
+    "music-streaming",
+    "water-utility-metering",
+    "event-scheduler",
+    "recipe-manager"
+  ],
+  "truth_option": 2,
+  "prompt": "You are evaluating a source-code privacy technique. Your job is to defeat it.\n\nA tool called `effigy` takes a source file from some **original problem domain** and rewrites or\nobscures it so the file can be sent to a third-party model for architectural review without\nrevealing what the original code was about. You are that third party, and you are hostile.\n\nYou have **complete knowledge of the tool**. It is a public research repository: its algorithms,\nits configuration, and its prompts are all published. Assume nothing is secret except the original\nsource itself. Specifically:\n\nSolution `literal-tagging` \u2014 string-literal and PII tagging with type-class placeholders.\n\nEvery string literal is replaced by a typed placeholder such as `<URL:n>`, `<PATH:n>`, `<MSG:n>`.\nThe same literal content maps to the same placeholder throughout the file, so deduplication and\ncoupling are preserved. Triple-quoted, double-quoted, single-quoted and backtick literals are all\nmatched.\n\n**Identifiers, comments and code structure are untouched.** Every function, variable, type, field,\ntable and column name survives exactly as written in the original.\n\n**The artifact you are about to see may have been rewritten into a DIFFERENT problem domain than\nthe one it came from.** If it reads convincingly as some domain, that is exactly what the tool was\nbuilt to make you believe, and it may be the *target* domain rather than the source. Your task is\nto identify the **ORIGINAL** domain \u2014 the one the code was written in before the tool touched it.\n\n\n## The artifact\n\nOne source file.\n\n```go\npackage api\n\nimport (\n\t\"<PATH:0>\"\n\t\"<MSG:0>\"\n\t\"<PATH:1>\"\n\t\"<MSG:1>\"\n\n\t\"<PATH:2>\"\n\n\t\"<PATH:3>\"\n)\n\n// handleGetStation looks up one operator station. The station id is the\n// callsign itself \u2014 there is no separate surrogate id anywhere in this\n// service \u2014 so this is a single-column lookup with no join.\n//\n// A station that has never logged a contact is still a valid row: ingest\n// creates one on first sight of a callsign in the op field, profile fields\n// or not, so a lookup here can succeed even for an operator with zero\n// contacts recorded yet.\nfunc (s *Server) handleGetStation(w http.ResponseWriter, r *http.Request) {\n\tstationID := strings.TrimSpace(chi.URLParam(r, \"<MSG:2>\"))\n\tvar st model.Station\n\terr := s.db.QueryRowContext(r.Context(), `<SQL:0>`, stationID).\n\t\tScan(&st.StationID, &st.Callsign, &st.GridSquare, &st.OperatorClass)\n\tif errors.Is(err, sql.ErrNoRows) {\n\t\twriteError(w, http.StatusNotFound, \"<MSG:3>\", \"<MSG:4>\")\n\t\treturn\n\t}\n\tif err != nil {\n\t\ts.serverError(w, err)\n\t\treturn\n\t}\n\twriteJSON(w, http.StatusOK, st)\n}\n\n// handleStationSummary answers \"<MSG:5>\" without the\n// band/mode breakdown handleAwardProgress gives: one row, four counts, no\n// grouping. It exists because the SPA's station header needs a cheap number on\n// every page load, not the full progress table.\nfunc (s *Server) handleStationSummary(w http.ResponseWriter, r *http.Request) {\n\tstationID := strings.TrimSpace(chi.URLParam(r, \"<MSG:2>\"))\n\tvar known string\n\terr := s.db.QueryRowContext(r.Context(),\n\t\t`<SQL:1>`, stationID).Scan(&known)\n\tif errors.Is(err, sql.ErrNoRows) {\n\t\twriteError(w, http.StatusNotFound, \"<MSG:3>\", \"<MSG:4>\")\n\t\treturn\n\t}\n\tif err != nil {\n\t\ts.serverError(w, err)\n\t\treturn\n\t}\n\n\tvar totalContacts, distinctBands, distinctModes, confirmedContacts int\n\terr = s.db.QueryRowContext(r.Context(), `<SQL:2>`, stationID).\n\t\tScan(&totalContacts, &distinctBands, &distinctModes, &confirmedContacts)\n\tif err != nil {\n\t\ts.serverError(w, err)\n\t\treturn\n\t}\n\twriteJSON(w, http.StatusOK, map[string]any{\n\t\t\"<MSG:2>\":         stationID,\n\t\t\"<MSG:6>\":     totalContacts,\n\t\t\"<MSG:7>\":     distinctBands,\n\t\t\"<MSG:8>\":     distinctModes,\n\t\t\"<MSG:9>\": confirmedContacts,\n\t})\n}\n\n```\n\n## Your answer\n\nReply with ONLY a JSON object. No prose before it, no explanation after it, no markdown fence.\n\n{\"domain\": \"<short free-text description of the ORIGINAL problem domain>\",\n \"specific_identifiers\": [\"<any organization, product, vendor, regulation, standard, proprietary\n                           system or place you believe you can name from this artifact>\"],\n \"confidence\": <float 0.0-1.0>,\n \"evidence\": \"<= 40 words on what in the artifact led you there>\"}\n\n`specific_identifiers` must be **[]** if you cannot name anything concrete. Do not pad it with\nguesses \u2014 but do not hold back a name you genuinely believe is there, because naming one correctly\nis the strongest result you can produce here.\n",
+  "attempts": [
+    {
+      "attempt": 0,
+      "text": "{\"domain\": \"Amateur radio (ham radio) contact/QSO logging service: a logbook API tracking operator stations by callsign, with grid squares, license/operator classes, per-band and per-mode contact counts, and confirmation/award progress tracking.\",\n \"specific_identifiers\": [\"Maidenhead Locator System (grid square)\"],\n \"confidence\": 0.9,\n \"evidence\": \"Identifiers and comments survive untouched: Callsign, GridSquare, OperatorClass, band/mode breakdowns, confirmed contacts, and award progress are all canonical amateur-radio logbook concepts; grid square specifically implies the Maidenhead locator standard.\"}",
+      "finish_reason": "stop",
+      "served_model": "moonshotai/Kimi-K3",
+      "latency_s": 8.91,
+      "parsed_ok": true
+    }
+  ],
+  "parsed": {
+    "domain": "Amateur radio (ham radio) contact/QSO logging service: a logbook API tracking operator stations by callsign, with grid squares, license/operator classes, per-band and per-mode contact counts, and confirmation/award progress tracking.",
+    "specific_identifiers": [
+      "Maidenhead Locator System (grid square)"
+    ],
+    "confidence": 0.9,
+    "evidence": "Identifiers and comments survive untouched: Callsign, GridSquare, OperatorClass, band/mode breakdowns, confirmed contacts, and award progress are all canonical amateur-radio logbook concepts; grid square specifically implies the Maidenhead locator standard."
+  }
+}

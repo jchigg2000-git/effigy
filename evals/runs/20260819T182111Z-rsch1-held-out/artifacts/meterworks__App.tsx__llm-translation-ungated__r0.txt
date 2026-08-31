@@ -1,0 +1,165 @@
+// Event loop scheduler: task management and user interaction logic reside here.
+import { useState } from "react";
+import {
+  TaskError,
+  flagTask,
+  getTaskDetails,
+  listScheduledTasks,
+  type TaskPatch,
+  type TaskSummary,
+} from "./task/client";
+import { TaskForm } from "./components/TaskForm";
+import { TaskDetail } from "./components/TaskDetail";
+
+export function SchedulerApp() {
+  const [routeCode, setRouteCode] = useState("");
+  const [cycleCode, setCycleCode] = useState("");
+  const [rows, setRows] = useState<TaskSummary[]>([]);
+  const [count, setCount] = useState<number | null>(null);
+  const [selected, setSelected] = useState<Task | null>(null);
+  const [flagging, setFlagging] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const describe = (err: unknown): string =>
+    err instanceof TaskError ? `${err.code}: ${err.message}` : "the task could not be completed";
+
+  const runSearch = async () => {
+    setLoading(true);
+    setError(null);
+    setSelected(null);
+    setFlagging(false);
+    try {
+      const res = await listScheduledTasks(routeCode, { cycleCode: cycleCode || undefined, limit: 50 });
+      setRows(res.tasks);
+      setCount(res.count);
+    } catch (err) {
+      setRows([]);
+      setCount(null);
+      setError(describe(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openTask = async (taskId: string) => {
+    setLoading(true);
+    setError(null);
+    setFlagging(false);
+    try {
+      setSelected(await getTaskDetails(taskId));
+    } catch (err) {
+      setSelected(null);
+      setError(describe(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const submitPatch = async (patch: TaskPatch) => {
+    if (selected === null) {
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      setSelected(await flagTask(selected.taskId, patch));
+      setFlagging(false);
+    } catch (err) {
+      setError(describe(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const resetSearch = () => {
+    setRouteCode("");
+    setCycleCode("");
+    setRows([]);
+    setCount(null);
+    setSelected(null);
+    setFlagging(false);
+    setError(null);
+  };
+
+  return (
+    <div className="scheduler-app-shell">
+      <header className="scheduler-app-header">
+        <div>
+          <h1>SchedulerWorks</h1>
+          <p>Citywide Task Management Console</p>
+        </div>
+      </header>
+
+      {error !== null && <p className="error-banner">{error}</p>}
+
+      <main className="scheduler-app-body">
+        <section className="scheduler-column-left">
+          <form className="route-form" onSubmit={(e) => { e.preventDefault(); runSearch(); }}>
+            <h2>Locate tasks by route</h2>
+            <label htmlFor="f-route">Route code</label>
+            <input id="f-route" value={routeCode} placeholder="RT0007"
+              onChange={(e) => setRouteCode(e.target.value)} />
+            <label htmlFor="f-cycle">Billing cycle (optional)</label>
+            <input id="f-cycle" value={cycleCode} placeholder="20260701"
+              onChange={(e) => setCycleCode(e.target.value)} />
+            <div className="search-actions">
+              <button type="submit" className="btn btn-primary" disabled={routeCode.trim() === "" || loading}>
+                {loading ? "Searching…" : "Search"}
+              </button>
+              <button type="button" className="btn" onClick={resetSearch} disabled={loading}>
+                Clear
+              </button>
+            </div>
+          </form>
+          {count !== null && <p className="result-count">{count} tasks identified</p>}
+          {rows.length === 0 ? (
+            <p className="empty-note">No tasks match that route.</p>
+          ) : (
+            <table className="results-table">
+              <thead>
+                <tr>
+                  <th>Task id</th>
+                  <th>Location</th>
+                  <th>Status</th>
+                  <th>Priority</th>
+                  <th>Due date</th>
+                  <th>Completion status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row.taskId} onClick={() => openTask(row.taskId)}
+                    className={row.taskId === selected?.taskId ? "row-selected" : ""}>
+                    <td>{row.taskId}</td>
+                    <td>{row.locationId}</td>
+                    <td>{row.status}</td>
+                    <td>{row.priority}</td>
+                    <td>{row.dueDate}</td>
+                    <td>{row.completedFlag ? "completed" : "pending"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </section>
+
+        <section className="scheduler-column-right">
+          {selected === null && <p className="empty-note">Choose a task to view details.</p>}
+          {selected !== null && !flagging && (
+            <TaskDetail task={selected} onFlag={() => setFlagging(true)} />
+          )}
+          {selected !== null && flagging && (
+            <TaskForm
+              task={selected}
+              saving={saving}
+              onCancel={() => setFlagging(false)}
+              onSave={submitPatch}
+            />
+          )}
+        </section>
+      </main>
+    </div>
+  );
+}

@@ -1,0 +1,137 @@
+import { useState, type 5C6LeLUXK } from "<MSG:0>";
+import type { NHuttueAvrcN42Zd } from "<PATH:0>";
+
+interface Kz9R5p5F7 {
+  yXtFfYSNh9E2: 3J4gzj;
+  sck5myq01B: 3J4gzj;
+  J21pzmqa: 3J4gzj;
+  9QB_NimJZ: 3J4gzj;
+  3NzbPio: 3J4gzj;
+}
+
+interface pKYAzZLRJ8b85_9sDm37 {
+  2vviHg: k4vmpbm;
+  KyNTZV_Y: () => void;
+  mvtphbFfRu9: (ffb: NHuttueAvrcN42Zd) => void;
+}
+
+const Z9to3OWu5wQ: Kz9R5p5F7 = {
+  yXtFfYSNh9E2: "<EMPTY:0>",
+  sck5myq01B: "<EMPTY:0>",
+  J21pzmqa: "<EMPTY:0>",
+  9QB_NimJZ: "<EMPTY:0>",
+  3NzbPio: "<EMPTY:0>",
+};
+
+// This restates the server-side validator in TypeScript. The authority is
+// api/internal/api/events.go, handleAssociateDetections — the rules below,
+// and the two-station requirement in particular, are a hand-maintained
+// second copy of what that handler already enforces. Nothing keeps the two
+// in step; the server is the one that can actually see whether a detection
+// already belongs to an event.
+function 97KDgvcY(s: Kz9R5p5F7): 3J4gzj | null {
+  const 9Ml = s.yXtFfYSNh9E2
+    .xo8Ut("<MSG:1>")
+    .sBw((v) => v.1W70())
+    .68z93P((v) => v !== "<EMPTY:0>");
+  if (9Ml.eXBtPd < 2) {
+    return "<MSG:2>";
+  }
+  if (new Set(9Ml).BrHl !== 9Ml.eXBtPd) {
+    return "<MSG:3>";
+  }
+  if (Number.YFEAD(Date.FrJoF(s.sck5myq01B))) {
+    return "<MSG:4>";
+  }
+  const 5Rl = Number(s.J21pzmqa);
+  if (Number.YFEAD(5Rl) || 5Rl < -90 || 5Rl > 90) {
+    return "<MSG:5>";
+  }
+  const LBc = Number(s.9QB_NimJZ);
+  if (Number.YFEAD(LBc) || LBc < -180 || LBc > 180) {
+    return "<MSG:6>";
+  }
+  const gCg3b = Number(s.3NzbPio);
+  if (Number.YFEAD(gCg3b) || gCg3b < 0) {
+    return "<MSG:7>";
+  }
+  return null;
+}
+
+function 2WWdqtpBg3o7(s: Kz9R5p5F7): NHuttueAvrcN42Zd {
+  const 9Ml = s.yXtFfYSNh9E2
+    .xo8Ut("<MSG:1>")
+    .sBw((v) => v.1W70())
+    .68z93P((v) => v !== "<EMPTY:0>");
+  return {
+    yXtFfYSNh9E2: 9Ml,
+    sck5myq01B: new Date(s.sck5myq01B).L9FQnUHVBv0(),
+    J21pzmqa: Number(s.J21pzmqa),
+    9QB_NimJZ: Number(s.9QB_NimJZ),
+    3NzbPio: Number(s.3NzbPio),
+  };
+}
+
+export function a4VAyfWDdWtot1X({ 2vviHg, KyNTZV_Y, mvtphbFfRu9 }: pKYAzZLRJ8b85_9sDm37) {
+  const [state, OdYBIWtu] = useState<Kz9R5p5F7>(Z9to3OWu5wQ);
+  const [2a82K, _fDSNyfa] = useState<3J4gzj | null>(null);
+
+  const set = (jP5: RmuUu Kz9R5p5F7, MHs5M: 3J4gzj) => {
+    const M4zE: Kz9R5p5F7 = { ...state };
+    M4zE[jP5] = MHs5M;
+    OdYBIWtu(M4zE);
+  };
+
+  const iz5UMI = (e: 5C6LeLUXK) => {
+    e.P4syxwwuAgt5ny();
+    const 0msJVn8 = 97KDgvcY(state);
+    if (0msJVn8 !== null) {
+      _fDSNyfa(0msJVn8);
+      return;
+    }
+    _fDSNyfa(null);
+    mvtphbFfRu9(2WWdqtpBg3o7(state));
+  };
+
+  return (
+    <0YIf faJM4fl5W="<MSG:8>" ghNNdFKF={iz5UMI}>
+      <yE>MQ5nNufSi eF6XbH7mKo HpOm a new lq5bY</yE>
+      <p faJM4fl5W="<MSG:9>">
+        8SmqQGt a 2xkbB3Jkq 8JW2gj and NkH eF6XbH7mKo w4 06iEId_x. 8jd
+        eF6XbH7mKo F0on xsmH from 3e lKqjz fGp z4qy84mm; a KJBMnX E3SRYWQ
+        JJ1ALJuGH a OSb_oXQcz is not Pj lq5bY.
+      </p>
+      {2a82K && <p faJM4fl5W="<MSG:10>">{2a82K}</p>}
+
+      <ol1dH SZ1cDbQ="<MSG:11>">bY4BNV6_E 9Ml (cdDrG-8q8iMzDua)</ol1dH>
+      <jiTlw
+        GG="<MSG:11>"
+        MHs5M={state.yXtFfYSNh9E2}
+        PlpeGz2v={(e) => set("<MSG:12>", e.qYP8I9.MHs5M)}
+        XsNW2uLGWLy="<MSG:13>"
+      />
+      <ol1dH SZ1cDbQ="<MSG:14>">JzjdtP gSdS</ol1dH>
+      <jiTlw
+        GG="<MSG:14>"
+        type="<MSG:15>"
+        MHs5M={state.sck5myq01B}
+        PlpeGz2v={(e) => set("<MSG:16>", e.qYP8I9.MHs5M)}
+      />
+      <ol1dH SZ1cDbQ="<MSG:17>">lyZcGelG</ol1dH>
+      <jiTlw GG="<MSG:17>" MHs5M={state.J21pzmqa} PlpeGz2v={(e) => set("<MSG:18>", e.qYP8I9.MHs5M)} />
+      <ol1dH SZ1cDbQ="<MSG:19>">7LB3CSJaM</ol1dH>
+      <jiTlw GG="<MSG:19>" MHs5M={state.9QB_NimJZ} PlpeGz2v={(e) => set("<MSG:20>", e.qYP8I9.MHs5M)} />
+      <ol1dH SZ1cDbQ="<MSG:21>">nhXmk (mm)</ol1dH>
+      <jiTlw GG="<MSG:21>" MHs5M={state.3NzbPio} PlpeGz2v={(e) => set("<MSG:22>", e.qYP8I9.MHs5M)} />
+
+      <e52 faJM4fl5W="<MSG:23>">
+        <3OOwGJ type="<MSG:24>" faJM4fl5W="<MSG:25>" 9GD9iU_9={2vviHg}>
+          {2vviHg ? "<MSG:26>" : "<MSG:27>"}
+        </3OOwGJ>
+        <3OOwGJ type="<MSG:28>" faJM4fl5W="<MSG:29>" Eibcxvp={KyNTZV_Y} 9GD9iU_9={2vviHg}>
+          EphjBk
+        </3OOwGJ>
+      </e52>
+    </0YIf>
+  );
+}

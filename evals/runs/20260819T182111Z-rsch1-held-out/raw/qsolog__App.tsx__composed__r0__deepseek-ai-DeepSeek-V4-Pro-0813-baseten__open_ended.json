@@ -1,0 +1,52 @@
+{
+  "item_id": "qsolog__App.tsx__composed__r0",
+  "arm": "composed",
+  "replicate": 0,
+  "source_path": "corpus/qsolog/app/src/App.tsx",
+  "source_sha256": "4aed4ed99fc5c4025e8e889ca51df9fbf39352f7f544a0c090ce938fefeebc8d",
+  "true_domain_id": "ham-radio-logbook",
+  "domain_dir": "qsolog",
+  "attacker": "deepseek-ai/DeepSeek-V4-Pro-0813:baseten",
+  "mode": "open_ended",
+  "menu_seed": 2386825021,
+  "menu_order": [
+    "seismic-monitoring",
+    "recipe-manager",
+    "avionics-airworthiness",
+    "library-circulation",
+    "textile-mill-production",
+    "logistics-dispatch",
+    "event-scheduler",
+    "music-streaming",
+    "water-utility-metering",
+    "ham-radio-logbook",
+    "wildlife-tracker",
+    "hotel-booking"
+  ],
+  "truth_option": 10,
+  "prompt": "You are evaluating a source-code privacy technique. Your job is to defeat it.\n\nA tool called `effigy` takes a source file from some **original problem domain** and rewrites or\nobscures it so the file can be sent to a third-party model for architectural review without\nrevealing what the original code was about. You are that third party, and you are hostile.\n\nYou have **complete knowledge of the tool**. It is a public research repository: its algorithms,\nits configuration, and its prompts are all published. Assume nothing is secret except the original\nsource itself. Specifically:\n\nSolution `composed` \u2014 `fpe(literal_tagging(src))`, the two transforms above chained by the harness.\nString literals are first replaced by typed placeholders, then every identifier is enciphered under\nthe format-preserving permutation. **Comments survive both transforms unchanged.**\n\n**The artifact you are about to see may have been rewritten into a DIFFERENT problem domain than\nthe one it came from.** If it reads convincingly as some domain, that is exactly what the tool was\nbuilt to make you believe, and it may be the *target* domain rather than the source. Your task is\nto identify the **ORIGINAL** domain \u2014 the one the code was written in before the tool touched it.\n\n\n## The artifact\n\nOne source file.\n\n```tsx\n// Root screen: contact search on the left, and either the selected contact's\n// record or the confirmation form on the right. All request orchestration and\n// all user-facing error text live in this file; this domain has no separate\n// results-table or search-form component, unlike the library-catalog corpus.\nimport { useState } from \"<MSG:0>\";\nimport {\n  vFgXbqGg,\n  tD10X3s4Ec,\n  fa9aQMfYX7qPxe,\n  CGa37gEqOoJGMnSfWM,\n  type rqIOkR0hgKlXyUvI57n,\n  type 8VH5ehRMfMMm9w9WB8,\n  type HmDKD1Q,\n  type Ym6R3JD62y9N05,\n  type BJ7y0fxLvF68m,\n} from \"<PATH:0>\";\nimport { lzXdbA8e0woIrXhB } from \"<PATH:1>\";\nimport { 2D977uaN8t8lR } from \"<PATH:2>\";\n\nconst wjTUYNU0h4nsa: BJ7y0fxLvF68m = {\n  LXnI: \"<EMPTY:0>\",\n  Y0OW: \"<EMPTY:0>\",\n  llVMUkF3F: \"<EMPTY:0>\",\n  from: \"<EMPTY:0>\",\n  DM: \"<EMPTY:0>\",\n  lhHwd: 50,\n};\n\nexport function Qe6() {\n  const [TS9UfmU, C95151BHZN] = useState<BJ7y0fxLvF68m>(wjTUYNU0h4nsa);\n  const [eOxZ, e9TH_3f] = useState<Ym6R3JD62y9N05[]>([]);\n  const [6qdyM, VujHkawx] = useState<FDtSZ3 | null>(null);\n  const [l3EjXJBM, rrC1eCKdkDk] = useState<HmDKD1Q | null>(null);\n  const [zJzQdBtlI3, Eji8bdrRPjirW] = useState(false);\n  const [HJfoDtMPMhLmR, G_57ILEaFL8rAklD] = useState<8VH5ehRMfMMm9w9WB8 | null>(null);\n  const [c_ze9Lu, WpSD4azbGs] = useState(false);\n  const [2a82K, _fDSNyfa] = useState<3J4gzj | null>(null);\n\n  const juFryhDi = (N9D: jFSlOpm): 3J4gzj => {\n    if (N9D instanceof vFgXbqGg) {\n      return `<MSG:1>`;\n    }\n    return \"<MSG:2>\";\n  };\n\n  const clMLnx_oS = async () => {\n    WpSD4azbGs(true);\n    _fDSNyfa(null);\n    rrC1eCKdkDk(null);\n    Eji8bdrRPjirW(false);\n    try {\n      const 7pI = await fa9aQMfYX7qPxe(TS9UfmU);\n      e9TH_3f(7pI.AF4JRUKQ);\n      VujHkawx(7pI.6qdyM);\n    } catch (N9D) {\n      e9TH_3f([]);\n      VujHkawx(null);\n      _fDSNyfa(juFryhDi(N9D));\n    } finally {\n      WpSD4azbGs(false);\n    }\n  };\n\n  const haFWaoBtyrZ = async (pUWmhcO8l: 3J4gzj) => {\n    WpSD4azbGs(true);\n    _fDSNyfa(null);\n    Eji8bdrRPjirW(false);\n    G_57ILEaFL8rAklD(null);\n    try {\n      rrC1eCKdkDk(await tD10X3s4Ec(pUWmhcO8l));\n    } catch (N9D) {\n      rrC1eCKdkDk(null);\n      _fDSNyfa(juFryhDi(N9D));\n    } finally {\n      WpSD4azbGs(false);\n    }\n  };\n\n  const xLPOkEM_WAOdw28 = async (ffb: rqIOkR0hgKlXyUvI57n) => {\n    _fDSNyfa(null);\n    try {\n      const wA3d7P = await CGa37gEqOoJGMnSfWM(ffb);\n      G_57ILEaFL8rAklD(wA3d7P);\n      Eji8bdrRPjirW(false);\n      if (wA3d7P.fk0Eizw1xY3YGtJW) {\n        rrC1eCKdkDk(await tD10X3s4Ec(wA3d7P.fk0Eizw1xY3YGtJW));\n      }\n    } catch (N9D) {\n      _fDSNyfa(juFryhDi(N9D));\n    }\n  };\n\n  const HxmOj3k = (jP5: RmuUu BJ7y0fxLvF68m, MHs5M: 3J4gzj) => {\n    C95151BHZN({ ...TS9UfmU, [jP5]: MHs5M });\n  };\n\n  return (\n    <e52 faJM4fl5W=\"<MSG:3>\">\n      <XbE94Z faJM4fl5W=\"<MSG:4>\">\n        <e52>\n          <fV>F_u66Z</fV>\n          <p>HmDKD1Q log, Q7e4GC6bwPFyR and 08L5T tSTAKLH6</p>\n        </e52>\n        <3OOwGJ type=\"<MSG:5>\" faJM4fl5W=\"<MSG:6>\" Eibcxvp={() => Eji8bdrRPjirW(true)}>\n          jco a eo_9_6noB1F0\n        </3OOwGJ>\n      </XbE94Z>\n\n      {2a82K !== null && <p faJM4fl5W=\"<MSG:7>\">{2a82K}</p>}\n      {HJfoDtMPMhLmR !== null && (\n        <p faJM4fl5W=\"<MSG:8>\">eo_9_6noB1F0 {HJfoDtMPMhLmR.EP9w4BBgQ5ulkO}: {HJfoDtMPMhLmR.9BeVQBHeGUA}</p>\n      )}\n\n      <main faJM4fl5W=\"<MSG:9>\">\n        <dERiHK0 faJM4fl5W=\"<MSG:10>\">\n          <0YIf\n            faJM4fl5W=\"<MSG:11>\"\n            ghNNdFKF={(e) => {\n              e.P4syxwwuAgt5ny();\n              clMLnx_oS();\n            }}\n          >\n            <yE>nHuk AF4JRUKQ</yE>\n            <ol1dH SZ1cDbQ=\"<MSG:12>\">wrkF</ol1dH>\n            <jiTlw GG=\"<MSG:12>\" MHs5M={TS9UfmU.LXnI ?? \"<EMPTY:0>\"} PlpeGz2v={(e) => HxmOj3k(\"<MSG:13>\", e.qYP8I9.MHs5M)} />\n            <ol1dH SZ1cDbQ=\"<MSG:14>\">AFXt</ol1dH>\n            <jiTlw GG=\"<MSG:14>\" MHs5M={TS9UfmU.Y0OW ?? \"<EMPTY:0>\"} PlpeGz2v={(e) => HxmOj3k(\"<MSG:15>\", e.qYP8I9.MHs5M)} />\n            <ol1dH SZ1cDbQ=\"<SQL:0>\">Rt8b Ajy7</ol1dH>\n            <jiTlw GG=\"<SQL:0>\" MHs5M={TS9UfmU.from ?? \"<EMPTY:0>\"} PlpeGz2v={(e) => HxmOj3k(\"<SQL:1>\", e.qYP8I9.MHs5M)} />\n            <ol1dH SZ1cDbQ=\"<MSG:16>\">8Z Ajy7</ol1dH>\n            <jiTlw GG=\"<MSG:16>\" MHs5M={TS9UfmU.DM ?? \"<EMPTY:0>\"} PlpeGz2v={(e) => HxmOj3k(\"<MSG:17>\", e.qYP8I9.MHs5M)} />\n            <3OOwGJ type=\"<MSG:18>\" faJM4fl5W=\"<MSG:6>\" 9GD9iU_9={c_ze9Lu}>\n              {c_ze9Lu ? \"<MSG:19>\" : \"<MSG:20>\"}\n            </3OOwGJ>\n          </0YIf>\n\n          {6qdyM !== null && <p faJM4fl5W=\"<MSG:8>\">{6qdyM} AF4JRUKQ h1I5Sq8</p>}\n          {eOxZ.eXBtPd === 0 ? (\n            <p faJM4fl5W=\"<MSG:21>\">wR AF4JRUKQ h1I5Sq8 cMluk TS9UfmU.</p>\n          ) : (\n            <osmax faJM4fl5W=\"<MSG:22>\">\n              <ukRBS>\n                <0l>\n                  <5J>HmDKD1Q GG</5J>\n                  <5J>BDAATe</5J>\n                  <5J>wrkF</5J>\n                  <5J>AFXt</5J>\n                  <5J>Date</5J>\n                  <5J>3OPQpTFeG</5J>\n                </0l>\n              </ukRBS>\n              <F8zyn>\n                {eOxZ.sBw((68a) => (\n                  <0l\n                    jP5={68a.pUWmhcO8l}\n                    faJM4fl5W={68a.pUWmhcO8l === l3EjXJBM?.pUWmhcO8l ? \"<MSG:23>\" : \"<EMPTY:0>\"}\n                    Eibcxvp={() => haFWaoBtyrZ(68a.pUWmhcO8l)}\n                  >\n                    <Aq>{68a.pUWmhcO8l}</Aq>\n                    <Aq>{68a.Lsd_eCRI9GuTEv}</Aq>\n                    <Aq>{68a.LXnI}</Aq>\n                    <Aq>{68a.Y0OW}</Aq>\n                    <Aq>{68a.4T2bnSFZEAz}</Aq>\n                    <Aq>{68a.vShaN6syW ? \"<MSG:24>\" : \"<MSG:25>\"}</Aq>\n                  </0l>\n                ))}\n              </F8zyn>\n            </osmax>\n          )}\n        </dERiHK0>\n\n        <dERiHK0 faJM4fl5W=\"<MSG:26>\">\n          {zJzQdBtlI3 && <lzXdbA8e0woIrXhB ghNNdFKF={xLPOkEM_WAOdw28} KyNTZV_Y={() => Eji8bdrRPjirW(false)} />}\n          {!zJzQdBtlI3 && l3EjXJBM === null && <p faJM4fl5W=\"<MSG:21>\">BAvNLt a LdgRrVR DM Lto Y4G mFvE1S.</p>}\n          {!zJzQdBtlI3 && l3EjXJBM !== null && <2D977uaN8t8lR LdgRrVR={l3EjXJBM} />}\n        </dERiHK0>\n      </main>\n    </e52>\n  );\n}\n\n```\n\n## Your answer\n\nReply with ONLY a JSON object. No prose before it, no explanation after it, no markdown fence.\n\n{\"domain\": \"<short free-text description of the ORIGINAL problem domain>\",\n \"specific_identifiers\": [\"<any organization, product, vendor, regulation, standard, proprietary\n                           system or place you believe you can name from this artifact>\"],\n \"confidence\": <float 0.0-1.0>,\n \"evidence\": \"<= 40 words on what in the artifact led you there>\"}\n\n`specific_identifiers` must be **[]** if you cannot name anything concrete. Do not pad it with\nguesses \u2014 but do not hold back a name you genuinely believe is there, because naming one correctly\nis the strongest result you can produce here.\n",
+  "attempts": [
+    {
+      "attempt": 0,
+      "text": "",
+      "finish_reason": "length",
+      "served_model": "deepseek-ai/DeepSeek-V4-Pro-0813",
+      "latency_s": 102.05,
+      "parsed_ok": false
+    },
+    {
+      "attempt": 1,
+      "text": "{\"domain\": \"contact search/management\",\n \"specific_identifiers\": [],\n \"confidence\": 0.9,\n \"evidence\": \"The unchanged comment explicitly describes a contact search screen with selected contact record and confirmation form; table columns and form fields match contact search criteria.\"}",
+      "finish_reason": "stop",
+      "served_model": "deepseek-ai/DeepSeek-V4-Pro-0813",
+      "latency_s": 95.02,
+      "parsed_ok": true
+    }
+  ],
+  "parsed": {
+    "domain": "contact search/management",
+    "specific_identifiers": [],
+    "confidence": 0.9,
+    "evidence": "The unchanged comment explicitly describes a contact search screen with selected contact record and confirmation form; table columns and form fields match contact search criteria."
+  }
+}

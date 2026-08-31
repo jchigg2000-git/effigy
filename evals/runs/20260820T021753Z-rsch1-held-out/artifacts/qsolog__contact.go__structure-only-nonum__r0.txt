@@ -1,0 +1,46 @@
+// -
+// -
+// -
+// -
+package ident_0001
+
+// -
+// -
+type Ident_0002 struct {
+	Ident_0003 string `str_0001`
+	Ident_0004 string `str_0002`
+	Ident_0005 string `str_0003`
+	Ident_0006 string `str_0004`
+}
+
+// -
+// -
+// -
+// -
+type Ident_0007 struct {
+	Ident_0008 string `str_0005`
+	Ident_0009 string `str_0006`
+	Ident_0010 string `str_0007`
+	Ident_0011 string `str_0008`
+	Ident_0012 string `str_0009`
+	Ident_0013 string `str_0010`
+	Ident_0014 string `str_0011`
+	Ident_0015 string `str_0012`
+}
+
+type Ident_0016 struct {
+	Ident_0017 string       `str_0013`
+	Ident_0003 string       `str_0001`
+	Ident_0018 string       `str_0014`
+	Ident_0010 string       `str_0007`
+	Ident_0011 string       `str_0008`
+	Ident_0012 string       `str_0009`
+	Ident_0019 string       `str_0015`
+	Ident_0020 string       `str_0016`
+	Ident_0021 string       `str_0017`
+	Ident_0005 string       `str_0003`
+	Ident_0022 string       `str_0018`
+	Ident_0023 string       `str_0019`
+	Ident_0002 *Ident_0002  `str_0020`
+	Ident_0024 []Ident_0007 `str_0021`
+}

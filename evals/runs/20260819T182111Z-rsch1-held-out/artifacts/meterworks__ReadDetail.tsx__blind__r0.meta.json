@@ -1,0 +1,15 @@
+{
+  "key": "meterworks__ReadDetail.tsx__blind__r0",
+  "arm": "blind",
+  "replicate": 0,
+  "source_path": "corpus/meterworks/app/src/components/ReadDetail.tsx",
+  "source_sha256": "73e290a1945b22211c4e537cb6bdf0444cec219f2d66a8980fb757216b25943e",
+  "true_domain_id": "water-utility-metering",
+  "language": "tsx",
+  "artifact_sha256": "e94dd3767dce183847a0b982fdc32e32c16c8041c98596623943442d8b3b404e",
+  "artifact_lines": 13,
+  "latency_s": 0.0,
+  "solution_meta": {
+    "generated_by": "evals/blind_stub.py"
+  }
+}

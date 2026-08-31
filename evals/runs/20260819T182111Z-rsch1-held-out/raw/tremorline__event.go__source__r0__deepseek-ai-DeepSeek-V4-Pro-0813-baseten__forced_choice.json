@@ -1,0 +1,42 @@
+{
+  "item_id": "tremorline__event.go__source__r0",
+  "arm": "source",
+  "replicate": 0,
+  "source_path": "corpus/tremorline/api/internal/model/event.go",
+  "source_sha256": "caf3cbdda9e55a7712fecdaa82dc273dd32d3c975e262edf096e96e4038c9e33",
+  "true_domain_id": "seismic-monitoring",
+  "domain_dir": "tremorline",
+  "attacker": "deepseek-ai/DeepSeek-V4-Pro-0813:baseten",
+  "mode": "forced_choice",
+  "menu_seed": 2524171509,
+  "menu_order": [
+    "recipe-manager",
+    "logistics-dispatch",
+    "seismic-monitoring",
+    "wildlife-tracker",
+    "music-streaming",
+    "water-utility-metering",
+    "textile-mill-production",
+    "ham-radio-logbook",
+    "event-scheduler",
+    "library-circulation",
+    "hotel-booking",
+    "avionics-airworthiness"
+  ],
+  "truth_option": 3,
+  "prompt": "You are evaluating a source-code privacy technique. Your job is to defeat it.\n\nA tool called `effigy` takes a source file from some **original problem domain** and rewrites or\nobscures it so the file can be sent to a third-party model for architectural review without\nrevealing what the original code was about. You are that third party, and you are hostile.\n\nYou have **complete knowledge of the tool**. It is a public research repository: its algorithms,\nits configuration, and its prompts are all published. Assume nothing is secret except the original\nsource itself. Specifically:\n\nThe artifact is the **UNMODIFIED ORIGINAL SOURCE FILE**. No transform has been applied. This is a\ncontrol condition.\n\n**The artifact you are about to see may have been rewritten into a DIFFERENT problem domain than\nthe one it came from.** If it reads convincingly as some domain, that is exactly what the tool was\nbuilt to make you believe, and it may be the *target* domain rather than the source. Your task is\nto identify the **ORIGINAL** domain \u2014 the one the code was written in before the tool touched it.\n\n\n## The menu\n\nExactly one of these twelve is the original domain. Some of the others are domains this tool\nrewrites *into*, so they are deliberately tempting.\n\n1. Recipe management \u2014 Recipes, ingredients, and meal planning for a cooking application.\n2. Freight dispatch \u2014 Shipment routing, carrier assignment, and delivery tracking for a freight operation.\n3. Seismic event monitoring \u2014 Seismograph station networks, waveform ingest, and earthquake event cataloging.\n4. Wildlife tracking \u2014 Tagged animal sightings, collar telemetry, and habitat surveys for a field research program.\n5. Music streaming \u2014 Track catalogs, playlists, and listener session handling for a streaming service.\n6. Municipal water metering \u2014 Service points, meter reads, and consumption billing for a municipal water utility.\n7. Textile mill production \u2014 Loom scheduling, yarn lot tracking, and shift production reporting in a weaving mill.\n8. Amateur radio contact logging \u2014 Logging two-way radio contacts, confirmations, and award tracking for amateur radio operators.\n9. Event scheduling \u2014 Venues, sessions, and attendee registration for a conference scheduling system.\n10. Library catalog and circulation \u2014 Bibliographic holdings, branch lending, reservations, and returns for a public library system.\n11. Hotel reservations \u2014 Room inventory, availability search, and guest reservations for a hotel chain.\n12. Aircraft airworthiness tracking \u2014 Component life limits, maintenance intervals, and airworthiness directive compliance.\n\n## The artifact\n\nOne source file.\n\n```go\n// Package model holds the JSON projection of the seismic catalog. Field order\n// mirrors each table's column order, which the positional Scan calls in the\n// handlers rely on.\npackage model\n\n// NetworkCode values are drawn from the RR0-RR9 block, an invented range\n// chosen because no real-world network code registry assigns it to a\n// permanent or temporary network. Nothing in this tree should be read as\n// identifying an actual seismic network.\ntype Station struct {\n\tStationID   string  `json:\"stationId\"`\n\tNetworkCode string  `json:\"networkCode\"`\n\tName        string  `json:\"name\"`\n\tLatitude    float64 `json:\"latitude\"`\n\tLongitude   float64 `json:\"longitude\"`\n\tElevationM  float64 `json:\"elevationM\"`\n\tOperator    string  `json:\"operator\"`\n\tStatus      string  `json:\"status\"`\n}\n\n// Channel is one validity epoch of one channel. A channel that has been\n// recalibrated carries more than one row sharing ChannelCode but not\n// ChannelID; ValidityEnd is empty for the epoch still in force.\ntype Channel struct {\n\tChannelID     string  `json:\"channelId\"`\n\tStationID     string  `json:\"stationId\"`\n\tChannelCode   string  `json:\"channelCode\"`\n\tSampleRateHz  float64 `json:\"sampleRateHz\"`\n\tAzimuthDeg    float64 `json:\"azimuthDeg\"`\n\tDipDeg        float64 `json:\"dipDeg\"`\n\tDepthM        float64 `json:\"depthM\"`\n\tValidityStart string  `json:\"validityStart\"`\n\tValidityEnd   string  `json:\"validityEnd,omitempty\"`\n}\n\ntype Detection struct {\n\tDetectionID string  `json:\"detectionId\"`\n\tChannelID   string  `json:\"channelId\"`\n\tStationID   string  `json:\"stationId\"`\n\tDetectedAt  string  `json:\"detectedAt\"`\n\tAmplitude   float64 `json:\"amplitude\"`\n\tPeriodS     float64 `json:\"periodS\"`\n\tPhaseHint   string  `json:\"phaseHint\"`\n\tEventID     string  `json:\"eventId,omitempty\"`\n}\n\ntype MagnitudeEstimate struct {\n\tEstimateID string  `json:\"estimateId\"`\n\tEventID    string  `json:\"eventId\"`\n\tChannelID  string  `json:\"channelId\"`\n\tValue      float64 `json:\"value\"`\n\tMagType    string  `json:\"magType\"`\n\tResidual   float64 `json:\"residual\"`\n}\n\ntype Event struct {\n\tEventID        string              `json:\"eventId\"`\n\tOriginTime     string              `json:\"originTime\"`\n\tLatitude       float64             `json:\"latitude\"`\n\tLongitude      float64             `json:\"longitude\"`\n\tDepthKm        float64             `json:\"depthKm\"`\n\tMagnitude      float64             `json:\"magnitude,omitempty\"`\n\tMagnitudeType  string              `json:\"magnitudeType,omitempty\"`\n\tReviewStatus   string              `json:\"reviewStatus\"`\n\tDetectionCount int                 `json:\"detectionCount\"`\n\tEstimates      []MagnitudeEstimate `json:\"estimates,omitempty\"`\n\tDetections     []Detection         `json:\"detections,omitempty\"`\n}\n\n```\n\n## Your answer\n\nReply with ONLY a JSON object. No prose before it, no explanation after it, no markdown fence.\n\n{\"choice\": <integer 1-12>, \"confidence\": <float 0.0-1.0>}\n\n`choice` is the menu number of the **ORIGINAL** domain. You must pick one \u2014 there is no\n\"cannot determine\" and abstaining is not available. `confidence` is your honest probability that\nyour choice is correct; a low confidence is not penalised and is more useful than a bluff.\n",
+  "attempts": [
+    {
+      "attempt": 0,
+      "text": "{\"choice\": 3, \"confidence\": 0.98}",
+      "finish_reason": "stop",
+      "served_model": "deepseek-ai/DeepSeek-V4-Pro-0813",
+      "latency_s": 4.17,
+      "parsed_ok": true
+    }
+  ],
+  "parsed": {
+    "choice": 3,
+    "confidence": 0.98
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "key": "qsolog__contacts.go__llm-translation__r2",
+  "arm": "llm-translation",
+  "replicate": 2,
+  "source_path": "corpus/qsolog/api/internal/api/contacts.go",
+  "source_sha256": "af67c3deac92283512d2b9ec9ae11130242873b31b23b9ebf36e5671b9ca18b5",
+  "true_domain_id": "ham-radio-logbook",
+  "language": "go",
+  "artifact_sha256": "6bb17c319174ac67669b899c60cc0fac37d66f55a529793e6ad600a03bb2f775",
+  "artifact_lines": 343,
+  "latency_s": 21.8,
+  "solution_meta": {
+    "model": "Qwen/Qwen2.5-Coder-7B-Instruct",
+    "base_url": "https://router.huggingface.co/v1",
+    "target_domain": "a hotel booking platform with rooms, reservations, and guests",
+    "target_id": "hotel-booking",
+    "temperature": 0.2,
+    "postcondition": {
+      "src_code_lines": 316,
+      "husk_code_lines": 293,
+      "similarity_ratio": 0.592,
+      "ident_retention": 0.51,
+      "code_verbatim": 0.577,
+      "longest_identical_run": 11,
+      "longest_identical_run_share": 0.035,
+      "copied_spans": 11,
+      "copied_span_lines": 79,
+      "copied_span_share": 0.25,
+      "thresholds": {
+        "run_lines": 999999,
+        "run_share": 9.0,
+        "copied_share": 9.0,
+        "retention": 9.0,
+        "ratio": 9.0,
+        "min_code_lines": 12
+      },
+      "verdict": "ok"
+    },
+    "usage": {
+      "prompt_tokens": 4590,
+      "completion_tokens": 3170,
+      "total_tokens": 7760
+    }
+  }
+}

@@ -1,0 +1,271 @@
+package api
+
+import (
+	"context"
+	"database/sql"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"regexp"
+	"strconv"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
+
+	"graphworks/internal/model"
+)
+
+// fetchNode pulls one node together with its edges. Four fields come from the node,
+// two from each edge, in the order the SELECT list declares them.
+func (g *Graph) fetchNode(ctx context.Context, nodeID string) (model.Node, error) {
+	var nd model.Node
+	var ed1 model.Edge
+	var ed2 model.Edge
+	err := g.db.QueryRowContext(ctx, `SELECT n.node_id, n.label, e1.edge_id, e1.target_node_id, e1.weight,
+	              e2.edge_id, e2.target_node_id, e2.weight
+	       FROM nodes n
+	       LEFT JOIN edges e1 ON e1.source_node_id = n.node_id
+	       LEFT JOIN edges e2 ON e2.source_node_id = n.node_id
+	       WHERE n.node_id = ?`, nodeID).Scan(&nd.NodeID, &nd.Label, &ed1.EdgeID, &ed1.TargetNodeID, &ed1.Weight,
+		&ed2.EdgeID, &ed2.TargetNodeID, &ed2.Weight)
+	if err != nil {
+		return model.Node{}, err
+	}
+	nd.Edges = []model.Edge{ed1, ed2}
+	return nd, nil
+}
+
+// precedingNode finds the most recent trusted node on the same path, taken
+// before this one. Estimated nodes are skipped: they carry no register
+// value the tiered calculation can build an interval from.
+func (g *Graph) precedingNode(ctx context.Context, pathID, nodeID, nodeLabel string) (string, float64, bool) {
+	var id string
+	var weight float64
+	err := g.db.QueryRowContext(ctx, `SELECT node_id, weight FROM nodes
+	       WHERE path_id = ? AND node_id != ? AND node_label != ? AND node_type != 'ESTIMATED'
+	       ORDER BY node_weight DESC LIMIT 1`, pathID, nodeID, nodeLabel).Scan(&id, &weight)
+	if err != nil {
+		return "", 0, false
+	}
+	return id, weight, true
+}
+
+func (g *Graph) calculatePathCost(ctx context.Context, pathID string) ([]model.PathCost, error) {
+	rows, err := g.db.QueryContext(ctx, `SELECT cost_number, COALESCE(max_cost,0),
+	              cost_cents_per_unit FROM path_costs WHERE path_id = ?
+	       ORDER BY cost_number`, pathID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []model.PathCost{}
+	for rows.Next() {
+		var c model.PathCost
+		if err := rows.Scan(&c.CostNumber, &c.MaxCost, &c.CostCentsPerUnit); err != nil {
+			return nil, err
+		}
+		out = append(out, c)
+	}
+	return out, rows.Err()
+}
+
+// traversePath walks the path schedule in cost order and accumulates
+// a cost in cents. Each cost absorbs the portion of usage between the
+// previous cost's threshold and its own; a cost whose MaxCost is zero is
+// the open-ended top cost and absorbs everything still unclaimed.
+func traversePath(costUnits float64, costs []model.PathCost) float64 {
+	if costUnits <= 0 {
+		return 0
+	}
+	total := 0.0
+	lower := 0.0
+	for _, c := range costs {
+		upper := c.MaxCost
+		if upper == 0 || upper > costUnits {
+			upper = costUnits
+		}
+		if span := upper - lower; span > 0 {
+			total += span * c.CostCentsPerUnit
+		}
+		lower = upper
+		if lower >= costUnits {
+			break
+		}
+	}
+	return total
+}
+
+func (g *Graph) handleFetchNode(w http.ResponseWriter, r *http.Request) {
+	nodeID := strings.TrimSpace(chi.URLParam(r, "nodeId"))
+	nd, err := g.fetchNode(r.Context(), nodeID)
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, http.StatusNotFound, "not_found", "node not found")
+		return
+	}
+	if err != nil {
+		g.serverError(w, err)
+		return
+	}
+	if priorID, priorWeight, ok := g.precedingNode(r.Context(), nd.PathID, nd.NodeID, nd.Label); ok {
+		costs, err := g.calculatePathCost(r.Context(), nd.PathID)
+		if err != nil {
+			g.serverError(w, err)
+			return
+		}
+		units := nd.Weight - priorWeight
+		nd.Usage = &model.Usage{
+			PrecedingNodeID: priorID,
+			UnitsConsumed:   units,
+			CostCents:       traversePath(units, costs),
+		}
+	}
+	writeJSON(w, http.StatusOK, nd)
+}
+
+type nodeSummary struct {
+	NodeID         string `json:"nodeId"`
+	PathID         string `json:"pathId"`
+	Label          string `json:"label"`
+	Weight         float64 `json:"weight"`
+}
+
+// handleListPathNodes pages the nodes taken along one path-reading route.
+// There is no paths table to check the code against — a path is a
+// property of the nodes assigned to it, not a first-class row — so
+// an unrecognised path simply pages to zero results rather than 404ing.
+func (g *Graph) handleListPathNodes(w http.ResponseWriter, r *http.Request) {
+	pathID := strings.TrimSpace(chi.URLParam(r, "pathId"))
+	q := r.URL.Query()
+	limit := 50
+	if n, err := strconv.Atoi(strings.TrimSpace(q.Get("limit"))); err == nil && n > 0 && n <= 500 {
+		limit = n
+	}
+	offset := 0
+	if n, err := strconv.Atoi(strings.TrimSpace(q.Get("offset"))); err == nil && n > 0 {
+		offset = n
+	}
+	cycleCode := strings.TrimSpace(q.Get("cycleCode"))
+
+	sqlStr := `SELECT node_id, path_id, label, weight
+	           FROM nodes WHERE path_id = ?`
+	args := []any{pathID}
+	if cycleCode != "" {
+		sqlStr += " AND cycle_code = ?"
+		args = append(args, cycleCode)
+	}
+	sqlStr += " ORDER BY node_weight DESC, node_id LIMIT ? OFFSET ?"
+	args = append(args, limit, offset)
+
+	rows, err := g.db.QueryContext(r.Context(), sqlStr, args...)
+	if err != nil {
+		g.serverError(w, err)
+		return
+	}
+	defer rows.Close()
+	out := []nodeSummary{}
+	for rows.Next() {
+		var it nodeSummary
+		if err := rows.Scan(&it.NodeID, &it.PathID, &it.Label, &it.Weight); err != nil {
+			g.serverError(w, err)
+			return
+		}
+		out = append(out, it)
+	}
+	if err := rows.Err(); err != nil {
+		g.serverError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"pathId": pathID,
+		"count":  len(out),
+		"limit":  limit,
+		"offset": offset,
+		"nodes":  out,
+	})
+}
+
+// exceptionUpdate carries pointers so that "absent from the body" stays
+// distinguishable from "present and set to false/empty". requeue is the
+// only field that triggers a write beyond the flagged node itself: it opens
+// a fresh RE-READ record so a field crew has something to close out against.
+type exceptionUpdate struct {
+	ToleranceFlag *bool   `json:"toleranceFlag"`
+	Reason        *string `json:"reason"`
+	Requeue       *bool   `json:"requeue"`
+}
+
+var reasonPattern = regexp.MustCompile(`^(OUT_OF_TOLERANCE|METER_STUCK|ACCESS_BLOCKED|TRANSCRIPTION_ERROR)$`)
+
+func (u *exceptionUpdate) validate() string {
+	if u.Reason != nil && *u.Reason != "" && !reasonPattern.MatchString(*u.Reason) {
+		return "reason must be one of OUT_OF_TOLERANCE, METER_STUCK, ACCESS_BLOCKED, TRANSCRIPTION_ERROR"
+	}
+	return ""
+}
+
+func nullFloat(f float64) any {
+	if f == 0 {
+		return nil
+	}
+	return f
+}
+
+// handleNodeException flags or clears a node as outside tolerance and,
+// optionally, requeues it: rather than mutating the register value in
+// place, requeuing inserts a new pending RE-READ row against the same path
+// so a field crew can supply a fresh, trusted number. The original node is
+// never deleted; it stays as the exception record of what was first seen.
+func (g *Graph) handleNodeException(w http.ResponseWriter, r *http.Request) {
+	nodeID := strings.TrimSpace(chi.URLParam(r, "nodeId"))
+	var u exceptionUpdate
+	if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
+		writeError(w, http.StatusBadRequest, "bad_request", err.Error())
+		return
+	}
+	if msg := u.validate(); msg != "" {
+		writeError(w, http.StatusBadRequest, "bad_request", msg)
+		return
+	}
+	nd, err := g.fetchNode(r.Context(), nodeID)
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, http.StatusNotFound, "not_found", "node not found")
+		return
+	}
+	if err != nil {
+		g.serverError(w, err)
+		return
+	}
+
+	tolerance := nd.ToleranceFlag
+	if u.ToleranceFlag != nil {
+		tolerance = *u.ToleranceFlag
+	}
+	reason := nd.ExceptionReason
+	if u.Reason != nil {
+		reason = *u.Reason
+	}
+	if _, err := g.db.ExecContext(r.Context(),
+		`UPDATE nodes SET tolerance_flag = ?, exception_reason = ? WHERE node_id = ?`,
+		tolerance, nullFloat(reason), nodeID); err != nil {
+		g.serverError(w, err)
+		return
+	}
+
+	if u.Requeue != nil && *u.Requeue {
+		newID := nodeID + "-RQ"
+		if _, err := g.db.ExecContext(r.Context(),
+			`INSERT INTO nodes (node_id, path_id, label, weight)
+			 VALUES (?, ?, ?, 0)`,
+			newID, nd.PathID, nd.Label, nd.Weight); err != nil {
+			g.serverError(w, err)
+			return
+		}
+	}
+
+	updated, err := g.fetchNode(r.Context(), nodeID)
+	if err != nil {
+		g.serverError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, updated)
+}

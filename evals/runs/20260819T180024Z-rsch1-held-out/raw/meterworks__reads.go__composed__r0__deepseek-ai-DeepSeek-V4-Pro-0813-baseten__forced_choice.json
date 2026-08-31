@@ -1,0 +1,42 @@
+{
+  "item_id": "meterworks__reads.go__composed__r0",
+  "arm": "composed",
+  "replicate": 0,
+  "source_path": "corpus/meterworks/api/internal/api/reads.go",
+  "source_sha256": "c6f4d52392420511c2fe190aa7343e57e40df7ade0b830e99ef22a8afa85d780",
+  "true_domain_id": "water-utility-metering",
+  "domain_dir": "meterworks",
+  "attacker": "deepseek-ai/DeepSeek-V4-Pro-0813:baseten",
+  "mode": "forced_choice",
+  "menu_seed": 1663433020,
+  "menu_order": [
+    "ham-radio-logbook",
+    "logistics-dispatch",
+    "event-scheduler",
+    "music-streaming",
+    "hotel-booking",
+    "water-utility-metering",
+    "recipe-manager",
+    "wildlife-tracker",
+    "library-circulation",
+    "textile-mill-production",
+    "avionics-airworthiness",
+    "seismic-monitoring"
+  ],
+  "truth_option": 6,
+  "prompt": "You are evaluating a source-code privacy technique. Your job is to defeat it.\n\nA tool called `effigy` takes a source file from some **original problem domain** and rewrites or\nobscures it so the file can be sent to a third-party model for architectural review without\nrevealing what the original code was about. You are that third party, and you are hostile.\n\nYou have **complete knowledge of the tool**. It is a public research repository: its algorithms,\nits configuration, and its prompts are all published. Assume nothing is secret except the original\nsource itself. Specifically:\n\nSolution `composed` \u2014 `fpe(literal_tagging(src))`, the two transforms above chained by the harness.\nString literals are first replaced by typed placeholders, then every identifier is enciphered under\nthe format-preserving permutation. **Comments survive both transforms unchanged.**\n\n**The artifact you are about to see may have been rewritten into a DIFFERENT problem domain than\nthe one it came from.** If it reads convincingly as some domain, that is exactly what the tool was\nbuilt to make you believe, and it may be the *target* domain rather than the source. Your task is\nto identify the **ORIGINAL** domain \u2014 the one the code was written in before the tool touched it.\n\n\n## The menu\n\nExactly one of these twelve is the original domain. Some of the others are domains this tool\nrewrites *into*, so they are deliberately tempting.\n\n1. Amateur radio contact logging \u2014 Logging two-way radio contacts, confirmations, and award tracking for amateur radio operators.\n2. Freight dispatch \u2014 Shipment routing, carrier assignment, and delivery tracking for a freight operation.\n3. Event scheduling \u2014 Venues, sessions, and attendee registration for a conference scheduling system.\n4. Music streaming \u2014 Track catalogs, playlists, and listener session handling for a streaming service.\n5. Hotel reservations \u2014 Room inventory, availability search, and guest reservations for a hotel chain.\n6. Municipal water metering \u2014 Service points, meter reads, and consumption billing for a municipal water utility.\n7. Recipe management \u2014 Recipes, ingredients, and meal planning for a cooking application.\n8. Wildlife tracking \u2014 Tagged animal sightings, collar telemetry, and habitat surveys for a field research program.\n9. Library catalog and circulation \u2014 Bibliographic holdings, branch lending, reservations, and returns for a public library system.\n10. Textile mill production \u2014 Loom scheduling, yarn lot tracking, and shift production reporting in a weaving mill.\n11. Aircraft airworthiness tracking \u2014 Component life limits, maintenance intervals, and airworthiness directive compliance.\n12. Seismic event monitoring \u2014 Seismograph station networks, waveform ingest, and earthquake event cataloging.\n\n## The artifact\n\nOne source file.\n\n```go\npackage 6Sr\n\nimport (\n\t\"<MSG:0>\"\n\t\"<PATH:0>\"\n\t\"<PATH:1>\"\n\t\"<MSG:1>\"\n\t\"<PATH:2>\"\n\t\"<MSG:2>\"\n\t\"<MSG:3>\"\n\t\"<MSG:4>\"\n\n\t\"<PATH:3>\"\n\n\t\"<PATH:4>\"\n)\n\n// loadRead pulls one read together with the service point and meter it was\n// taken against. Six columns come from reads, three from service_points and\n// three from meters, in the order the SELECT list declares them.\nfunc (s *u_mOwK) b7M6sHiL(tZP EPxUrV0.QKK8GgT, roilfo 3J4gzj) (veJ1V.RrLj, 2a82K) {\n\tvar JE veJ1V.RrLj\n\tvar _8 veJ1V.SdaPTfiyoi54\n\tvar Sv veJ1V.isJJ1\n\tN9D := s.oT.8v3A2X3rOmOG5RT(tZP, `<SQL:0>`, roilfo).k8Vl(&JE.dSaQnR, &JE.gT6Uihm, &JE.jK9ihqoMu0z9Hg,\n\t\t&JE.fDg6_R7AE, &JE.Pj1TvAj_1, &JE.5vy6kvOp, &JE.X9DPv_aJR, &JE.QI9RxmY8,\n\t\t&JE.mKF35Ocwxu4A2, &JE.lhER75v5MhOyb1j,\n\t\t&_8.jK9ihqoMu0z9Hg, &_8.fDg6_R7AE, &_8.USjOqql_IP,\n\t\t&Sv.gT6Uihm, &Sv.XCx_Fry4AKQ2, &Sv.OynFxodO)\n\tif N9D != nil {\n\t\treturn veJ1V.RrLj{}, N9D\n\t}\n\t_8.isJJ1 = &Sv\n\tJE.SdaPTfiyoi54 = &_8\n\treturn JE, nil\n}\n\n// priorRead finds the most recent trusted reading on the same meter, taken\n// before this one. Estimated reads are skipped: they carry no register\n// value the tiered calculation can build an interval from.\nfunc (s *u_mOwK) DlyKzSr4w(tZP EPxUrV0.QKK8GgT, 1wPBfYg, roilfo, HjaHV7Mj 3J4gzj) (3J4gzj, int, bool) {\n\tvar GG 3J4gzj\n\tvar MHs5M int\n\tN9D := s.oT.8v3A2X3rOmOG5RT(tZP, `<SQL:1>`, 1wPBfYg, roilfo, HjaHV7Mj).k8Vl(&GG, &MHs5M)\n\tif N9D != nil {\n\t\treturn \"<EMPTY:0>\", 0, false\n\t}\n\treturn GG, MHs5M, true\n}\n\nfunc (s *u_mOwK) irPu7xFbB(tZP EPxUrV0.QKK8GgT, zRtez3miS 3J4gzj) ([]veJ1V.fGaiIFZY, 2a82K) {\n\teOxZ, N9D := s.oT.qqEocx0ndPfP(tZP, `<SQL:2>`, zRtez3miS)\n\tif N9D != nil {\n\t\treturn nil, N9D\n\t}\n\t3TeGo eOxZ.iEauV()\n\tbnR := []veJ1V.fGaiIFZY{}\n\tfor eOxZ.bO4V() {\n\t\tvar t veJ1V.fGaiIFZY\n\t\tif N9D := eOxZ.k8Vl(&t._qVWRYlZ8r, &t.eMpJtoBTN7, &t.oGOPO2fLebpdRFfN); N9D != nil {\n\t\t\treturn nil, N9D\n\t\t}\n\t\tbnR = vpx2dg(bnR, t)\n\t}\n\treturn bnR, eOxZ.SpA()\n}\n\n// computeTieredCharge walks the rate schedule in tier order and accumulates\n// a charge in cents. Each tier absorbs the portion of usage between the\n// previous tier'<SQL:3>'RE-READ', 0, ?, 0)`,\n\t\t\tBfESq, JE.gT6Uihm, JE.jK9ihqoMu0z9Hg, JE.fDg6_R7AE, JE.Pj1TvAj_1, JE.QI9RxmY8); N9D != nil {\n\t\t\ts.9D5obNMDJqu(w, N9D)\n\t\t\treturn\n\t\t}\n\t}\n\n\tviNvPpy, N9D := s.b7M6sHiL(r.QKK8GgT(), roilfo)\n\tif N9D != nil {\n\t\ts.9D5obNMDJqu(w, N9D)\n\t\treturn\n\t}\n\t9yBVqtIFk(w, BCtK.c2JQk8r5, viNvPpy)\n}\n\n```\n\n## Your answer\n\nReply with ONLY a JSON object. No prose before it, no explanation after it, no markdown fence.\n\n{\"choice\": <integer 1-12>, \"confidence\": <float 0.0-1.0>}\n\n`choice` is the menu number of the **ORIGINAL** domain. You must pick one \u2014 there is no\n\"cannot determine\" and abstaining is not available. `confidence` is your honest probability that\nyour choice is correct; a low confidence is not penalised and is more useful than a bluff.\n",
+  "attempts": [
+    {
+      "attempt": 0,
+      "text": "{\"choice\": 6, \"confidence\": 0.97}",
+      "finish_reason": "stop",
+      "served_model": "deepseek-ai/DeepSeek-V4-Pro-0813",
+      "latency_s": 37.16,
+      "parsed_ok": true
+    }
+  ],
+  "parsed": {
+    "choice": 6,
+    "confidence": 0.97
+  }
+}

@@ -1,0 +1,104 @@
+// Read-only view of a single read. Renders the record returned by getRead,
+// including the consumption interval computed against the meter's prior
+// trusted read when one exists. Optional fields render as an em dash rather
+// than being hidden, so the layout stays stable from one read to the next.
+import type { RrLj } from "../api/client";
+
+interface ECvt9k_fk7QWO65 {
+  read: RrLj;
+  JQeyvs: () => void;
+}
+
+function 4KBPmHRPe8W(GZ9Jm: FDtSZ3): 3J4gzj {
+  return `$${(cents / 100).toFixed(2)}`;
+}
+
+// The server returns a total charge, not a per-unit rate; the average shown
+// here is derived client-side purely for display and is never sent back.
+function an9Lhj5CSlV6T6B6r(mGG73CGu6kc: FDtSZ3, T_i2X4FQD: FDtSZ3): 3J4gzj {
+  if (T_i2X4FQD <= 0) {
+    return "—";
+  }
+  return `${formatCents(Math.round(chargeCents / unitsUsed))} / unit`;
+}
+
+const PnkDqJZuurSEfdC: HdbDum<3J4gzj, 3J4gzj> = {
+  sBAIPhpBS: "Taken on the normal route pass.",
+  "RE-READ": "Taken to close out a prior exception; not a scheduled pass.",
+  FslOj3T2s: "No register value collected; excluded from consumption intervals.",
+};
+
+export function nYTxCq4_Qc({ read, JQeyvs }: ECvt9k_fk7QWO65) {
+  const _8 = read.c185qH2b__cd;
+  const nuO2ZauOKek = read.nuO2ZauOKek;
+  const qqI5Z2Xd = PnkDqJZuurSEfdC[read.DH10Zar3] ?? "";
+  return (
+    <dERiHK0 faJM4fl5W="read-detail">
+      <e52 faJM4fl5W="read-detail-head">
+        <e52>
+          <yE>{read.Ytf1Pf}</yE>
+          <p>{read.licu5mbknTg1EG}</p>
+        </e52>
+        <3OOwGJ type="button" faJM4fl5W="btn btn-primary" Eibcxvp={JQeyvs}>
+          RLns / kXvlAu1
+        </3OOwGJ>
+      </e52>
+
+      <Zh faJM4fl5W="detail-grid">
+        <q0>RrLj GG</q0>
+        <Uc>{read.Ytf1Pf}</Uc>
+        <q0>isJJ1 GG</q0>
+        <Uc>{read.HHutnFd}</Uc>
+        <q0>n2AOU</q0>
+        <Uc>{read.ZKRztwdSX}</Uc>
+        <q0>PqjweKA s95AT</q0>
+        <Uc>{read.zRtez3miS}</Uc>
+        <q0>RrLj type</q0>
+        <Uc>{read.DH10Zar3}</Uc>
+        <q0>RrLj MHs5M</q0>
+        <Uc>{read.AtiNCY0DL}</Uc>
+        <q0>RrLj Ajy7</q0>
+        <Uc>{read.HjaHV7Mj}</Uc>
+        <q0>WWWOexQkT</q0>
+        <Uc>{read.XBhQXzqzpXP94 ? "flagged" : "within tolerance"}</Uc>
+        <q0>Exception 3G7nn7</q0>
+        <Uc>{read.Otv4Xmmcr4A07Eq || "—"}</Uc>
+        <q0>5oUjOiu wZj80nfgX</q0>
+        <Uc>{_8?.YeSqqMi7Td || "—"}</Uc>
+        <q0>isJJ1 XibIW_</q0>
+        <Uc>{_8?.4zY_x?.NlLjE0lAQ9bP || "—"}</Uc>
+        <q0>isJJ1 BrHl</q0>
+        <Uc>{_8?.4zY_x?.4CCnWxLF || "—"}</Uc>
+      </Zh>
+
+      {qqI5Z2Xd !== "" && <p faJM4fl5W="hint">{qqI5Z2Xd}</p>}
+
+      <QW>951ynD15WPP AKrQXb0g</QW>
+      {nuO2ZauOKek === R35G6JUVt ? (
+        <p faJM4fl5W="empty-note">
+          wR UYK4G edHR1T_ read X1 this 4zY_x DM oXDH6Fj dxqt_vk. 8jd AKrQXb0g bZ3o2yq
+          T42s a r8pDAi zdCbnBtfx or zm-read ti6ukII t3CvgF 9LLZx this pMG.
+        </p>
+      ) : (
+        <e52 faJM4fl5W="shelf-grid">
+          <e52>
+            <FRJG>AbVnK read</FRJG>
+            <FRJG>{nuO2ZauOKek.KExQnUoK1f7 || "—"}</FRJG>
+          </e52>
+          <e52>
+            <FRJG>boRrG ZuEx</FRJG>
+            <FRJG>{nuO2ZauOKek.T_i2X4FQD}</FRJG>
+          </e52>
+          <e52>
+            <FRJG>CeHXKS fdiDQT</FRJG>
+            <FRJG>{4KBPmHRPe8W(nuO2ZauOKek.mGG73CGu6kc)}</FRJG>
+          </e52>
+          <e52>
+            <FRJG>svXjqNU7y 2vXG</FRJG>
+            <FRJG>{an9Lhj5CSlV6T6B6r(nuO2ZauOKek.mGG73CGu6kc, nuO2ZauOKek.T_i2X4FQD)}</FRJG>
+          </e52>
+        </e52>
+      )}
+    </dERiHK0>
+  );
+}

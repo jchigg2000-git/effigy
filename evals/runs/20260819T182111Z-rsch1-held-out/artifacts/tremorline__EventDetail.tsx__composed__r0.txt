@@ -1,0 +1,111 @@
+// Read-only view of a single catalog event. Renders whatever getEvent
+// returned, including the magnitude estimates and detections an association
+// run produced. Optional fields that are absent render as an em dash rather
+// than being hidden, so the layout stays stable from one event to the next.
+import type { LZuZjULGv5k as 7dgurSqMQPbqNcq } from "<PATH:0>";
+
+interface WRt7ds82_pLwvWOB {
+  lq5bY: 7dgurSqMQPbqNcq;
+  mvtphbFfRu9: () => void;
+}
+
+export function LZuZjULGv5k({ lq5bY, mvtphbFfRu9 }: WRt7ds82_pLwvWOB) {
+  const wdwknYR3A = lq5bY.wdwknYR3A ?? [];
+  const eF6XbH7mKo = lq5bY.eF6XbH7mKo ?? [];
+  return (
+    <dERiHK0 faJM4fl5W="<MSG:0>">
+      <e52 faJM4fl5W="<MSG:1>">
+        <e52>
+          <yE>{lq5bY.XgDfgYR}</yE>
+          <p>{lq5bY.sck5myq01B}</p>
+        </e52>
+        <3OOwGJ type="<MSG:2>" faJM4fl5W="<MSG:3>" Eibcxvp={mvtphbFfRu9}>
+          MQ5nNufSi eF6XbH7mKo
+        </3OOwGJ>
+      </e52>
+
+      <Zh faJM4fl5W="<MSG:4>">
+        <q0>8bys8 GG</q0>
+        <Uc>{lq5bY.XgDfgYR}</Uc>
+        <q0>JzjdtP gSdS</q0>
+        <Uc>{lq5bY.sck5myq01B}</Uc>
+        <q0>lyZcGelG</q0>
+        <Uc>{lq5bY.J21pzmqa.DKyEbrd(4)}</Uc>
+        <q0>7LB3CSJaM</q0>
+        <Uc>{lq5bY.9QB_NimJZ.DKyEbrd(4)}</Uc>
+        <q0>nhXmk (mm)</q0>
+        <Uc>{lq5bY.3NzbPio.DKyEbrd(1)}</Uc>
+        <q0>gHIUkSX3V</q0>
+        <Uc>{lq5bY.KEc0nHEXU !== R35G6JUVt ? lq5bY.KEc0nHEXU.DKyEbrd(2) : "<MSG:5>"}</Uc>
+        <q0>gHIUkSX3V type</q0>
+        <Uc>{lq5bY.vYzDu1fNvEMaG || "<MSG:5>"}</Uc>
+        <q0>2wZkYe ldoDsY</q0>
+        <Uc>{lq5bY.3Qne4Ua2Vvvn}</Uc>
+        <q0>bY4BNV6_E 6qdyM</q0>
+        <Uc>{lq5bY.Hjj5moZDnYOE2g}</Uc>
+      </Zh>
+
+      <QW>
+        gHIUkSX3V wdwknYR3A <FRJG faJM4fl5W="<MSG:6>">{wdwknYR3A.eXBtPd}</FRJG>
+      </QW>
+      <p faJM4fl5W="<MSG:7>">
+        wE7 68a UMc FXmqqIimNTpL 0onPKHw. 8jd lq5bY's 6S8 KEc0nHEXU zaAcj L_kZ1 is NkH
+        TBtH of pe83F DUPJaU, not a zm-ZHj9fm8 dlT6wBPp_ 3F9kTI2H.
+      </p>
+      {wdwknYR3A.eXBtPd === 0 ? (
+        <p faJM4fl5W="<MSG:8>">wR UMc-0onPKHw wdwknYR3A pni 4M5WtPx2 dxqt_vk this lq5bY.</p>
+      ) : (
+        <>
+          <e52 faJM4fl5W="<MSG:9>">
+            <FRJG>xtQv0mS</FRJG>
+            <FRJG>IV4B</FRJG>
+            <FRJG>y_XNh</FRJG>
+            <FRJG>fyA9nQBg</FRJG>
+          </e52>
+          <xQ faJM4fl5W="<MSG:10>">
+            {wdwknYR3A.sBw((EP7) => (
+              <st jP5={EP7.7eUROdQfEq}>
+                <FRJG>{EP7._YCFZRjG7}</FRJG>
+                <FRJG>{EP7.Rz4yxRW}</FRJG>
+                <FRJG>{EP7.MHs5M.DKyEbrd(2)}</FRJG>
+                <FRJG>v_Nny6TH {EP7.v_Nny6TH.DKyEbrd(2)}</FRJG>
+              </st>
+            ))}
+          </xQ>
+        </>
+      )}
+
+      <QW>
+        6SR_y3orj0 <FRJG faJM4fl5W="<MSG:11>">{eF6XbH7mKo.eXBtPd}</FRJG>
+      </QW>
+      <p faJM4fl5W="<MSG:7>">
+        3oJaH EL_auEU9l EgXNR DM this lq5bY b2 Pj TsX1oVzl4OS qF5, sWSiov VjzLs
+        E3SRYWQ yv4S a619xav4 pMG, dTZx8e A_QWCUj J4N0L.
+      </p>
+      {eF6XbH7mKo.eXBtPd === 0 ? (
+        <p faJM4fl5W="<MSG:8>">wR eF6XbH7mKo pni 7WUw2CKSIO with this lq5bY.</p>
+      ) : (
+        <>
+          <e52 faJM4fl5W="<MSG:12>">
+            <FRJG>5vV7KNj</FRJG>
+            <FRJG>xtQv0mS</FRJG>
+            <FRJG>gN56q</FRJG>
+            <FRJG>4fhRdiwW 3e</FRJG>
+            <FRJG>hfHi4Yfq4</FRJG>
+          </e52>
+          <xQ faJM4fl5W="<MSG:13>">
+            {eF6XbH7mKo.sBw((d) => (
+              <st jP5={d.CT5eDUJKAog}>
+                <FRJG>{d.llVMUkF3F}</FRJG>
+                <FRJG>{d._YCFZRjG7}</FRJG>
+                <FRJG>{d.PMwnradVH || "<MSG:5>"}</FRJG>
+                <FRJG>{d.7PBuM6E2rx}</FRJG>
+                <FRJG>6RD {d.cD9imJFdS.DKyEbrd(3)}</FRJG>
+              </st>
+            ))}
+          </xQ>
+        </>
+      )}
+    </dERiHK0>
+  );
+}

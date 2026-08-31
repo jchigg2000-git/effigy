@@ -1,0 +1,75 @@
+// Read-only view of a single listener. Renders the record returned by
+// getUserProfile, including every playlist that has been matched against it.
+// Optional fields that are absent render as an em dash rather than being
+// hidden, so the layout stays stable from one record to the next.
+import type { User } from "../api/user";
+
+interface ListenerProfileProps {
+  user: User;
+}
+
+export function ListenerProfile({ user }: ListenerProfileProps) {
+  const playlists = user.playlists ?? [];
+  const active = Boolean(user.isActive);
+  return (
+    <section className="listener-profile">
+      <div className="listener-profile-head">
+        <div>
+          <h2>{user.displayName}</h2>
+          <p>{user.userId}</p>
+        </div>
+        <span className={active ? "status-active" : "status-inactive"}>
+          {active ? "Active" : "Inactive"}
+        </span>
+      </div>
+
+      <dl className="profile-grid">
+        <dt>User id</dt>
+        <dd>{user.userId}</dd>
+        <dt>Display name</dt>
+        <dd>{user.displayName}</dd>
+        <dt>Email</dt>
+        <dd>{user.email}</dd>
+        <dt>Country</dt>
+        <dd>{user.country}</dd>
+        <dt>Language</dt>
+        <dd>{user.language}</dd>
+        <dt>Subscription status</dt>
+        <dd>{user.subscriptionStatus}</dd>
+        <dt>Last login</dt>
+        <dd>{user.lastLogin}</dd>
+      </dl>
+
+      <h3>
+        Matched playlists <span className="playlist-count">{playlists.length}</span>
+      </h3>
+      {playlists.length === 0 ? (
+        <p className="empty-note">
+          No playlists have matched this listener yet. A playlist only
+          appears here once its creator, genre, and release date agree
+          exactly with this record.
+        </p>
+      ) : (
+        <ul className="playlist-list">
+          {playlists.map((p) => (
+            <li key={p.playlistId}>
+              <span>{p.createdBy}</span>
+              <span>{p.genre}</span>
+              <span>{p.releaseDate}</span>
+              <span>{p.matchStatus}</span>
+              <span>{p.listenedAt}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* The listening-history rollup lives at the track level, not here: one
+          listener's match says nothing about how many times a track has been
+          listened to by different users. */}
+      <p className="hint">
+        Listening history for this user, if any, is reflected in the track's
+        listening-history rollup rather than repeated on this page.
+      </p>
+    </section>
+  );
+}

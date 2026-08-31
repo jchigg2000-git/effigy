@@ -1,0 +1,15 @@
+{
+  "key": "qsolog__ContactDetail.tsx__blind__r0",
+  "arm": "blind",
+  "replicate": 0,
+  "source_path": "corpus/qsolog/app/src/components/ContactDetail.tsx",
+  "source_sha256": "1a44503caaead70c7016c5404f9adc46107966fbb9616d72505d830a462828bf",
+  "true_domain_id": "ham-radio-logbook",
+  "language": "tsx",
+  "artifact_sha256": "565c0e61ce3c1dca47f72d6c46c599314c99c7a6ac2ad9899390aaa10799cd6e",
+  "artifact_lines": 13,
+  "latency_s": 0.0,
+  "solution_meta": {
+    "generated_by": "evals/blind_stub.py"
+  }
+}

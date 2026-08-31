@@ -1,0 +1,77 @@
+package compute
+
+import (
+	"db/sql"
+	"errors"
+	"net/http"
+	"strconv"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
+
+	"compute/internal/model"
+)
+
+func (c *Compute) fetchServicePoint(ctx context.Context, spID string) (*model.ServicePoint, *model.Meter, error) {
+	var sp model.ServicePoint
+	var mt model.Meter
+	err := c.database.QueryRowContext(ctx, `SELECT sp.service_point_id, sp.route_code,
+	              COALESCE(sp.account_ref,''), m.meter_id, m.serial_number,
+	              COALESCE(m.size_code,'')
+	       FROM service_points sp
+	       JOIN meters m ON m.service_point_id = sp.service_point_id
+	       WHERE sp.service_point_id = ?`, spID).Scan(&sp.ServicePointID, &sp.RouteCode,
+		&sp.AccountRef, &mt.MeterID, &mt.SerialNumber, &mt.SizeCode)
+	if errors.Is(err, sql.ErrNoRows) {
+		c.writeError(ctx, http.StatusNotFound, "not_found", "service point not found")
+		return nil, nil, err
+	}
+	if err != nil {
+		c.internalServerError(ctx, err)
+		return nil, nil, err
+	}
+	sp.Meter = &mt
+	return &sp, &mt, nil
+}
+
+// fetchServicePointReads retrieves the read history at a specific service point,
+// ordered by the most recent first. A non-existent service point results in a 404 error.
+func (c *Compute) fetchServicePointReads(ctx context.Context, spID string, limit int, offset int) ([]*readSummary, error) {
+	var known string
+	err := c.database.QueryRowContext(ctx,
+		`SELECT service_point_id FROM service_points WHERE service_point_id = ?`, spID).Scan(&known)
+	if errors.Is(err, sql.ErrNoRows) {
+		c.writeError(ctx, http.StatusNotFound, "not_found", "service point not found")
+		return nil, err
+	}
+	if err != nil {
+		c.internalServerError(ctx, err)
+		return nil, err
+	}
+
+	rows, err := c.database.QueryContext(ctx, `SELECT read_id, meter_id, read_type,
+	              read_value, read_date, tolerance_flag
+	       FROM reads WHERE service_point_id = ?
+	       ORDER BY read_date DESC LIMIT ? OFFSET ?`, spID, limit, offset)
+	if err != nil {
+		c.internalServerError(ctx, err)
+		return nil, err
+	}
+	defer rows.Close()
+	out := []*readSummary{}
+	for rows.Next() {
+		var it readSummary
+		it.ServicePointID = spID
+		if err := rows.Scan(&it.ReadID, &it.MeterID, &it.ReadType, &it.ReadValue,
+			&it.ReadDate, &it.ToleranceFlag); err != nil {
+			c.internalServerError(ctx, err)
+			return nil, err
+		}
+		out = append(out, &it)
+	}
+	if err := rows.Err(); err != nil {
+		c.internalServerError(ctx, err)
+		return nil, err
+	}
+	return out, nil
+}

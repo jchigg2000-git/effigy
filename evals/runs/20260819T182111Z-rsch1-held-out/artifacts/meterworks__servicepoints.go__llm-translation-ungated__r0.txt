@@ -1,0 +1,95 @@
+package compute
+
+import (
+	"db/sql"
+	"errors"
+	"net/http"
+	"strconv"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
+
+	"mathworks/internal/model"
+)
+
+func (c *Controller) processServicePointRequest(w http.ResponseWriter, r *http.Request) {
+	servicePointID := strings.TrimSpace(chi.URLParam(r, "spId"))
+	var servicePoint model.ServicePoint
+	var meter model.Meter
+	err := c.database.QueryRowContext(r.Context(), `SELECT sp.service_point_id, sp.route_code,
+	              COALESCE(sp.account_ref,''), m.meter_id, m.serial_number,
+	              COALESCE(m.size_code,'')
+	       FROM service_points sp
+	       JOIN meters m ON m.service_point_id = sp.service_point_id
+	       WHERE sp.service_point_id = ?`, servicePointID).Scan(&servicePoint.ServicePointID, &servicePoint.RouteCode,
+		&servicePoint.AccountRef, &meter.MeterID, &meter.SerialNumber, &meter.SizeCode)
+	if errors.Is(err, sql.ErrNoRows) {
+		c.respondWithError(w, http.StatusNotFound, "not_found", "service point not found")
+		return
+	}
+	if err != nil {
+		c.internalServerError(w, err)
+		return
+	}
+	servicePoint.Meter = &meter
+	c.respondWithJSON(w, http.StatusOK, servicePoint)
+}
+
+// fetchServicePointReads retrieves the read history at a specific service point,
+// ordered by the most recent first. A non-existent service point results in a 404 error.
+func (c *Controller) fetchServicePointReads(w http.ResponseWriter, r *http.Request) {
+	servicePointID := strings.TrimSpace(chi.URLParam(r, "spId"))
+	queryParams := r.URL.Query()
+	limit := 50
+	if num, err := strconv.Atoi(strings.TrimSpace(queryParams.Get("limit"))); err == nil && num > 0 && num <= 500 {
+		limit = num
+	}
+	offset := 0
+	if num, err := strconv.Atoi(strings.TrimSpace(queryParams.Get("offset"))); err == nil && num > 0 {
+		offset = num
+	}
+
+	var known string
+	err := c.database.QueryRowContext(r.Context(),
+		`SELECT service_point_id FROM service_points WHERE service_point_id = ?`, servicePointID).Scan(&known)
+	if errors.Is(err, sql.ErrNoRows) {
+		c.respondWithError(w, http.StatusNotFound, "not_found", "service point not found")
+		return
+	}
+	if err != nil {
+		c.internalServerError(w, err)
+		return
+	}
+
+	results, err := c.database.QueryContext(r.Context(), `SELECT read_id, meter_id, read_type,
+	              read_value, read_date, tolerance_flag
+	       FROM reads WHERE service_point_id = ?
+	       ORDER BY read_date DESC LIMIT ? OFFSET ?`, servicePointID, limit, offset)
+	if err != nil {
+		c.internalServerError(w, err)
+		return
+	}
+	defer results.Close()
+	readSummaries := []readSummary{}
+	for results.Next() {
+		var item readSummary
+		item.ServicePointID = servicePointID
+		if err := results.Scan(&item.ReadID, &item.MeterID, &item.ReadType, &item.ReadValue,
+			&item.ReadDate, &item.ToleranceFlag); err != nil {
+			c.internalServerError(w, err)
+			return
+		}
+		readSummaries = append(readSummaries, item)
+	}
+	if err := results.Err(); err != nil {
+		c.internalServerError(w, err)
+		return
+	}
+	c.respondWithJSON(w, http.StatusOK, map[string]any{
+		"servicePointId": servicePointID,
+		"count":          len(readSummaries),
+		"limit":          limit,
+		"offset":         offset,
+		"reads":          readSummaries,
+	})
+}

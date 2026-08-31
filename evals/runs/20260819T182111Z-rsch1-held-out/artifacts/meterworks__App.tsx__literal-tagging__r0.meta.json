@@ -1,0 +1,20 @@
+{
+  "key": "meterworks__App.tsx__literal-tagging__r0",
+  "arm": "literal-tagging",
+  "replicate": 0,
+  "source_path": "corpus/meterworks/app/src/App.tsx",
+  "source_sha256": "a837cfa4f34b5bd6b26cbb3668905e652444c7108847e2828925eafa533cc3c0",
+  "true_domain_id": "water-utility-metering",
+  "language": "tsx",
+  "artifact_sha256": "9e65d908d300efadecf2247d08722b74cdae611352aaca9aa35cf54cf597ca37",
+  "artifact_lines": 169,
+  "latency_s": 0.0,
+  "solution_meta": {
+    "literals_by_class": {
+      "MSG": 30,
+      "PATH": 3,
+      "EMPTY": 6
+    },
+    "total_literals_replaced": 39
+  }
+}

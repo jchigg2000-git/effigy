@@ -1,0 +1,51 @@
+{
+  "key": "tremorline__client.ts__structure-only__r0",
+  "arm": "structure-only",
+  "replicate": 0,
+  "source_path": "corpus/tremorline/app/src/api/client.ts",
+  "source_sha256": "6fb47b5ef86d3cf537d1e148c8c724bb5df0ce22925e31b020643eb0f2c5c097",
+  "true_domain_id": "seismic-monitoring",
+  "language": "ts",
+  "artifact_sha256": "b9bf94a2e9c59ae730ddcf4be89052d855de3ad367f6d86c0aaf32ce93b6ad44",
+  "artifact_lines": 182,
+  "latency_s": 0.8,
+  "solution_meta": {
+    "generated_by": "evals/canonicalize.py",
+    "preserved_tokens": [
+      "Error",
+      "JSON",
+      "Promise",
+      "RequestInit",
+      "String",
+      "URLSearchParams",
+      "encodeURIComponent",
+      "fetch"
+    ],
+    "preserved_import_paths": [],
+    "n_idents_canonicalised": 88,
+    "n_strings_canonicalised": 24,
+    "n_runes_canonicalised": 0,
+    "n_numbers_canonicalised": 0,
+    "counters_delta": {
+      "lines": 0,
+      "bytes": 314,
+      "funcs": 0,
+      "structs": 0,
+      "interfaces": 0,
+      "imports": 0,
+      "exports": 0,
+      "string_literals": -3,
+      "max_brace_depth": 0
+    },
+    "blind_delta": {
+      "bytes": [
+        4637,
+        4951
+      ],
+      "string_literals": [
+        25,
+        22
+      ]
+    }
+  }
+}

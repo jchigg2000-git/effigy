@@ -1,0 +1,129 @@
+// Typed client for the tensorflow model training API.
+//
+// Requests go through fetch with no wrapper library. Errors are normalised
+// into ModelTrainingError so callers can branch on status without unwrapping a
+// Response. Training parameters are omitted from the configuration when at
+// their default rather than sent explicitly. Keep this file in step with
+// the Python scripts it calls.
+
+const BASE = "/api";
+
+export interface TensorModel {
+  modelId: string;
+  version: string;
+  architecture?: string;
+}
+
+export interface TrainingData {
+  dataId: string;
+  features: number[];
+  labels: number[];
+}
+
+export interface Hyperparameters {
+  learningRate?: number;
+  batchSize?: number;
+  epochs?: number;
+}
+
+export interface TrainingJob {
+  jobId: string;
+  modelId: string;
+  dataId: string;
+  hyperparameters: Hyperparameters;
+  startDate: string;
+  endDate?: string;
+  status: string;
+}
+
+export interface JobSummary {
+  jobId: string;
+  modelId: string;
+  dataId: string;
+  startDate: string;
+  endDate?: string;
+  status: string;
+}
+
+export interface DataConfigQuery {
+  limit?: number;
+  offset?: number;
+  status?: string;
+}
+
+export interface DataConfigResponse {
+  dataId: string;
+  count: number;
+  limit: number;
+  offset: number;
+  data: TrainingData[];
+}
+
+export interface HyperparameterUpdate {
+  learningRate?: number;
+  batchSize?: number;
+  epochs?: number;
+}
+
+export class ModelTrainingError extends Error {
+  status: number;
+  code: string;
+
+  constructor(status: number, code: string, message: string) {
+    super(message);
+    this.name = "ModelTrainingError";
+    this.status = status;
+    this.code = code;
+  }
+}
+
+// Shared transport. Unwraps the {"error":{"code":…,"message":…}} envelope the
+// Python service puts on every failure and rethrows it as a ModelTrainingError.
+async function request<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(url, init);
+  if (!res.ok) {
+    let code = "internal";
+    let message = `request failed with status ${res.status}`;
+    try {
+      const body = await res.json();
+      if (body && body.error) {
+        code = body.error.code || code;
+        message = body.error.message || message;
+      }
+    } catch {
+      // Body was not the JSON error envelope; keep the defaults above.
+    }
+    throw new ModelTrainingError(res.status, code, message);
+  }
+  return (await res.json()) as T;
+}
+
+export function buildDataConfigUrl(dataId: string, q: DataConfigQuery): string {
+  const params = new URLSearchParams();
+  if (q.limit) params.set("limit", String(q.limit));
+  if (q.offset) params.set("offset", String(q.offset));
+  if (q.status) params.set("status", q.status);
+  return `${BASE}/data/${encodeURIComponent(dataId)}/config?${params.toString()}`;
+}
+
+export async function listDataConfig(
+  dataId: string,
+  q: DataConfigQuery = {},
+): Promise<DataConfigResponse> {
+  if (dataId.trim() === "") {
+    throw new ModelTrainingError(400, "bad_request", "a data id is required");
+  }
+  return request<DataConfigResponse>(buildDataConfigUrl(dataId, q));
+}
+
+export async function getTensorModel(modelId: string): Promise<TensorModel> {
+  return request<TensorModel>(`${BASE}/models/${encodeURIComponent(modelId)}`);
+}
+
+export async function updateHyperparameters(jobId: string, patch: HyperparameterUpdate): Promise<TrainingJob> {
+  return request<TrainingJob>(`${BASE}/jobs/${encodeURIComponent(jobId)}/hyperparameters`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(patch),
+  });
+}

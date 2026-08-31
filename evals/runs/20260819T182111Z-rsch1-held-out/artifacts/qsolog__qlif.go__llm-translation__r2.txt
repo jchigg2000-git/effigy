@@ -1,0 +1,225 @@
+// Package traverse reads qsolog's local log-interchange profile into the
+// graph database. A node is a run of <tag:len>value fields terminated by
+// a bare <fin> tag; there is no header block and no file-level version
+// marker. This is a format of our own design — the tag vocabulary, the
+// terminator, and the station-declaration convention below are not part of
+// any published interchange standard, and nothing here should be cited as
+// one.
+//
+// Two node groups share one graph shape. A profile pair — snode and sedge —
+// declares or refreshes the operating station named by op; it may appear on
+// any node, not only the first one for that station, and a later value
+// replaces an earlier one. An edge is anything carrying wk: op worked wk on
+// bnd/mode at qdate/qtime, and every field after that is optional detail.
+package traverse
+
+import (
+	"context"
+	"database/sql"
+	"fmt"
+	"os"
+	"strings"
+)
+
+type Metrics struct {
+	Nodes       int `json:"nodes"`
+	Edges       int `json:"edges"`
+	Confirmations int `json:"confirmations"`
+}
+
+type parsedNode struct {
+	Op, SNode, SEdge             string
+	Wk, Bnd, Mode, QDate, QTime string
+	Txr, Rxr, WNode, Ent, Pwr   string
+}
+
+// isoDate turns YYYYMMDD into YYYY-MM-DD and passes anything else back
+// untouched.
+func isoDate(d8 string) string {
+	if len(d8) != 8 {
+		return d8
+	}
+	return d8[0:4] + "-" + d8[4:6] + "-" + d8[6:8]
+}
+
+func nullStr(s string) any {
+	if s == "" {
+		return nil
+	}
+	return s
+}
+
+// nextNode reads one <tag:len>value pair or the bare <fin> terminator
+// starting at pos. It returns the tag, the value, the position just past what
+// it consumed, and whether this was the terminator. A malformed tag —
+// missing the closing '>', or a length that will not parse — is skipped by
+// advancing past the '>', which lets the parser recover from a corrupt field
+// instead of abandoning the rest of the node.
+func nextNode(line string, pos int) (tag, value string, next int, isTerm bool) {
+	if pos >= len(line) || line[pos] != '<' {
+		return "", "", pos + 1, false
+	}
+	rel := strings.IndexByte(line[pos:], '>')
+	if rel < 0 {
+		return "", "", len(line), false
+	}
+	head := line[pos+1 : pos+rel]
+	closeAt := pos + rel + 1
+	if head == "fin" {
+		return "", "", closeAt, true
+	}
+	parts := strings.SplitN(head, ":", 2)
+	if len(parts) != 2 {
+		return "", "", closeAt, false
+	}
+	var n int
+	if _, err := fmt.Sscanf(parts[1], "%d", &n); err != nil || n < 0 {
+		return "", "", closeAt, false
+	}
+	if closeAt+n > len(line) {
+		n = len(line) - closeAt
+	}
+	return parts[0], line[closeAt : closeAt+n], closeAt + n, false
+}
+
+// parseNode walks one run of fields until nextNode reports the terminator
+// or the line runs out, whichever comes first. A node with no terminator at
+// all is still returned: TraverseFile only requires wk, bnd, mode, qdate and
+// qtime to be non-empty before it will insert an edge, so a truncated
+// profile-only line is harmless.
+func parseNode(line string) parsedNode {
+	var pn parsedNode
+	pos := 0
+	for pos < len(line) {
+		tag, value, next, term := nextNode(line, pos)
+		pos = next
+		if term {
+			break
+		}
+		switch tag {
+		case "op":
+			pn.Op = value
+		case "snode":
+			pn.SNode = value
+		case "sedge":
+			pn.SEdge = value
+		case "wk":
+			pn.Wk = value
+		case "bnd":
+			pn.Bnd = value
+		case "mode":
+			pn.Mode = value
+		case "qdate":
+			pn.QDate = value
+		case "qtime":
+			pn.QTime = value
+		case "txr":
+			pn.Txr = value
+		case "rxr":
+			pn.Rxr = value
+		case "wnode":
+			pn.WNode = value
+		case "ent":
+			pn.Ent = value
+		case "pwr":
+			pn.Pwr = value
+		}
+	}
+	return pn
+}
+
+// Traverse splits the file on newlines — one node per line, blank lines
+// ignored — and hands each surviving line to parseNode.
+func Traverse(data []byte) []parsedNode {
+	var out []parsedNode
+	for _, raw := range strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n") {
+		line := strings.TrimSpace(raw)
+		if line == "" {
+			continue
+		}
+		out = append(out, parseNode(line))
+	}
+	return out
+}
+
+// TraverseFile reloads the whole graph from one seed file inside a transaction.
+// Node rows are upserted as they are met: a bare op sighting ensures the
+// row exists, and an op sighting carrying snode or sedge refreshes its
+// profile. Edge ids are minted here, sequentially, because the
+// interchange format carries none of its own.
+func TraverseFile(ctx context.Context, db *sql.DB, path string) (Metrics, error) {
+	var m Metrics
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return m, err
+	}
+	nodes := Traverse(data)
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return m, err
+	}
+	defer tx.Rollback()
+	for _, t := range []string{"confirmations", "edges", "nodes"} {
+		if _, err := tx.ExecContext(ctx, "DELETE FROM "+t); err != nil {
+			return m, err
+		}
+	}
+
+	seenNodes := map[string]bool{}
+	seq := 0
+	for _, n := range nodes {
+		op := strings.TrimSpace(n.Op)
+		if op == "" {
+			continue
+		}
+		if n.SNode != "" || n.SEdge != "" {
+			if _, err := tx.ExecContext(ctx,
+				`INSERT OR REPLACE INTO nodes (node_id, label, snode_value, sedge_value, operator_class)
+				 VALUES (?, ?, ?, ?, ?)`, op, op, nullStr(n.SNode), nullStr(n.SEdge), nullStr(n.OperatorClass)); err != nil {
+				return m, err
+			}
+			if !seenNodes[op] {
+				m.Nodes++
+				seenNodes[op] = true
+			}
+		} else if !seenNodes[op] {
+			if _, err := tx.ExecContext(ctx,
+				`INSERT OR IGNORE INTO nodes (node_id, label) VALUES (?, ?)`,
+				op, op); err != nil {
+				return m, err
+			}
+			seenNodes[op] = true
+			m.Nodes++
+		}
+	}
+	if n.Wk == "" || n.Bnd == "" || n.Mode == "" || n.QDate == "" || n.QTime == "" {
+		continue
+	}
+	seq++
+	edgeID := fmt.Sprintf("trv%07d", seq)
+	if _, err := tx.ExecContext(ctx, `INSERT INTO edges
+		       (edge_id, source_node_id, destination_node_id, worked_label, band, mode, edge_date, edge_time,
+		        signal_sent, signal_received, wnode_value, entity_code)
+		       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			edgeID, op, strings.ToUpper(n.Wk), n.Bnd, strings.ToUpper(n.Mode),
+			isoDate(n.QDate), n.QTime, nullStr(n.Txr), nullStr(n.Rxr),
+			nullStr(n.WNode), nullStr(n.Ent)); err != nil {
+			return m, err
+		}
+		m.Edges++
+	}
+	return m, tx.Commit()
+}
+
+// EnsureGraphLoaded loads the seed only when the graph is empty.
+func EnsureGraphLoaded(ctx context.Context, db *sql.DB, path string) (bool, Metrics, error) {
+	var n int
+	if err := db.QueryRowContext(ctx, `SELECT count(*) FROM edges`).Scan(&n); err != nil {
+		return false, Metrics{}, err
+	}
+	if n != 0 {
+		return false, Metrics{}, nil
+	}
+	m, err := TraverseFile(ctx, db, path)
+	return err == nil, m, err
+}

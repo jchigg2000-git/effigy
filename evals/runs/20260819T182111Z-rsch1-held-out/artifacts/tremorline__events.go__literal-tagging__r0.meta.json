@@ -1,0 +1,21 @@
+{
+  "key": "tremorline__events.go__literal-tagging__r0",
+  "arm": "literal-tagging",
+  "replicate": 0,
+  "source_path": "corpus/tremorline/api/internal/api/events.go",
+  "source_sha256": "03a61ec2777ab90129977a412c1b0d7983b23dbeb47e55414a49cd3c6f0ce5cb",
+  "true_domain_id": "seismic-monitoring",
+  "language": "go",
+  "artifact_sha256": "642262cf187b7ee0b43cafa90b91fe720c2682269b68aacd92b8e8c2a17c097b",
+  "artifact_lines": 257,
+  "latency_s": 0.0,
+  "solution_meta": {
+    "literals_by_class": {
+      "MSG": 42,
+      "PATH": 5,
+      "SQL": 11,
+      "EMPTY": 2
+    },
+    "total_literals_replaced": 60
+  }
+}

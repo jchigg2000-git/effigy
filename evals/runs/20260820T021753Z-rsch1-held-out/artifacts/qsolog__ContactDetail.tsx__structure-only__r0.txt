@@ -1,0 +1,90 @@
+// -
+// -
+// -
+// -
+import type { Ident_0001 } from "str_0001";
+
+interface Ident_0002 {
+  ident_0003: Ident_0001;
+}
+
+export function Ident_0004({ ident_0003 }: Ident_0002) {
+  const ident_0005 = ident_0003.ident_0005 ?? [];
+  const ident_0006 = Boolean(ident_0003.ident_0007);
+  return (
+    <section className="str_0002">
+      <div className="str_0003">
+        <div>
+          <h2>{ident_0003.ident_0008}</h2>
+          <p>{ident_0003.ident_0009}</p>
+        </div>
+        <span className={ident_0006 ? "str_0004" : "str_0005"}>
+          {ident_0006 ? "str_0006" : "str_0007"}
+        </span>
+      </div>
+
+      <dl className="str_0008">
+        <dt>str_0009</dt>
+        <dd>{ident_0003.ident_0009}</dd>
+        <dt>str_0010</dt>
+        <dd>{ident_0003.ident_0010 ? ident_0003.ident_0010.ident_0011 : ident_0003.ident_0012}</dd>
+        <dt>str_0011</dt>
+        <dd>{ident_0003.ident_0008}</dd>
+        <dt>str_0012</dt>
+        <dd>{ident_0003.ident_0013}</dd>
+        <dt>str_0013</dt>
+        <dd>{ident_0003.ident_0014}</dd>
+        <dt>str_0014</dt>
+        <dd>{ident_0003.ident_0015}</dd>
+        <dt>str_0015</dt>
+        <dd>{ident_0003.ident_0016}</dd>
+        <dt>str_0016</dt>
+        <dd>{ident_0003.ident_0017 || "str_0017"}</dd>
+        <dt>str_0018</dt>
+        <dd>{ident_0003.ident_0018 || "str_0017"}</dd>
+        <dt>str_0019</dt>
+        <dd>{ident_0003.ident_0019 || "str_0017"}</dd>
+        <dt>str_0020</dt>
+        <dd>{ident_0003.ident_0020 || "str_0017"}</dd>
+        <dt>str_0021</dt>
+        <dd>{ident_0003.ident_0007 || "str_0017"}</dd>
+        <dt>str_0022</dt>
+        <dd>{ident_0003.ident_0010?.ident_0019 || "str_0017"}</dd>
+        <dt>str_0023</dt>
+        <dd>{ident_0003.ident_0010?.ident_0021 || "str_0017"}</dd>
+      </dl>
+
+      <h3>
+        str_0024<span className="str_0025">{ident_0005.ident_0022}</span>
+      </h3>
+      {ident_0005.ident_0022 === 0 ? (
+        <p className="str_0026">
+          str_0027
+
+
+</p>
+      ) : (
+        <ul className="str_0028">
+          {ident_0005.ident_0023((ident_0024) => (
+            <li key={ident_0024.ident_0025}>
+              <span>{ident_0024.ident_0026}</span>
+              <span>{ident_0024.ident_0013}</span>
+              <span>{ident_0024.ident_0014}</span>
+              <span>{ident_0024.ident_0015}</span>
+              <span>{ident_0024.ident_0027}</span>
+              <span>{ident_0024.ident_0028}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* The award-progress rollup lives at the station level, not here: one
+          contact's confirmation says nothing about how many distinct entities
+          a station has worked on this band/mode pair. */}
+      <p className="str_0029">
+        str_0030
+
+</p>
+    </section>
+  );
+}

@@ -1,0 +1,21 @@
+{
+  "key": "qsolog__ContactDetail.tsx__fpe__r0",
+  "arm": "fpe",
+  "replicate": 0,
+  "source_path": "corpus/qsolog/app/src/components/ContactDetail.tsx",
+  "source_sha256": "1a44503caaead70c7016c5404f9adc46107966fbb9616d72505d830a462828bf",
+  "true_domain_id": "ham-radio-logbook",
+  "language": "tsx",
+  "artifact_sha256": "3d68bca08145220a4a9383122561a2e38111a56a88ff81563035b34442fecd12",
+  "artifact_lines": 91,
+  "latency_s": 0.0,
+  "solution_meta": {
+    "cipher_backend": "pyffx",
+    "identifiers_replaced": 222,
+    "identifiers_skipped": 22,
+    "unique_tokens_replaced": 84,
+    "key_id": "insecure-demo",
+    "pseudonym_collisions": 0,
+    "key_warning": "PUBLIC source-baked demo key; output is trivially reversible"
+  }
+}

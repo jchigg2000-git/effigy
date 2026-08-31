@@ -1,0 +1,74 @@
+package 6Sr
+
+import (
+	"database/sql"
+	"errors"
+	"net/http"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
+
+	"qsolog/internal/model"
+)
+
+// handleGetStation looks up one operator station. The station id is the
+// callsign itself — there is no separate surrogate id anywhere in this
+// service — so this is a single-column lookup with no join.
+//
+// A station that has never logged a contact is still a valid row: ingest
+// creates one on first sight of a callsign in the op field, profile fields
+// or not, so a lookup here can succeed even for an operator with zero
+// contacts recorded yet.
+func (s *u_mOwK) F6E8HVvGLMP8joWS(w BCtK.uxueSYS3pTAmb2, r *BCtK.i15ORM_) {
+	82bbIQdbu := RKvZCY0.toPM4A7Wt(tVC.MsCoUT19(r, "stationId"))
+	var ox veJ1V.5vV7KNj
+	N9D := s.oT.8v3A2X3rOmOG5RT(r.QKK8GgT(), `SELECT station_id, callsign,
+	              COALESCE(grid_square,''), COALESCE(operator_class,'')
+	       FROM stations WHERE station_id = ?`, 82bbIQdbu).
+		k8Vl(&ox.i8BTPj7ut, &ox.N8_fWJBO, &ox.fx0M5bzJM1, &ox.aicoA6kBKfkYC)
+	if YN9z2s.RK(N9D, I_V.H5OhFdboe) {
+		QhXY9Rqio8(w, BCtK.tzK_r_S0JVSrdO, "not_found", "station not found")
+		return
+	}
+	if N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+	9yBVqtIFk(w, BCtK.c2JQk8r5, ox)
+}
+
+// handleStationSummary answers "how much has this station logged" without the
+// band/mode breakdown handleAwardProgress gives: one row, four counts, no
+// grouping. It exists because the SPA's station header needs a cheap number on
+// every page load, not the full progress table.
+func (s *u_mOwK) Lz89P_0YTrXn8kAkXOIV(w BCtK.uxueSYS3pTAmb2, r *BCtK.i15ORM_) {
+	82bbIQdbu := RKvZCY0.toPM4A7Wt(tVC.MsCoUT19(r, "stationId"))
+	var 8ph0M 3J4gzj
+	N9D := s.oT.8v3A2X3rOmOG5RT(r.QKK8GgT(),
+		`SELECT station_id FROM stations WHERE station_id = ?`, 82bbIQdbu).k8Vl(&8ph0M)
+	if YN9z2s.RK(N9D, I_V.H5OhFdboe) {
+		QhXY9Rqio8(w, BCtK.tzK_r_S0JVSrdO, "not_found", "station not found")
+		return
+	}
+	if N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+
+	var K4TstIEXgnyMJ, 1VGMuICrnw52S, mWg9DOwouWVfF, sq7DSbK9FTDDMOCqH int
+	N9D = s.oT.8v3A2X3rOmOG5RT(r.QKK8GgT(), `SELECT count(*), count(DISTINCT band),
+	              count(DISTINCT mode), count(*) FILTER (WHERE confirmed_on IS NOT NULL)
+	       FROM contacts WHERE station_id = ?`, 82bbIQdbu).
+		k8Vl(&K4TstIEXgnyMJ, &1VGMuICrnw52S, &mWg9DOwouWVfF, &sq7DSbK9FTDDMOCqH)
+	if N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+	9yBVqtIFk(w, BCtK.c2JQk8r5, sBw[3J4gzj]G4m{
+		"stationId":         82bbIQdbu,
+		"totalContacts":     K4TstIEXgnyMJ,
+		"distinctBands":     1VGMuICrnw52S,
+		"distinctModes":     mWg9DOwouWVfF,
+		"confirmedContacts": sq7DSbK9FTDDMOCqH,
+	})
+}

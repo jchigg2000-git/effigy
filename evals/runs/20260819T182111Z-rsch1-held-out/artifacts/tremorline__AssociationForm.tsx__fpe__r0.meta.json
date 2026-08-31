@@ -1,0 +1,21 @@
+{
+  "key": "tremorline__AssociationForm.tsx__fpe__r0",
+  "arm": "fpe",
+  "replicate": 0,
+  "source_path": "corpus/tremorline/app/src/components/AssociationForm.tsx",
+  "source_sha256": "10e6f5b53e85827aba67598d5b5714dc07fb6dcea811489147fe4d4784bb3dba",
+  "true_domain_id": "seismic-monitoring",
+  "language": "tsx",
+  "artifact_sha256": "0a57c91ecfb263d6154ad8527240d9736e31223543f3f4914603bd3950800a37",
+  "artifact_lines": 138,
+  "latency_s": 0.0,
+  "solution_meta": {
+    "cipher_backend": "pyffx",
+    "identifiers_replaced": 230,
+    "identifiers_skipped": 90,
+    "unique_tokens_replaced": 89,
+    "key_id": "insecure-demo",
+    "pseudonym_collisions": 0,
+    "key_warning": "PUBLIC source-baked demo key; output is trivially reversible"
+  }
+}

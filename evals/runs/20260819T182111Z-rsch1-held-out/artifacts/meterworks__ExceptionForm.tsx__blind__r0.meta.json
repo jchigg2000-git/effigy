@@ -1,0 +1,15 @@
+{
+  "key": "meterworks__ExceptionForm.tsx__blind__r0",
+  "arm": "blind",
+  "replicate": 0,
+  "source_path": "corpus/meterworks/app/src/components/ExceptionForm.tsx",
+  "source_sha256": "62b832b7fda329a2f785c58d35e36afc898b5bcc21246f35777454c338d3c191",
+  "true_domain_id": "water-utility-metering",
+  "language": "tsx",
+  "artifact_sha256": "abd5108e06827778c6acf19a65094ef982be9790bfb90ee3bd630aa9030b0879",
+  "artifact_lines": 13,
+  "latency_s": 0.0,
+  "solution_meta": {
+    "generated_by": "evals/blind_stub.py"
+  }
+}

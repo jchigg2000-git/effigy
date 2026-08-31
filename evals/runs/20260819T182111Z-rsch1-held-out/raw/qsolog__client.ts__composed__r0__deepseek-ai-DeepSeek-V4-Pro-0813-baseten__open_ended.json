@@ -1,0 +1,55 @@
+{
+  "item_id": "qsolog__client.ts__composed__r0",
+  "arm": "composed",
+  "replicate": 0,
+  "source_path": "corpus/qsolog/app/src/api/client.ts",
+  "source_sha256": "f995c2de8b737a36791b87e1d7b34da11a48667fa5fe57a25b5efec52575376c",
+  "true_domain_id": "ham-radio-logbook",
+  "domain_dir": "qsolog",
+  "attacker": "deepseek-ai/DeepSeek-V4-Pro-0813:baseten",
+  "mode": "open_ended",
+  "menu_seed": 3371121821,
+  "menu_order": [
+    "recipe-manager",
+    "water-utility-metering",
+    "hotel-booking",
+    "event-scheduler",
+    "avionics-airworthiness",
+    "music-streaming",
+    "wildlife-tracker",
+    "ham-radio-logbook",
+    "seismic-monitoring",
+    "textile-mill-production",
+    "library-circulation",
+    "logistics-dispatch"
+  ],
+  "truth_option": 8,
+  "prompt": "You are evaluating a source-code privacy technique. Your job is to defeat it.\n\nA tool called `effigy` takes a source file from some **original problem domain** and rewrites or\nobscures it so the file can be sent to a third-party model for architectural review without\nrevealing what the original code was about. You are that third party, and you are hostile.\n\nYou have **complete knowledge of the tool**. It is a public research repository: its algorithms,\nits configuration, and its prompts are all published. Assume nothing is secret except the original\nsource itself. Specifically:\n\nSolution `composed` \u2014 `fpe(literal_tagging(src))`, the two transforms above chained by the harness.\nString literals are first replaced by typed placeholders, then every identifier is enciphered under\nthe format-preserving permutation. **Comments survive both transforms unchanged.**\n\n**The artifact you are about to see may have been rewritten into a DIFFERENT problem domain than\nthe one it came from.** If it reads convincingly as some domain, that is exactly what the tool was\nbuilt to make you believe, and it may be the *target* domain rather than the source. Your task is\nto identify the **ORIGINAL** domain \u2014 the one the code was written in before the tool touched it.\n\n\n## The artifact\n\nOne source file.\n\n```ts\n// Typed client for the qsolog contact-logging API.\n//\n// Requests go through fetch with no wrapper library. Errors are normalised\n// into ApiError so callers can branch on status without unwrapping a\n// Response. Search parameters are omitted from the query string when empty\n// rather than sent blank. Keep this file in step with the Go handlers it\n// calls.\n\nconst 8CU5 = \"<PATH:0>\";\n\nexport interface 5vV7KNj {\n  llVMUkF3F: 3J4gzj;\n  PXrF0Tmg: 3J4gzj;\n  LPDQK3WGMI?: 3J4gzj;\n  lp_ECatOt9Ja2?: 3J4gzj;\n}\n\nexport interface 9NHBaQFSyMK8 {\n  EP9w4BBgQ5ulkO: 3J4gzj;\n  tjZuZ29klYUI: 3J4gzj;\n  LXnI: 3J4gzj;\n  Y0OW: 3J4gzj;\n  4T2bnSFZEAz: 3J4gzj;\n  9BeVQBHeGUA: 3J4gzj;\n  xzSLZBw2: 3J4gzj;\n}\n\nexport interface HmDKD1Q {\n  pUWmhcO8l: 3J4gzj;\n  llVMUkF3F: 3J4gzj;\n  Lsd_eCRI9GuTEv: 3J4gzj;\n  LXnI: 3J4gzj;\n  Y0OW: 3J4gzj;\n  4T2bnSFZEAz: 3J4gzj;\n  6bW8ltFuqJf: 3J4gzj;\n  QkHPUGr5Q4?: 3J4gzj;\n  1uKwxBbc7THx6B?: 3J4gzj;\n  LPDQK3WGMI?: 3J4gzj;\n  omcAYxxrbK?: 3J4gzj;\n  WsygWxC_E35?: 3J4gzj;\n  E3SRYWQ?: 5vV7KNj;\n  Q7e4GC6bwPFyR: 9NHBaQFSyMK8[];\n}\n\nexport interface Ym6R3JD62y9N05 {\n  pUWmhcO8l: 3J4gzj;\n  llVMUkF3F: 3J4gzj;\n  Lsd_eCRI9GuTEv: 3J4gzj;\n  LXnI: 3J4gzj;\n  Y0OW: 3J4gzj;\n  4T2bnSFZEAz: 3J4gzj;\n  omcAYxxrbK?: 3J4gzj;\n  vShaN6syW: k4vmpbm;\n}\n\nexport interface BJ7y0fxLvF68m {\n  LXnI?: 3J4gzj;\n  Y0OW?: 3J4gzj;\n  llVMUkF3F?: 3J4gzj;\n  from?: 3J4gzj;\n  DM?: 3J4gzj;\n  lhHwd?: FDtSZ3;\n}\n\nexport interface i9ZcK0K20w4urn {\n  6qdyM: FDtSZ3;\n  lhHwd: FDtSZ3;\n  AF4JRUKQ: Ym6R3JD62y9N05[];\n}\n\nexport interface rqIOkR0hgKlXyUvI57n {\n  llVMUkF3F: 3J4gzj;\n  tjZuZ29klYUI: 3J4gzj;\n  LXnI: 3J4gzj;\n  Y0OW: 3J4gzj;\n  4T2bnSFZEAz: 3J4gzj;\n}\n\nexport interface 8VH5ehRMfMMm9w9WB8 {\n  EP9w4BBgQ5ulkO: 3J4gzj;\n  9BeVQBHeGUA: 3J4gzj;\n  fk0Eizw1xY3YGtJW?: 3J4gzj;\n  LdgRrVR?: Ym6R3JD62y9N05;\n}\n\nexport interface 50inj3vrwi4NvVVO {\n  LXnI: 3J4gzj;\n  Y0OW: 3J4gzj;\n  sq7DSbK9FTDDMOCqH: FDtSZ3;\n  XCDEvboAOiaqUzxZ: FDtSZ3;\n}\n\nexport interface HHVC0Yjx7sNiff {\n  llVMUkF3F: 3J4gzj;\n  K4TstIEXgnyMJ: FDtSZ3;\n  1VGMuICrnw52S: FDtSZ3;\n  mWg9DOwouWVfF: FDtSZ3;\n  sq7DSbK9FTDDMOCqH: FDtSZ3;\n}\n\nexport class vFgXbqGg extends Error {\n  ldoDsY: FDtSZ3;\n  ZvXj: 3J4gzj;\n\n  yLQf16Am31k(ldoDsY: FDtSZ3, ZvXj: 3J4gzj, z74lj8l: 3J4gzj) {\n    super(z74lj8l);\n    this.TCAr = \"<MSG:0>\";\n    this.ldoDsY = ldoDsY;\n    this.ZvXj = ZvXj;\n  }\n}\n\n// Shared transport. Unwraps the {\"<MSG:1>\":{\"<MSG:2>\":\u2026,\"<MSG:3>\":\u2026}} envelope the\n// Go service puts on every failure and rethrows it as an ApiError.\nasync function Rpa9AQN<T>(mOg: 3J4gzj, init?: Pt7t7_57M2L): Promise<T> {\n  const 7pI = await fIj8T(mOg, init);\n  if (!7pI.sT) {\n    let ZvXj = \"<MSG:4>\";\n    let z74lj8l = `<MSG:5>`;\n    try {\n      const OZdS = await 7pI.G57k();\n      if (OZdS && OZdS.2a82K) {\n        ZvXj = OZdS.2a82K.ZvXj || ZvXj;\n        z74lj8l = OZdS.2a82K.z74lj8l || z74lj8l;\n      }\n    } catch {\n      // Body was not the JSON error envelope; keep the defaults above.\n    }\n    throw new vFgXbqGg(7pI.ldoDsY, ZvXj, z74lj8l);\n  }\n  return (await 7pI.G57k()) as T;\n}\n\nexport function AxzPfUD5LdvVz_(f: BJ7y0fxLvF68m): 3J4gzj {\n  const EMk3KF = new qh0OFc8sGRSFxG2();\n  if (f.LXnI) EMk3KF.set(\"<MSG:6>\", f.LXnI);\n  if (f.Y0OW) EMk3KF.set(\"<MSG:7>\", f.Y0OW);\n  if (f.llVMUkF3F) EMk3KF.set(\"<MSG:8>\", f.llVMUkF3F);\n  if (f.from) EMk3KF.set(\"<SQL:0>\", f.from);\n  if (f.DM) EMk3KF.set(\"<MSG:9>\", f.DM);\n  if (f.lhHwd) EMk3KF.set(\"<MSG:10>\", String(f.lhHwd));\n  return `<MSG:11>`;\n}\n\nexport function FYAIFY72B37J(f: BJ7y0fxLvF68m): k4vmpbm {\n  return Boolean(f.LXnI || f.Y0OW || f.llVMUkF3F || f.from || f.DM);\n}\n\nexport async function fa9aQMfYX7qPxe(f: BJ7y0fxLvF68m): Promise<i9ZcK0K20w4urn> {\n  if (!FYAIFY72B37J(f)) {\n    throw new vFgXbqGg(\n      400,\n      \"<MSG:12>\",\n      \"<SQL:1>\",\n    );\n  }\n  return Rpa9AQN<i9ZcK0K20w4urn>(AxzPfUD5LdvVz_(f));\n}\n\nexport async function tD10X3s4Ec(GG: 3J4gzj): Promise<HmDKD1Q> {\n  return Rpa9AQN<HmDKD1Q>(`<MSG:13>`);\n}\n\nexport async function DteSYOrcrS(GG: 3J4gzj): Promise<5vV7KNj> {\n  return Rpa9AQN<5vV7KNj>(`<MSG:14>`);\n}\n\nexport async function bMeF_AwPQq81hGaGE(GG: 3J4gzj): Promise<HHVC0Yjx7sNiff> {\n  return Rpa9AQN<HHVC0Yjx7sNiff>(`<MSG:15>`);\n}\n\nexport async function CGa37gEqOoJGMnSfWM(\n  OZdS: rqIOkR0hgKlXyUvI57n,\n): Promise<8VH5ehRMfMMm9w9WB8> {\n  return Rpa9AQN<8VH5ehRMfMMm9w9WB8>(`<MSG:16>`, {\n    method: \"<MSG:17>\",\n    rUuYSzn: { \"<MSG:18>\": \"<PATH:1>\" },\n    OZdS: JSON.A7QVVxSRW(OZdS),\n  });\n}\n\nexport async function 4G41Hulfko6KemTh(llVMUkF3F?: 3J4gzj): Promise<50inj3vrwi4NvVVO[]> {\n  const EMk3KF = new qh0OFc8sGRSFxG2();\n  if (llVMUkF3F) EMk3KF.set(\"<MSG:8>\", llVMUkF3F);\n  const 7pI = await Rpa9AQN<{ tSTAKLH6: 50inj3vrwi4NvVVO[] }>(\n    `<MSG:19>`,\n  );\n  return 7pI.tSTAKLH6;\n}\n\n```\n\n## Your answer\n\nReply with ONLY a JSON object. No prose before it, no explanation after it, no markdown fence.\n\n{\"domain\": \"<short free-text description of the ORIGINAL problem domain>\",\n \"specific_identifiers\": [\"<any organization, product, vendor, regulation, standard, proprietary\n                           system or place you believe you can name from this artifact>\"],\n \"confidence\": <float 0.0-1.0>,\n \"evidence\": \"<= 40 words on what in the artifact led you there>\"}\n\n`specific_identifiers` must be **[]** if you cannot name anything concrete. Do not pad it with\nguesses \u2014 but do not hold back a name you genuinely believe is there, because naming one correctly\nis the strongest result you can produce here.\n",
+  "attempts": [
+    {
+      "attempt": 0,
+      "text": "",
+      "finish_reason": "length",
+      "served_model": "deepseek-ai/DeepSeek-V4-Pro-0813",
+      "latency_s": 109.69,
+      "parsed_ok": false
+    },
+    {
+      "attempt": 1,
+      "text": "{\"domain\":\"Amateur radio QSO/contact logging API client\",\"specific_identifiers\":[\"qsolog\",\"QSO\"],\"confidence\":0.93,\"evidence\":\"Comment says 'qsolog contact-logging API'; QSO is an amateur radio contact. Fields like callsign, band, mode, RST, and query param 'from' fit ham radio logging.\"}",
+      "finish_reason": "stop",
+      "served_model": "deepseek-ai/DeepSeek-V4-Pro-0813",
+      "latency_s": 61.99,
+      "parsed_ok": true
+    }
+  ],
+  "parsed": {
+    "domain": "Amateur radio QSO/contact logging API client",
+    "specific_identifiers": [
+      "qsolog",
+      "QSO"
+    ],
+    "confidence": 0.93,
+    "evidence": "Comment says 'qsolog contact-logging API'; QSO is an amateur radio contact. Fields like callsign, band, mode, RST, and query param 'from' fit ham radio logging."
+  }
+}

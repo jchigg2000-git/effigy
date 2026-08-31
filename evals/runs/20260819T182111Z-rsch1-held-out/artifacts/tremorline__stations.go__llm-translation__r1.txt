@@ -1,0 +1,105 @@
+package api
+
+import (
+	"net/http"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
+
+	"tremorline/internal/model"
+)
+
+type trackListing struct {
+	TrackID      string `json:"trackId"`
+	AlbumID      string `json:"albumId"`
+	Title        string `json:"title"`
+	Artist       string `json:"artist"`
+	DurationSecs int    `json:"durationSecs"`
+}
+
+// handleListTracks responds with a list of tracks, including their album ID and duration in seconds.
+func (s *Server) handleListTracks(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	conds := []string{}
+	args := []any{}
+	if v := strings.TrimSpace(q.Get("albumID")); v != "" {
+		conds = append(conds, "tr.album_id = ?")
+		args = append(args, strings.ToUpper(v))
+	}
+	if v := strings.TrimSpace(q.Get("genre")); v != "" {
+		conds = append(conds, "tr.genre = ?")
+		args = append(args, strings.ToUpper(v))
+	}
+	where := ""
+	if len(conds) > 0 {
+		where = "WHERE " + strings.Join(conds, " AND ")
+	}
+	rows, err := s.db.QueryContext(r.Context(), `SELECT tr.track_id, tr.album_id,
+	                  tr.title, tr.artist, tr.duration_secs
+	           FROM tracks tr LEFT JOIN albums al ON al.album_id = tr.album_id
+	           `+where+`
+	           GROUP BY tr.track_id ORDER BY tr.track_id`, args...)
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	defer rows.Close()
+	out := []trackListing{}
+	for rows.Next() {
+		var tr trackListing
+		if err := rows.Scan(&tr.TrackID, &tr.AlbumID, &tr.Title, &tr.Artist,
+			&tr.DurationSecs); err != nil {
+			s.serverError(w, err)
+			return
+		}
+		out = append(out, tr)
+	}
+	if err := rows.Err(); err != nil {
+		s.serverError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"count":    len(out),
+		"tracks":   out,
+	})
+}
+
+// handleGetTrackDetails fetches a specific track by its ID and includes details about the artist and album.
+func (s *Server) handleGetTrackDetails(w http.ResponseWriter, r *http.Request) {
+	trackID := strings.TrimSpace(chi.URLParam(r, "trackId"))
+	var tr model.Track
+	err := s.db.QueryRowContext(r.Context(), `SELECT track_id, album_id, title,
+	              artist, duration_secs
+	       FROM tracks WHERE track_id = ?`, trackID).
+		Scan(&tr.TrackID, &tr.AlbumID, &tr.Title, &tr.Artist, &tr.DurationSecs)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "not_found", "track not found")
+		return
+	}
+	rows, err := s.db.QueryContext(r.Context(), `SELECT artist_id, artist_name, artist_genre,
+	                  artist_biography
+	           FROM artists WHERE artist_id = ?
+	           ORDER BY artist_name`, tr.Artist)
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	defer rows.Close()
+	artists := []model.Artist{}
+	for rows.Next() {
+		var a model.Artist
+		if err := rows.Scan(&a.ArtistID, &a.ArtistName, &a.ArtistGenre, &a.ArtistBiography); err != nil {
+			s.serverError(w, err)
+			return
+		}
+		artists = append(artists, a)
+	}
+	if err := rows.Err(); err != nil {
+		s.serverError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"track":     tr,
+		"artists":   artists,
+	})
+}

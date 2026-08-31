@@ -1,0 +1,148 @@
+import { useState, type FormEvent } from "<MSG:0>";
+import type { ConfirmationRequest } from "<PATH:0>";
+
+interface FormState {
+  stationId: string;
+  receivedFrom: string;
+  band: string;
+  mode: string;
+  contactDate: string;
+}
+
+interface ConfirmationFormProps {
+  onCancel: () => void;
+  onSubmit: (req: ConfirmationRequest) => void;
+}
+
+const BANDS = ["<MSG:1>", "<MSG:2>", "<MSG:3>", "<MSG:4>", "<MSG:5>", "<MSG:6>", "<MSG:7>", "<MSG:8>", "<MSG:9>", "<MSG:10>", "<MSG:11>"];
+const MODES = ["<MSG:12>", "<MSG:13>", "<MSG:14>", "<MSG:15>", "<MSG:16>", "<MSG:17>", "<MSG:18>"];
+
+const EMPTY_STATE: FormState = {
+  stationId: "<EMPTY:0>",
+  receivedFrom: "<EMPTY:0>",
+  band: BANDS[3],
+  mode: MODES[0],
+  contactDate: "<EMPTY:0>",
+};
+
+// Callsigns in this fixture are drawn from the ITU-unassigned-style prefix
+// block X0AAA-X9ZZZ, invented for this corpus so nothing here can collide
+// with a real assigned callsign.
+const callsignPattern = /^X[0-9][A-Z]{3}$/;
+const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+
+// This restates the server-side validator in TypeScript. The authority is
+// api/internal/api/contacts.go, handleLogConfirmation — the rules below, and
+// the exact message text they return, are a hand-maintained second copy of
+// what that handler already enforces. Nothing keeps the two in step.
+function validate(s: FormState): string | null {
+  if (s.stationId.trim() === "<EMPTY:0>") {
+    return "<MSG:19>";
+  }
+  if (!callsignPattern.test(s.stationId.trim().toUpperCase())) {
+    return "<MSG:20>";
+  }
+  if (s.receivedFrom.trim() === "<EMPTY:0>") {
+    return "<MSG:21>";
+  }
+  if (!callsignPattern.test(s.receivedFrom.trim().toUpperCase())) {
+    return "<MSG:22>";
+  }
+  if (!BANDS.includes(s.band)) {
+    return "<MSG:23>";
+  }
+  if (!MODES.includes(s.mode)) {
+    return "<MSG:24>";
+  }
+  if (!datePattern.test(s.contactDate.trim())) {
+    return "<MSG:25>";
+  }
+  return null;
+}
+
+export function ConfirmationForm({ onCancel, onSubmit }: ConfirmationFormProps) {
+  const [state, setState] = useState<FormState>(EMPTY_STATE);
+  const [error, setError] = useState<string | null>(null);
+
+  const set = (key: keyof FormState, value: string) => {
+    setState({ ...state, [key]: value });
+  };
+
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    const problem = validate(state);
+    if (problem !== null) {
+      setError(problem);
+      return;
+    }
+    setError(null);
+    onSubmit({
+      stationId: state.stationId.trim().toUpperCase(),
+      receivedFrom: state.receivedFrom.trim().toUpperCase(),
+      band: state.band,
+      mode: state.mode,
+      contactDate: state.contactDate.trim(),
+    });
+  };
+
+  return (
+    <form className="<MSG:26>" onSubmit={submit}>
+      <h2>Log an inbound confirmation</h2>
+      <p className="<MSG:27>">
+        Enter what the confirming station claims. A match requires the
+        station, the confirming callsign, the band, the mode and the date to
+        agree exactly with a logged contact; there is no partial credit.
+      </p>
+      {error && <p className="<MSG:28>">{error}</p>}
+
+      <label htmlFor="<MSG:29>">Your station</label>
+      <input
+        id="<MSG:29>"
+        value={state.stationId}
+        onChange={(e) => set("<MSG:30>", e.target.value)}
+      />
+
+      <label htmlFor="<SQL:0>">Confirming callsign</label>
+      <input
+        id="<SQL:0>"
+        value={state.receivedFrom}
+        onChange={(e) => set("<MSG:31>", e.target.value)}
+      />
+
+      <label htmlFor="<MSG:32>">Band</label>
+      <select id="<MSG:32>" value={state.band} onChange={(e) => set("<MSG:33>", e.target.value)}>
+        {BANDS.map((b) => (
+          <option key={b} value={b}>
+            {b}
+          </option>
+        ))}
+      </select>
+
+      <label htmlFor="<MSG:34>">Mode</label>
+      <select id="<MSG:34>" value={state.mode} onChange={(e) => set("<MSG:35>", e.target.value)}>
+        {MODES.map((m) => (
+          <option key={m} value={m}>
+            {m}
+          </option>
+        ))}
+      </select>
+
+      <label htmlFor="<MSG:36>">Contact date</label>
+      <input
+        id="<MSG:36>"
+        type="<MSG:37>"
+        value={state.contactDate}
+        onChange={(e) => set("<MSG:38>", e.target.value)}
+      />
+
+      <div className="<MSG:39>">
+        <button type="<MSG:40>" className="<MSG:41>">
+          Submit
+        </button>
+        <button type="<MSG:42>" className="<MSG:43>" onClick={onCancel}>
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}

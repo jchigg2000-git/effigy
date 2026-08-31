@@ -1,0 +1,42 @@
+package tensorpipeline
+
+import (
+	"errors"
+	"math/rand"
+)
+
+type TensorPipeline struct {
+	tensors []Tensor
+}
+
+func NewTensorPipeline(tensors []Tensor) *TensorPipeline {
+	return &TensorPipeline{tensors: tensors}
+}
+
+func (tp *TensorPipeline) ProcessTensors() ([]ProcessedTensor, error) {
+	var results []ProcessedTensor
+	for _, t := range tp.tensors {
+		result, err := processTensor(t)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, result)
+	}
+	return results, nil
+}
+
+func processTensor(t Tensor) (ProcessedTensor, error) {
+	// Simulate processing
+	if rand.Intn(2) == 0 {
+		return ProcessedTensor{}, errors.New("processing failed")
+	}
+	return ProcessedTensor{Value: t.Value * 2}, nil
+}
+
+type Tensor struct {
+	Value float64
+}
+
+type ProcessedTensor struct {
+	Value float64
+}

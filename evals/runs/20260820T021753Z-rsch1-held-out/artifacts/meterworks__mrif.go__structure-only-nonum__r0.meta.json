@@ -1,0 +1,77 @@
+{
+  "key": "meterworks__mrif.go__structure-only-nonum__r0",
+  "arm": "structure-only-nonum",
+  "replicate": 0,
+  "source_path": "corpus/meterworks/api/internal/ingest/mrif.go",
+  "source_sha256": "b951f6b52d9a30e19e57ffcc2af53f2f72bdb2f1c20f8243bf60ba0c0d01b05c",
+  "true_domain_id": "water-utility-metering",
+  "language": "go",
+  "artifact_sha256": "abf5cf2c4cad2fc8950e2f34d48a0d2ad66a1516b93dcb244a772b45613c83e4",
+  "artifact_lines": 235,
+  "latency_s": 0.1,
+  "solution_meta": {
+    "generated_by": "evals/canonicalize.py",
+    "preserved_tokens": [
+      "Atoi",
+      "Context",
+      "DB",
+      "Errorf",
+      "ReadFile",
+      "ReplaceAll",
+      "Split",
+      "Sprintf",
+      "TrimSpace",
+      "_",
+      "any",
+      "append",
+      "bool",
+      "byte",
+      "context",
+      "error",
+      "false",
+      "fmt",
+      "int",
+      "len",
+      "nil",
+      "os",
+      "sql",
+      "strconv",
+      "string",
+      "strings",
+      "true"
+    ],
+    "preserved_import_paths": [
+      "\"context\"",
+      "\"database/sql\"",
+      "\"fmt\"",
+      "\"os\"",
+      "\"strconv\"",
+      "\"strings\""
+    ],
+    "n_idents_canonicalised": 57,
+    "n_strings_canonicalised": 29,
+    "n_runes_canonicalised": 6,
+    "n_numbers_canonicalised": 9,
+    "counters_delta": {
+      "lines": 0,
+      "bytes": -969,
+      "funcs": 0,
+      "structs": 0,
+      "interfaces": 0,
+      "imports": 1,
+      "exports": 0,
+      "string_literals": 21,
+      "max_brace_depth": 0
+    },
+    "blind_delta": {
+      "bytes": [
+        6820,
+        5851
+      ],
+      "string_literals": [
+        27,
+        48
+      ]
+    }
+  }
+}

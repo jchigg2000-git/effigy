@@ -1,0 +1,176 @@
+// Typed client for the HBP reservation-logging API.
+//
+// Requests go through fetch with no wrapper library. Errors are normalised
+// into ReservationApiError so callers can branch on status without unwrapping a
+// Response. Search parameters are omitted from the query string when empty
+// rather than sent blank. Keep this file in step with the Go handlers it
+// calls.
+
+const BASE = "/api";
+
+export interface Room {
+  roomId: string;
+  roomType: string;
+  capacity: number;
+}
+
+export interface Guest {
+  guestId: string;
+  firstName: string;
+  lastName: string;
+  email?: string;
+  phone?: string;
+}
+
+export interface Reservation {
+  reservationId: string;
+  guestId: string;
+  roomTypeId: string;
+  startDate: string;
+  endDate: string;
+  status: string;
+  createdAt: string;
+}
+
+export interface ReservationSummary {
+  reservationId: string;
+  guestId: string;
+  roomTypeId: string;
+  startDate: string;
+  endDate: string;
+  status: boolean;
+}
+
+export interface SearchCriteria {
+  roomType?: string;
+  status?: string;
+  guestId?: string;
+  startDate?: string;
+  endDate?: string;
+  limit?: number;
+}
+
+export interface SearchResult {
+  count: number;
+  limit: number;
+  reservations: ReservationSummary[];
+}
+
+export interface ReservationRequest {
+  guestId: string;
+  roomTypeId: string;
+  startDate: string;
+  endDate: string;
+}
+
+export interface ReservationResult {
+  reservationId: string;
+  status: string;
+  matchedRoomId?: string;
+  reservation?: ReservationSummary;
+}
+
+export interface AvailabilityReport {
+  roomType: string;
+  status: string;
+  availableReservations: number;
+  occupiedRooms: number;
+}
+
+export interface HotelSummary {
+  hotelId: string;
+  totalReservations: number;
+  distinctRoomTypes: number;
+  reservedRooms: number;
+  occupiedRooms: number;
+}
+
+export class ReservationApiError extends Error {
+  status: number;
+  code: string;
+
+  constructor(status: number, code: string, message: string) {
+    super(message);
+    this.name = "ReservationApiError";
+    this.status = status;
+    this.code = code;
+  }
+}
+
+// Shared transport. Unwraps the {"error":{"code":…,"message":…}} envelope the
+// Go service puts on every failure and rethrows it as a ReservationApiError.
+async function request<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(url, init);
+  if (!res.ok) {
+    let code = "internal";
+    let message = `request failed with status ${res.status}`;
+    try {
+      const body = await res.json();
+      if (body && body.error) {
+        code = body.error.code || code;
+        message = body.error.message || message;
+      }
+    } catch {
+      // Body was not the JSON error envelope; keep the defaults above.
+    }
+    throw new ReservationApiError(res.status, code, message);
+  }
+  return (await res.json()) as T;
+}
+
+export function buildSearchUrl(c: SearchCriteria): string {
+  const params = new URLSearchParams();
+  if (c.roomType) params.set("roomType", c.roomType);
+  if (c.status) params.set("status", c.status);
+  if (c.guestId) params.set("guestId", c.guestId);
+  if (c.startDate) params.set("startDate", c.startDate);
+  if (c.endDate) params.set("endDate", c.endDate);
+  if (c.limit) params.set("limit", String(c.limit));
+  return `${BASE}/reservations/search?${params.toString()}`;
+}
+
+export function hasAnyCriterion(c: SearchCriteria): boolean {
+  return Boolean(c.roomType || c.status || c.guestId || c.startDate || c.endDate);
+}
+
+export async function searchReservations(c: SearchCriteria): Promise<SearchResult> {
+  if (!hasAnyCriterion(c)) {
+    throw new ReservationApiError(
+      400,
+      "bad_request",
+      "at least one criterion required (roomType, status, guestId, startDate, endDate)",
+    );
+  }
+  return request<SearchResult>(buildSearchUrl(c));
+}
+
+export async function getReservation(id: string): Promise<Reservation> {
+  return request<Reservation>(`${BASE}/reservations/${encodeURIComponent(id)}`);
+}
+
+export async function getGuest(id: string): Promise<Guest> {
+  return request<Guest>(`${BASE}/guests/${encodeURIComponent(id)}`);
+}
+
+export async function getHotelSummary(id: string): Promise<HotelSummary> {
+  return request<HotelSummary>(`${BASE}/hotels/${encodeURIComponent(id)}/summary`);
+}
+
+export async function bookReservation(
+  body: ReservationRequest,
+): Promise<ReservationResult> {
+  return request<ReservationResult>(`${BASE}/reservations`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+export async function getAvailabilityReport(hotelId?: string): Promise<AvailabilityReport[]> {
+  const params = new URLSearchParams();
+  if (hotelId) params.set("hotelId", hotelId);
+  const res = await request<{ report: AvailabilityReport[] }>(
+    `${BASE}/availability/report?${params.toString()}`,
+  );
+  return res.report;
+}

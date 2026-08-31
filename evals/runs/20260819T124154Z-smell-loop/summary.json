@@ -1,0 +1,54 @@
+{
+  "summary": [
+    {
+      "husker": "Qwen/Qwen2.5-Coder-7B-Instruct",
+      "cases": 8,
+      "ok": 8,
+      "mean_agreement_f1": 0.646,
+      "mean_gt_recall": 0.5,
+      "p50_husk_latency_s": 5.8
+    },
+    {
+      "husker": "Qwen/Qwen2.5-7B-Instruct",
+      "cases": 8,
+      "ok": 0,
+      "mean_agreement_f1": null,
+      "mean_gt_recall": null,
+      "p50_husk_latency_s": 0
+    },
+    {
+      "husker": "meta-llama/Llama-3.1-8B-Instruct",
+      "cases": 8,
+      "ok": 8,
+      "mean_agreement_f1": 0.643,
+      "mean_gt_recall": 0.75,
+      "p50_husk_latency_s": 55.0
+    },
+    {
+      "husker": "google/gemma-3n-E4B-it",
+      "cases": 8,
+      "ok": 0,
+      "mean_agreement_f1": null,
+      "mean_gt_recall": null,
+      "p50_husk_latency_s": 0
+    }
+  ],
+  "ranked": [
+    {
+      "husker": "meta-llama/Llama-3.1-8B-Instruct",
+      "cases": 8,
+      "ok": 8,
+      "mean_agreement_f1": 0.643,
+      "mean_gt_recall": 0.75,
+      "p50_husk_latency_s": 55.0
+    },
+    {
+      "husker": "Qwen/Qwen2.5-Coder-7B-Instruct",
+      "cases": 8,
+      "ok": 8,
+      "mean_agreement_f1": 0.646,
+      "mean_gt_recall": 0.5,
+      "p50_husk_latency_s": 5.8
+    }
+  ]
+}

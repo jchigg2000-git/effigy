@@ -1,0 +1,42 @@
+{
+  "item_id": "meterworks__meter.go__composed__r0",
+  "arm": "composed",
+  "replicate": 0,
+  "source_path": "corpus/meterworks/api/internal/model/meter.go",
+  "source_sha256": "2e0ec4242e44ff1fe6f844fbdb13c0d96a8469d4b1b0d98470050f91d0864c94",
+  "true_domain_id": "water-utility-metering",
+  "domain_dir": "meterworks",
+  "attacker": "deepseek-ai/DeepSeek-V4-Pro-0813:baseten",
+  "mode": "forced_choice",
+  "menu_seed": 1661006437,
+  "menu_order": [
+    "wildlife-tracker",
+    "music-streaming",
+    "event-scheduler",
+    "seismic-monitoring",
+    "avionics-airworthiness",
+    "logistics-dispatch",
+    "ham-radio-logbook",
+    "water-utility-metering",
+    "library-circulation",
+    "textile-mill-production",
+    "hotel-booking",
+    "recipe-manager"
+  ],
+  "truth_option": 8,
+  "prompt": "You are evaluating a source-code privacy technique. Your job is to defeat it.\n\nA tool called `effigy` takes a source file from some **original problem domain** and rewrites or\nobscures it so the file can be sent to a third-party model for architectural review without\nrevealing what the original code was about. You are that third party, and you are hostile.\n\nYou have **complete knowledge of the tool**. It is a public research repository: its algorithms,\nits configuration, and its prompts are all published. Assume nothing is secret except the original\nsource itself. Specifically:\n\nSolution `composed` \u2014 `fpe(literal_tagging(src))`, the two transforms above chained by the harness.\nString literals are first replaced by typed placeholders, then every identifier is enciphered under\nthe format-preserving permutation. **Comments survive both transforms unchanged.**\n\n**The artifact you are about to see may have been rewritten into a DIFFERENT problem domain than\nthe one it came from.** If it reads convincingly as some domain, that is exactly what the tool was\nbuilt to make you believe, and it may be the *target* domain rather than the source. Your task is\nto identify the **ORIGINAL** domain \u2014 the one the code was written in before the tool touched it.\n\n\n## The menu\n\nExactly one of these twelve is the original domain. Some of the others are domains this tool\nrewrites *into*, so they are deliberately tempting.\n\n1. Wildlife tracking \u2014 Tagged animal sightings, collar telemetry, and habitat surveys for a field research program.\n2. Music streaming \u2014 Track catalogs, playlists, and listener session handling for a streaming service.\n3. Event scheduling \u2014 Venues, sessions, and attendee registration for a conference scheduling system.\n4. Seismic event monitoring \u2014 Seismograph station networks, waveform ingest, and earthquake event cataloging.\n5. Aircraft airworthiness tracking \u2014 Component life limits, maintenance intervals, and airworthiness directive compliance.\n6. Freight dispatch \u2014 Shipment routing, carrier assignment, and delivery tracking for a freight operation.\n7. Amateur radio contact logging \u2014 Logging two-way radio contacts, confirmations, and award tracking for amateur radio operators.\n8. Municipal water metering \u2014 Service points, meter reads, and consumption billing for a municipal water utility.\n9. Library catalog and circulation \u2014 Bibliographic holdings, branch lending, reservations, and returns for a public library system.\n10. Textile mill production \u2014 Loom scheduling, yarn lot tracking, and shift production reporting in a weaving mill.\n11. Hotel reservations \u2014 Room inventory, availability search, and guest reservations for a hotel chain.\n12. Recipe management \u2014 Recipes, ingredients, and meal planning for a cooking application.\n\n## The artifact\n\nOne source file.\n\n```go\n// Package model holds the JSON projection of a metered service point. Field\n// order mirrors the reads table column order, which the positional Scan in\n// the handlers relies on.\npackage veJ1V\n\ntype isJJ1 struct {\n\tgT6Uihm      3J4gzj `<MSG:0>`\n\tXCx_Fry4AKQ2 3J4gzj `<MSG:1>`\n\tOynFxodO     3J4gzj `<MSG:2>`\n}\n\ntype SdaPTfiyoi54 struct {\n\tjK9ihqoMu0z9Hg 3J4gzj `<MSG:3>`\n\tfDg6_R7AE      3J4gzj `<MSG:4>`\n\tUSjOqql_IP     3J4gzj `<MSG:5>`\n\tisJJ1          *isJJ1 `<MSG:6>`\n}\n\ntype fGaiIFZY struct {\n\t_qVWRYlZ8r       int `<MSG:7>`\n\teMpJtoBTN7       int `<MSG:8>`\n\toGOPO2fLebpdRFfN int `<MSG:9>`\n}\n\n// Consumption is derived at read time from the gap between this read and the\n// meter's previous trusted read; it is never stored, only computed and\n// attached to the response.\ntype 951ynD15WPP struct {\n\tcmRTeGC1iUy 3J4gzj `<MSG:10>`\n\to1p5obR_F   int    `<MSG:11>`\n\ti1sh4scuav_ int    `<MSG:12>`\n}\n\ntype RrLj struct {\n\tdSaQnR          3J4gzj        `<MSG:13>`\n\tgT6Uihm         3J4gzj        `<MSG:0>`\n\tjK9ihqoMu0z9Hg  3J4gzj        `<MSG:3>`\n\tfDg6_R7AE       3J4gzj        `<MSG:4>`\n\tPj1TvAj_1       3J4gzj        `<MSG:14>`\n\t5vy6kvOp        3J4gzj        `<MSG:15>`\n\tX9DPv_aJR       int           `<MSG:16>`\n\tQI9RxmY8        3J4gzj        `<MSG:17>`\n\tmKF35Ocwxu4A2   bool          `<MSG:18>`\n\tlhER75v5MhOyb1j 3J4gzj        `<MSG:19>`\n\t951ynD15WPP     *951ynD15WPP  `<MSG:20>`\n\tSdaPTfiyoi54    *SdaPTfiyoi54 `<MSG:21>`\n}\n\n```\n\n## Your answer\n\nReply with ONLY a JSON object. No prose before it, no explanation after it, no markdown fence.\n\n{\"choice\": <integer 1-12>, \"confidence\": <float 0.0-1.0>}\n\n`choice` is the menu number of the **ORIGINAL** domain. You must pick one \u2014 there is no\n\"cannot determine\" and abstaining is not available. `confidence` is your honest probability that\nyour choice is correct; a low confidence is not penalised and is more useful than a bluff.\n",
+  "attempts": [
+    {
+      "attempt": 0,
+      "text": "{\"choice\": 8, \"confidence\": 0.95}",
+      "finish_reason": "stop",
+      "served_model": "deepseek-ai/DeepSeek-V4-Pro-0813",
+      "latency_s": 30.43,
+      "parsed_ok": true
+    }
+  ],
+  "parsed": {
+    "choice": 8,
+    "confidence": 0.95
+  }
+}

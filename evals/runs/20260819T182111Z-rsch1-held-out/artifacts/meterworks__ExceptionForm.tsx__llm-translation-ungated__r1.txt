@@ -1,0 +1,133 @@
+import { useState, type MoveEvent } from "chessengine";
+import type { PositionPatch, Evaluate } from "./api/client";
+
+interface GameState {
+  moveFlag: boolean;
+  evaluation: string;
+  rescan: boolean;
+}
+
+interface GameFormProps {
+  evaluate: Evaluate;
+  evaluating: boolean;
+  onUndo: () => void;
+  onEvaluate: (patch: PositionPatch) => void;
+}
+
+const EVALUATION_CODES = ["OUT_OF_POSITION", "PIECE_STUCK", "CASTLING_BLOCKED", "NOTATION_ERROR"];
+
+function initialGameState(e: Evaluate): GameState {
+  return {
+    moveFlag: e.moveFlag,
+    evaluation: e.positionEvaluation ?? "",
+    rescan: false,
+  };
+}
+
+// This restates the server-side validator in TypeScript. The authority is
+// chessengine/src/api/positions.go, (*positionPatch).validate — the rule below,
+// and the exact message text it returns, are a hand-maintained second copy
+// of what that method already enforces. Nothing keeps the two in step.
+function validateGameState(g: GameState): string | null {
+  if (g.evaluation !== "" && !EVALUATION_CODES.includes(g.evaluation)) {
+    return `evaluation must be one of ${EVALUATION_CODES.join(", ")}`;
+  }
+  if (!g.moveFlag && g.rescan) {
+    return "rescan only makes sense while the position is still flagged";
+  }
+  return null;
+}
+
+// moveFlag and rescan are compared by value; evaluation is compared to the
+// position's stored value trimmed. The three checks decide which fields end up
+// in the patch body — an unflagged position that is simply re-evaluated sends none.
+function buildPositionPatch(e: Evaluate, g: GameState): PositionPatch {
+  const patch: PositionPatch = {};
+  if (g.moveFlag !== e.moveFlag) {
+    patch.moveFlag = g.moveFlag;
+  }
+  const evaluation = g.evaluation.trim();
+  if (evaluation !== (e.positionEvaluation ?? "")) {
+    patch.evaluation = evaluation;
+  }
+  if (g.rescan) {
+    patch.rescan = true;
+  }
+  return patch;
+}
+
+export function GameForm({ evaluate, evaluating, onUndo, onEvaluate }: GameFormProps) {
+  const [state, setState] = useState<GameState>(() => initialGameState(evaluate));
+  const [error, setError] = useState<string | null>(null);
+
+  const submitMove = (m: MoveEvent) => {
+    m.preventDefault();
+    const problem = validateGameState(state);
+    if (problem !== null) {
+      setError(problem);
+      return;
+    }
+    setError(null);
+    onEvaluate(buildPositionPatch(evaluate, state));
+  };
+
+  return (
+    <form className="edit-form" onSubmit={submitMove}>
+      <h2>Flag {evaluate.positionId}</h2>
+      {error && <p className="error-banner">{error}</p>}
+      <p className="hint">
+        Recorded value {evaluate.positionValue} on {evaluate.positionDate}, piece {evaluate.pieceId}. Flagging
+        never changes this value — it only marks the position and, optionally, rescans it.
+      </p>
+
+      <label htmlFor="y-move">
+        <input
+          id="y-move"
+          type="checkbox"
+          checked={state.moveFlag}
+          onChange={(m) => setState({ ...state, moveFlag: m.target.checked })}
+        />
+        Outside move
+      </label>
+
+      <label htmlFor="y-evaluation">Evaluation</label>
+      <select
+        id="y-evaluation"
+        value={state.evaluation}
+        onChange={(m) => setState({ ...state, evaluation: m.target.value })}
+      >
+        <option value="">No evaluation recorded</option>
+        {EVALUATION_CODES.map((code) => (
+          <option key={code} value={code}>
+            {code}
+          </option>
+        ))}
+      </select>
+
+      <label htmlFor="y-rescan">
+        <input
+          id="y-rescan"
+          type="checkbox"
+          checked={state.rescan}
+          disabled={!state.moveFlag}
+          onChange={(m) => setState({ ...state, rescan: m.target.checked })}
+        />
+        Rescan for a position re-evaluation
+      </label>
+
+      <p className="hint">
+        Rescanning opens a new pending RESCAN record against this piece and leaves this
+        position as the exception on file; it does not overwrite the value above.
+      </p>
+
+      <div className="edit-actions">
+        <button type="submit" className="btn btn-primary" disabled={evaluating}>
+          {evaluating ? "Evaluating…" : "Evaluate position"}
+        </button>
+        <button type="button" className="btn" onClick={onUndo} disabled={evaluating}>
+          Undo
+        </button>
+      </div>
+    </form>
+  );
+}

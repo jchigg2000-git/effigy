@@ -1,0 +1,168 @@
+// Root screen: route search on the left, the selected read's detail (or the
+// exception form) on the right. All request orchestration and all
+// user-facing error text live in this file.
+import { useState } from "<MSG:0>";
+import {
+  ApiError,
+  flagException,
+  getRead,
+  listRouteReads,
+  type ExceptionPatch,
+  type Read,
+  type ReadSummary,
+} from "<PATH:0>";
+import { ExceptionForm } from "<PATH:1>";
+import { ReadDetail } from "<PATH:2>";
+
+export function App() {
+  const [routeCode, setRouteCode] = useState("<EMPTY:0>");
+  const [cycleCode, setCycleCode] = useState("<EMPTY:0>");
+  const [rows, setRows] = useState<ReadSummary[]>([]);
+  const [count, setCount] = useState<number | null>(null);
+  const [selected, setSelected] = useState<Read | null>(null);
+  const [flagging, setFlagging] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const describe = (err: unknown): string =>
+    err instanceof ApiError ? `<MSG:1>` : "<MSG:2>";
+
+  const runSearch = async () => {
+    setLoading(true);
+    setError(null);
+    setSelected(null);
+    setFlagging(false);
+    try {
+      const res = await listRouteReads(routeCode, { cycleCode: cycleCode || undefined, limit: 50 });
+      setRows(res.reads);
+      setCount(res.count);
+    } catch (err) {
+      setRows([]);
+      setCount(null);
+      setError(describe(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openRead = async (readId: string) => {
+    setLoading(true);
+    setError(null);
+    setFlagging(false);
+    try {
+      setSelected(await getRead(readId));
+    } catch (err) {
+      setSelected(null);
+      setError(describe(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const submitException = async (patch: ExceptionPatch) => {
+    if (selected === null) {
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      setSelected(await flagException(selected.readId, patch));
+      setFlagging(false);
+    } catch (err) {
+      setError(describe(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const resetSearch = () => {
+    setRouteCode("<EMPTY:0>");
+    setCycleCode("<EMPTY:0>");
+    setRows([]);
+    setCount(null);
+    setSelected(null);
+    setFlagging(false);
+    setError(null);
+  };
+
+  return (
+    <div className="<MSG:3>">
+      <header className="<MSG:4>">
+        <div>
+          <h1>meterworks</h1>
+          <p>Cedar Hollow Municipal Water — route reading &amp; billing console</p>
+        </div>
+      </header>
+
+      {error !== null && <p className="<MSG:5>">{error}</p>}
+
+      <main className="<MSG:6>">
+        <section className="<MSG:7>">
+          <form className="<MSG:8>" onSubmit={(e) => { e.preventDefault(); runSearch(); }}>
+            <h2>Find reads by route</h2>
+            <label htmlFor="<MSG:9>">Route code</label>
+            <input id="<MSG:9>" value={routeCode} placeholder="<MSG:10>"
+              onChange={(e) => setRouteCode(e.target.value)} />
+            <label htmlFor="<MSG:11>">Billing cycle (optional)</label>
+            <input id="<MSG:11>" value={cycleCode} placeholder="<MSG:12>"
+              onChange={(e) => setCycleCode(e.target.value)} />
+            <div className="<MSG:13>">
+              <button type="<MSG:14>" className="<MSG:15>" disabled={routeCode.trim() === "<EMPTY:0>" || loading}>
+                {loading ? "<MSG:16>" : "<MSG:17>"}
+              </button>
+              <button type="<MSG:18>" className="<MSG:19>" onClick={resetSearch} disabled={loading}>
+                Clear
+              </button>
+            </div>
+          </form>
+          {count !== null && <p className="<MSG:20>">{count} reads matched</p>}
+          {rows.length === 0 ? (
+            <p className="<MSG:21>">No reads matched that route.</p>
+          ) : (
+            <table className="<MSG:22>">
+              <thead>
+                <tr>
+                  <th>Read id</th>
+                  <th>Service point</th>
+                  <th>Type</th>
+                  <th>Value</th>
+                  <th>Date</th>
+                  <th>Tolerance</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row.readId} onClick={() => openRead(row.readId)}
+                    className={row.readId === selected?.readId ? "<MSG:23>" : "<EMPTY:0>"}>
+                    <td>{row.readId}</td>
+                    <td>{row.servicePointId}</td>
+                    <td>{row.readType}</td>
+                    <td>{row.readValue}</td>
+                    <td>{row.readDate}</td>
+                    <td>{row.toleranceFlag ? "<MSG:24>" : "<MSG:25>"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </section>
+
+        <section className="<MSG:26>">
+          {selected === null && <p className="<MSG:21>">Select a read to see its detail.</p>}
+          {selected !== null && !flagging && (
+            <ReadDetail read={selected} onFlag={() => setFlagging(true)} />
+          )}
+          {selected !== null && flagging && (
+            <ExceptionForm
+              read={selected}
+              saving={saving}
+              onCancel={() => setFlagging(false)}
+              onSave={submitException}
+            />
+          )}
+        </section>
+      </main>
+    </div>
+  );
+}

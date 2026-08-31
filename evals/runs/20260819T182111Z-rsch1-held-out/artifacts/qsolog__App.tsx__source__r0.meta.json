@@ -1,0 +1,13 @@
+{
+  "key": "qsolog__App.tsx__source__r0",
+  "arm": "source",
+  "replicate": 0,
+  "source_path": "corpus/qsolog/app/src/App.tsx",
+  "source_sha256": "4aed4ed99fc5c4025e8e889ca51df9fbf39352f7f544a0c090ce938fefeebc8d",
+  "true_domain_id": "ham-radio-logbook",
+  "language": "tsx",
+  "artifact_sha256": "4aed4ed99fc5c4025e8e889ca51df9fbf39352f7f544a0c090ce938fefeebc8d",
+  "artifact_lines": 181,
+  "latency_s": 0.0,
+  "solution_meta": {}
+}

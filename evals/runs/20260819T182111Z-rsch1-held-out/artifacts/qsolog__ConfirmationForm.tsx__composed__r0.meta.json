@@ -1,0 +1,18 @@
+{
+  "key": "qsolog__ConfirmationForm.tsx__composed__r0",
+  "arm": "composed",
+  "replicate": 0,
+  "source_path": "corpus/qsolog/app/src/components/ConfirmationForm.tsx",
+  "source_sha256": "e76263f23c4972e192429aaacba0d3db02f6667428ccb029068bbcf28cd634e5",
+  "true_domain_id": "ham-radio-logbook",
+  "language": "tsx",
+  "artifact_sha256": "a905be71cf2306a4cce770b6b91bd145cfa7e49d9906aaf3548f8f9204b91f3e",
+  "artifact_lines": 149,
+  "latency_s": 0.0,
+  "solution_meta": {
+    "chain": [
+      "literal-tagging",
+      "fpe"
+    ]
+  }
+}

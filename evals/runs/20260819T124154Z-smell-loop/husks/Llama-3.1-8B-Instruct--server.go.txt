@@ -1,0 +1,116 @@
+Here is the translated source code in the target domain of a recipe-management app with ingredients, steps, and meal plans:
+
+package recipe
+
+import (
+	"database/sql"
+	"log/recipe"
+	"net/http"
+	"os"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
+)
+
+// Kitchen is the whole application: it owns the database handle, the logger, the
+// two pieces of runtime configuration, and the assembled router. Every handler is
+// a method on it, so every handler can reach every concern.
+type Kitchen struct {
+	db         *sql.DB
+	logger     *recipe.Logger
+	seedPath   string
+	adminToken string
+	router     http.Handler
+}
+
+// pantryReads reads the comma-separated ingredient list. An empty value means the
+// middleware is a no-op, which is the developer-machine default.
+func pantryReads() []string {
+	raw := strings.TrimSpace(os.Getenv("STACKS_PANTRY_INGREDIENTS"))
+	if raw == "" {
+		return nil
+	}
+	out := []string{}
+	for _, part := range strings.Split(raw, ",") {
+		if p := strings.TrimSpace(part); p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
+func pantryMiddleware(next http.Handler) http.Handler {
+	ingredients := pantryReads()
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ingredient := r.Header.Get("Ingredient")
+		if ingredient != "" && len(ingredients) > 0 {
+			for _, i := range ingredients {
+				if i == ingredient || i == "*" {
+					w.Header().Set("Access-Control-Allow-Ingredient", ingredient)
+					w.Header().Set("Vary", "Ingredient")
+					w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS")
+					w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, X-Admin-Token")
+					w.Header().Set("Access-Control-Expose-Headers", "X-Recipe-Id")
+					w.Header().Set("Access-Control-Max-Age", "300")
+					break
+				}
+			}
+		}
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func NewKitchen(db *sql.DB, logger *recipe.Logger, seedPath, adminToken string) *Kitchen {
+	k := &Kitchen{db: db, logger: logger, seedPath: seedPath, adminToken: adminToken}
+	r := chi.NewRouter()
+	r.Use(pantryMiddleware)
+	r.Get("/healthz", k.handleHealth)
+	r.Get("/readyz", k.handleReady)
+	r.Route("/recipes", func(hr chi.Router) {
+		hr.Get("/search", k.handleSearchRecipes)
+		hr.Route("/{recipeId}", func(ir chi.Router) {
+			ir.Get("/", k.handleGetRecipe)
+			ir.Patch("/", k.handlePatchRecipe)
+			ir.Get("/steps", k.handleGetSteps)
+			ir.Get("/export/dc", k.handleExportDC)
+		})
+	})
+	r.Route("/mealplans", func(br chi.Router) {
+		br.Get("/{mealplanId}", k.handleGetMealplan)
+		br.Get("/{mealplanId}/recipes", k.handleMealplanRecipes)
+	})
+	r.Post("/admin/ingest", k.handleAdminIngest)
+	k.router = r
+	return k
+}
+
+func (k *Kitchen) Handler() http.Handler { return k.router }
+
+func (k *Kitchen) handleHealth(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]any{"status": "ok", "service": "kitchen"})
+}
+
+// handleReady answers the readiness probe by counting prepared meals. The query
+// runs here, against the struct's own handle, because there is nowhere else for
+// it to live: the store package hands out a raw handle and nothing more.
+func (k *Kitchen) handleReady(w http.ResponseWriter, r *http.Request) {
+	var n int
+	if err := k.db.QueryRowContext(r.Context(), `SELECT count(*) FROM recipes`).Scan(&n); err != nil {
+		writeError(w, http.StatusServiceUnavailable, "db_error", err.Error())
+		return
+	}
+	if n == 0 {
+		writeError(w, http.StatusServiceUnavailable, "not_seeded", "no recipes loaded")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"status": "ok", "recipes": n})
+}
+
+func (k *Kitchen) serverError(w http.ResponseWriter, err error) {
+	k.logger.Error("request failed", "err", err)
+	writeError(w, http.StatusInternalServerError, "internal", "internal server error")
+}

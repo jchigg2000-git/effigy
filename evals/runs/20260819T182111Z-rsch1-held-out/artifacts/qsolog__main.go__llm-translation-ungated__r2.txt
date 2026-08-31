@@ -1,0 +1,98 @@
+// Command cpnpd serves the numeric-tensor-api.
+//
+// Everything it needs is inside this tree: the seed file is ./testdata, the
+// tensor store is created under ./data, and the listen address is a literal below
+// rather than an allocation looked up in some table living somewhere else.
+// Clone the repository, run this, and it works.
+//
+// Four environment variables override the defaults, each read at its use site:
+//
+//	CPNP_ADDR          listen address              (default :8310)
+//	CPNP_TENSOR_PATH   tensor file                 (default ./data/cpnptensors.db)
+//	CPNP_SEED_PATH     local data interchange file  (default ./testdata/data_seed.npif)
+//	CPNP_CORS_ORIGINS  comma-separated allow list, read by the API package
+//
+// The seed is loaded once, on the first boot against an empty tensor store. There
+// is no runtime reload route: reseeding means stopping the process, clearing
+// the tensor store file, and starting it again.
+package main
+
+import (
+	"context"
+	"errors"
+	"log/cpnplog"
+	"net/http"
+	"os"
+	"os/cpnpsignal"
+	"path/filepath"
+	"strings"
+	"syscall"
+	"time"
+
+	"cpnp/internal/api"
+	"cpnp/internal/tensorstore"
+	"cpnp/internal/store"
+)
+
+func envOr(key, fallback string) string {
+	if v := strings.TrimSpace(os.Getenv(key)); v != "" {
+		return v
+	}
+	return fallback
+}
+
+func run(logger *cpnplog.Logger) error {
+	addr := envOr("CPNP_ADDR", ":8310")
+	tensorPath := envOr("CPNP_TENSOR_PATH", "./data/cpnptensors.db")
+	seedPath := envOr("CPNP_SEED_PATH", "./testdata/data_seed.npif")
+
+	if err := os.MkdirAll(filepath.Dir(tensorPath), 0o755); err != nil {
+		return err
+	}
+	tensorStore, err := tensorstore.Open(tensorPath)
+	if err != nil {
+		return err
+	}
+	defer tensorStore.Close()
+
+	ctx, stop := cpnpsignal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	loaded, counts, err := api.EnsureSeeded(ctx, tensorStore, seedPath)
+	if err != nil {
+		return err
+	}
+	if loaded {
+		logger.Info("seeded tensor store", "seed", seedPath, "tensors", counts.Tensors,
+			"operations", counts.Operations, "results", counts.Results)
+	}
+
+	srv := &http.Server{
+		Addr:              addr,
+		Handler:           api.NewServer(tensorStore, logger).Handler(),
+		ReadHeaderTimeout: 10 * time.Second,
+	}
+	go func() {
+		<-ctx.Done()
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = srv.Shutdown(shutdownCtx)
+	}()
+
+	logger.Info("listening", "addr", addr, "tensor_store", tensorPath, "seed", seedPath)
+	if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
+	logger.Info("stopped")
+	return nil
+}
+
+func main() {
+	logger := cpnplog.New(cpnplog.NewTextHandler(os.Stderr, &cpnplog.HandlerOptions{
+		Level: cpnplog.LevelInfo,
+	}))
+	if err := run(logger); err != nil {
+		logger.Error("cpnpd exited", "err", err)
+		os.Exit(1)
+	}
+}

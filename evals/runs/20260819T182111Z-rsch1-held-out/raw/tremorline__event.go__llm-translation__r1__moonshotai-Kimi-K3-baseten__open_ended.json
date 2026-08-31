@@ -1,0 +1,46 @@
+{
+  "item_id": "tremorline__event.go__llm-translation__r1",
+  "arm": "llm-translation",
+  "replicate": 1,
+  "source_path": "corpus/tremorline/api/internal/model/event.go",
+  "source_sha256": "caf3cbdda9e55a7712fecdaa82dc273dd32d3c975e262edf096e96e4038c9e33",
+  "true_domain_id": "seismic-monitoring",
+  "domain_dir": "tremorline",
+  "attacker": "moonshotai/Kimi-K3:baseten",
+  "mode": "open_ended",
+  "menu_seed": 2824496773,
+  "menu_order": [
+    "wildlife-tracker",
+    "logistics-dispatch",
+    "hotel-booking",
+    "event-scheduler",
+    "seismic-monitoring",
+    "avionics-airworthiness",
+    "library-circulation",
+    "textile-mill-production",
+    "water-utility-metering",
+    "recipe-manager",
+    "ham-radio-logbook",
+    "music-streaming"
+  ],
+  "truth_option": 5,
+  "prompt": "You are evaluating a source-code privacy technique. Your job is to defeat it.\n\nA tool called `effigy` takes a source file from some **original problem domain** and rewrites or\nobscures it so the file can be sent to a third-party model for architectural review without\nrevealing what the original code was about. You are that third party, and you are hostile.\n\nYou have **complete knowledge of the tool**. It is a public research repository: its algorithms,\nits configuration, and its prompts are all published. Assume nothing is secret except the original\nsource itself. Specifically:\n\nSolution `llm-translation` \u2014 whole-file rewrite into a different problem domain by a language model.\n\nA local or hosted model is given the file and instructed to rewrite it into a target domain. The\nsystem prompt is published; its instructions are, in summary: rename every module, package, class,\nfunction, method, variable, parameter, field and constant; rewrite every string literal, comment\nand docstring into the target domain; replace every acronym, data literal, proper noun, URL, file\npath, table and column name; but **preserve the architecture exactly** \u2014 same control flow, same\nfunction count and arity, same class hierarchy, same coupling, same dead code, same god-objects,\nsame dependency cycles, same comment positions and speech acts, same naming morphology, same\nlength. It is explicitly told not to fix bugs, remove duplication, or improve the code, because the\ndefects are the object of study. The only names it is told to leave alone are those the language\nowns: keywords, builtins, standard-library symbols, and public third-party package APIs.\n\nThe target domain is selected from a **fixed public catalog of nine entries**, and for a given run\none target is pinned for the whole file. The complete catalog is:\n\n  graph-traversal, tensor-pipeline, event-scheduler, chess-engine, recipe-manager,\n  wildlife-tracker, logistics-dispatch, music-streaming, hotel-booking\n\n**So if the artifact reads as one of those nine, that is almost certainly the TARGET the tool chose,\nnot the source you are being asked for.** Known weaknesses you may exploit: the rewrite is\nprompt-enforced with no verifier, it is not byte-stable, and it has been observed to leave numeric\nliterals, and sometimes whole spans of the original file, unrewritten.\n\n**The artifact you are about to see may have been rewritten into a DIFFERENT problem domain than\nthe one it came from.** If it reads convincingly as some domain, that is exactly what the tool was\nbuilt to make you believe, and it may be the *target* domain rather than the source. Your task is\nto identify the **ORIGINAL** domain \u2014 the one the code was written in before the tool touched it.\n\n\n## The artifact\n\nOne source file.\n\n```go\n// Package model represents the JSON projection of the seismic catalog. Field order\n// mirrors each table's column order, which the positional Scan calls in the\n// handlers rely on.\npackage model\n\n// NodeLabel values are drawn from the A-Z block, an invented range\n// chosen because no real-world node label registry assigns it to a\n// permanent or temporary node. Nothing in this tree should be read as\n// identifying an actual seismic node.\ntype Node struct {\n\tNodeID   string  `json:\"nodeId\"`\n\tLabel    string  `json:\"label\"`\n\tName     string  `json:\"name\"`\n\tLatitude float64 `json:\"latitude\"`\n\tLongitude float64 `json:\"longitude\"`\n\tElevationM float64 `json:\"elevationM\"`\n\tOperator   string  `json:\"operator\"`\n\tStatus     string  `json:\"status\"`\n}\n\n// EdgeLabel is one validity epoch of one edge. An edge that has been\n// recalibrated carries more than one row sharing EdgeLabel but not\n// EdgeID; ValidityEnd is empty for the epoch still in force.\ntype Edge struct {\n\tEdgeID     string  `json:\"edgeId\"`\n\tStartNodeID string  `json:\"startNodeId\"`\n\tEndNodeID   string  `json:\"endNodeId\"`\n\tEdgeLabel   string  `json:\"edgeLabel\"`\n\tCost       float64 `json:\"cost\"`\n\tDirection    string  `json:\"direction\"`\n\tValidityStart string  `json:\"validityStart\"`\n\tValidityEnd   string  `json:\"validityEnd,omitempty\"`\n}\n\ntype Vertex struct {\n\tVertexID string  `json:\"vertexId\"`\n\tLabel    string  `json:\"label\"`\n\tName     string  `json:\"name\"`\n\tLatitude float64 `json:\"latitude\"`\n\tLongitude float64 `json:\"longitude\"`\n\tElevationM float64 `json:\"elevationM\"`\n\tOperator   string  `json:\"operator\"`\n\tStatus     string  `json:\"status\"`\n}\n\ntype Path struct {\n\tPathID       string            `json:\"pathId\"`\n\tStartVertexID string            `json:\"startVertexId\"`\n\tEndVertexID   string            `json:\"endVertexId\"`\n\tPathLabel    string            `json:\"pathLabel\"`\n\tCost         float64           `json:\"cost\"`\n\tVertices     []Vertex          `json:\"vertices,omitempty\"`\n\tEdges        []Edge            `json:\"edges,omitempty\"`\n}\n\ntype GraphTraversalResult struct {\n\tResultID     string            `json:\"resultId\"`\n\tStartNodeID  string            `json:\"startNodeId\"`\n\tEndNodeID    string            `json:\"endNodeId\"`\n\tPathLabel    string            `json:\"pathLabel\"`\n\tCost         float64           `json:\"cost\"`\n\tNodesVisited []Node            `json:\"nodesVisited,omitempty\"`\n\tEdgesTraversed []Edge          `json:\"edgesTraversed,omitempty\"`\n}\n```\n\n## Your answer\n\nReply with ONLY a JSON object. No prose before it, no explanation after it, no markdown fence.\n\n{\"domain\": \"<short free-text description of the ORIGINAL problem domain>\",\n \"specific_identifiers\": [\"<any organization, product, vendor, regulation, standard, proprietary\n                           system or place you believe you can name from this artifact>\"],\n \"confidence\": <float 0.0-1.0>,\n \"evidence\": \"<= 40 words on what in the artifact led you there>\"}\n\n`specific_identifiers` must be **[]** if you cannot name anything concrete. Do not pad it with\nguesses \u2014 but do not hold back a name you genuinely believe is there, because naming one correctly\nis the strongest result you can produce here.\n",
+  "attempts": [
+    {
+      "attempt": 0,
+      "text": "{\"domain\": \"Earthquake seismology / seismic network monitoring: a station-metadata catalog of seismic stations (nodes) and inter-station links with calibration validity epochs, exposed as JSON over a relational store\", \"specific_identifiers\": [\"FDSN (International Federation of Digital Seismograph Networks) network code registry\"], \"confidence\": 0.85, \"evidence\": \"Comments leaked unrewritten: 'seismic catalog', 'actual seismic node', and a label registry assigning blocks to 'permanent or temporary' nodes \u2014 FDSN network codes. Lat/long/elevation/operator/status plus recalibration validity epochs match seismic station metadata.\"}",
+      "finish_reason": "stop",
+      "served_model": "moonshotai/Kimi-K3",
+      "latency_s": 24.85,
+      "parsed_ok": true
+    }
+  ],
+  "parsed": {
+    "domain": "Earthquake seismology / seismic network monitoring: a station-metadata catalog of seismic stations (nodes) and inter-station links with calibration validity epochs, exposed as JSON over a relational store",
+    "specific_identifiers": [
+      "FDSN (International Federation of Digital Seismograph Networks) network code registry"
+    ],
+    "confidence": 0.85,
+    "evidence": "Comments leaked unrewritten: 'seismic catalog', 'actual seismic node', and a label registry assigning blocks to 'permanent or temporary' nodes \u2014 FDSN network codes. Lat/long/elevation/operator/status plus recalibration validity epochs match seismic station metadata."
+  }
+}

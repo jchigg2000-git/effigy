@@ -1,0 +1,21 @@
+{
+  "key": "qsolog__server.go__literal-tagging__r0",
+  "arm": "literal-tagging",
+  "replicate": 0,
+  "source_path": "corpus/qsolog/api/internal/api/server.go",
+  "source_sha256": "012e2038364271c9e81260762b8d5988c43f216116e7469a8679a316900e0780",
+  "true_domain_id": "ham-radio-logbook",
+  "language": "go",
+  "artifact_sha256": "0e587ee5bc1fc56aafda7ab7b963a0c8b35fdcc3041cf2d030c615022b75a108",
+  "artifact_lines": 131,
+  "latency_s": 0.0,
+  "solution_meta": {
+    "literals_by_class": {
+      "PATH": 13,
+      "MSG": 36,
+      "EMPTY": 3,
+      "SQL": 1
+    },
+    "total_literals_replaced": 53
+  }
+}

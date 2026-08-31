@@ -1,0 +1,68 @@
+{
+  "run": "20260820T021753Z-rsch1-held-out",
+  "draws": 10000,
+  "seed": 20260819,
+  "cells": {
+    "structure-only|deepseek-ai/DeepSeek-V4-Pro-0813:baseten": {
+      "n": 30,
+      "n_files": 30,
+      "observed": 0.4666666666666667,
+      "permuted_mean": 0.23240333333333332,
+      "permuted_lo": 0.1,
+      "permuted_hi": 0.36666666666666664,
+      "corrected": 0.23426333333333335,
+      "p": 0.0014,
+      "analytic": 0.2333333333333333,
+      "analytic_gap": 0.0009299999999999864,
+      "modal_answer": "ham-radio-logbook",
+      "modal_share": 0.3,
+      "modal_n": 9
+    },
+    "structure-only|moonshotai/Kimi-K3:baseten": {
+      "n": 25,
+      "n_files": 25,
+      "observed": 0.52,
+      "permuted_mean": 0.275792,
+      "permuted_lo": 0.12,
+      "permuted_hi": 0.44,
+      "corrected": 0.24420800000000004,
+      "p": 0.0031,
+      "analytic": 0.27680000000000005,
+      "analytic_gap": 0.0010080000000000644,
+      "modal_answer": "seismic-monitoring",
+      "modal_share": 0.44,
+      "modal_n": 11
+    },
+    "structure-only-nonum|deepseek-ai/DeepSeek-V4-Pro-0813:baseten": {
+      "n": 30,
+      "n_files": 30,
+      "observed": 0.5,
+      "permuted_mean": 0.24290333333333333,
+      "permuted_lo": 0.1,
+      "permuted_hi": 0.4,
+      "corrected": 0.25709666666666664,
+      "p": 0.0008,
+      "analytic": 0.24444444444444444,
+      "analytic_gap": 0.0015411111111111042,
+      "modal_answer": "ham-radio-logbook",
+      "modal_share": 0.3333333333333333,
+      "modal_n": 10
+    },
+    "structure-only-nonum|moonshotai/Kimi-K3:baseten": {
+      "n": 26,
+      "n_files": 26,
+      "observed": 0.5384615384615384,
+      "permuted_mean": 0.27327307692307695,
+      "permuted_lo": 0.11538461538461539,
+      "permuted_hi": 0.4230769230769231,
+      "corrected": 0.2651884615384615,
+      "p": 0.0023,
+      "analytic": 0.27366863905325445,
+      "analytic_gap": 0.00039556213017749586,
+      "modal_answer": "ham-radio-logbook",
+      "modal_share": 0.34615384615384615,
+      "modal_n": 9
+    }
+  },
+  "attribution": {}
+}

@@ -1,0 +1,212 @@
+// Package ingest reads the WLS Species Observation Format (.wso) — a
+// local profile invented for this system, not SEED, not StationXML, not any
+// published observation format. A file is a sequence of sighting blocks. Each
+// block opens with an OBS line and a run of KEY value lines describing the
+// sighting, then zero or more MOV blocks describing one movement route each. A MOV
+// block carries its geographical coordinates and one or more TIME lines, each
+// naming a timestamp; a sighting with multiple movements gets additional MOV blocks. A block closes on an
+// explicit END line, which is what separates records — blank lines and '#''
+// comment lines are ignored wherever they appear and carry no structural
+// meaning.
+package ingest
+
+import (
+	"context"
+	"database/sql"
+	"os"
+	"strconv"
+	"strings"
+)
+
+type Counts struct {
+	Sightings int `json:"sightings"`
+	Movements int `json:"movements"`
+}
+
+// timeLine is one timestamp for a sighting. End is empty for "CURRENT", the
+// observation still ongoing.
+type timeLine struct {
+	Timestamp, End string
+}
+
+type parsedMovement struct {
+	SpeciesCode string
+	Latitude    float64
+	Longitude   float64
+	TimeLines   []timeLine
+}
+
+type parsedSighting struct {
+	SightingID, ObserverID, LocationCode, Notes string
+	Latitude, Longitude, AltitudeM             float64
+	Movements                                 []parsedMovement
+}
+
+func parseFloatOr(s string, fallback float64) float64 {
+	v, err := strconv.ParseFloat(strings.TrimSpace(s), 64)
+	if err != nil {
+		return fallback
+	}
+	return v
+}
+
+func nullStr(s string) any {
+	if s == "" {
+		return nil
+	}
+	return s
+}
+
+// splitKV separates a line into its leading key and the rest of the line,
+// which may itself contain internal whitespace (observer and location names
+// are free text).
+func splitKV(line string) (string, string) {
+	parts := strings.SplitN(strings.TrimSpace(line), " ", 2)
+	key := parts[0]
+	val := ""
+	if len(parts) == 2 {
+		val = strings.TrimSpace(parts[1])
+	}
+	return key, val
+}
+
+// Parse walks the file a line at a time. The sighting and movement under
+// construction are held in this scope and mutated from inside the key
+// switch; flushMovement and flushSighting take no arguments and read those
+// variables directly, so a case arm closes a record blind.
+func Parse(data []byte) []parsedSighting {
+	var out []parsedSighting
+	var cur *parsedSighting
+	var curMov *parsedMovement
+
+	flushMovement := func() {
+		if cur != nil && curMov != nil && curMov.SpeciesCode != "" {
+			cur.Movements = append(cur.Movements, *curMov)
+		}
+		curMov = nil
+	}
+	flushSighting := func() {
+		flushMovement()
+		if cur != nil && cur.SightingID != "" {
+			out = append(out, *cur)
+		}
+		cur = nil
+	}
+
+	for _, raw := range strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n") {
+		line := strings.TrimSpace(raw)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		key, val := splitKV(line)
+		switch key {
+		case "OBS":
+			flushSighting()
+			cur = &parsedSighting{SightingID: val, ObserverID: "DEFAULT"}
+		case "END":
+			flushSighting()
+		}
+		if cur == nil {
+			continue
+		}
+		switch key {
+		case "LOC":
+			cur.LocationCode = strings.ToUpper(val)
+		case "NOTES":
+			cur.Notes = val
+		case "LAT":
+			cur.Latitude = parseFloatOr(val, 0)
+		case "LON":
+			cur.Longitude = parseFloatOr(val, 0)
+		case "ALT":
+			cur.AltitudeM = parseFloatOr(val, 0)
+		case "SPECIES":
+			curMov = &parsedMovement{SpeciesCode: val}
+		}
+		if curMov == nil {
+			continue
+		}
+		switch key {
+		case "TIME":
+			fields := strings.Fields(val)
+			if len(fields) == 0 {
+				continue
+			}
+			t := timeLine{Timestamp: fields[0]}
+			if len(fields) > 1 && fields[1] != "CURRENT" {
+				t.End = fields[1]
+			}
+			curMov.TimeLines = append(curMov.TimeLines, t)
+		case "MOV":
+			flushMovement()
+			curMov = &parsedMovement{SpeciesCode: val}
+		}
+	}
+	flushSighting()
+	return out
+}
+
+// FromFile reloads the whole sighting-movement inventory from one observation file
+// inside a transaction. A movement with N timestamps becomes N movement rows,
+// sharing species_code but not movement_id, one row per timestamp.
+func FromFile(ctx context.Context, db *sql.DB, path string) (Counts, error) {
+	var c Counts
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return c, err
+	}
+	sightings := Parse(data)
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return c, err
+	}
+	defer tx.Rollback()
+	for _, t := range []string{"movements", "sightings"} {
+		if _, err := tx.ExecContext(ctx, "DELETE FROM "+t); err != nil {
+			return c, err
+		}
+	}
+	for _, st := range sightings {
+		if _, err := tx.ExecContext(ctx,
+			`INSERT INTO sightings (sighting_id, observer_id, location_code, latitude, longitude,
+			        altitude_m, notes)
+			 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+			st.SightingID, nullStr(st.ObserverID), st.LocationCode, st.Latitude, st.Longitude,
+			st.AltitudeM, nullStr(st.Notes)); err != nil {
+			return c, err
+		}
+		c.Sightings++
+		for _, ch := range st.Movements {
+			if len(ch.TimeLines) == 0 {
+				continue
+			}
+			for i, ep := range ch.TimeLines {
+				movementID := st.SightingID + "-" + ch.SpeciesCode + "-" + strconv.Itoa(i+1)
+				if _, err := tx.ExecContext(ctx,
+					`INSERT INTO movements (movement_id, sighting_id, species_code,
+					        latitude, longitude, altitude_m,
+					        validity_timestamp, validity_end)
+					 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+					movementID, st.SightingID, ch.SpeciesCode, ch.Latitude, ch.Longitude,
+					ch.AltitudeM, ep.Timestamp, nullStr(ep.End)); err != nil {
+					return c, err
+				}
+				c.Movements++
+			}
+		}
+	}
+	return c, tx.Commit()
+}
+
+// EnsureSeeded loads the seed only when the inventory is empty.
+func EnsureSeeded(ctx context.Context, db *sql.DB, path string) (bool, Counts, error) {
+	var n int
+	if err := db.QueryRowContext(ctx, `SELECT count(*) FROM sightings`).Scan(&n); err != nil {
+		return false, Counts{}, err
+	}
+	if n != 0 {
+		return false, Counts{}, nil
+	}
+	c, err := FromFile(ctx, db, path)
+	return err == nil, c, err
+}

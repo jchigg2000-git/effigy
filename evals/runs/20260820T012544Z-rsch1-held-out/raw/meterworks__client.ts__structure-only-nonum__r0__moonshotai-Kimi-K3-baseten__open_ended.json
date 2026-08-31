@@ -1,0 +1,44 @@
+{
+  "item_id": "meterworks__client.ts__structure-only-nonum__r0",
+  "arm": "structure-only-nonum",
+  "replicate": 0,
+  "source_path": "corpus/meterworks/app/src/api/client.ts",
+  "source_sha256": "c7f85c7784906d0eca33cb23a15c442e295eaea32b65039ba02a04ca24e19bf3",
+  "true_domain_id": "water-utility-metering",
+  "domain_dir": "meterworks",
+  "attacker": "moonshotai/Kimi-K3:baseten",
+  "mode": "open_ended",
+  "menu_seed": 1760871027,
+  "menu_order": [
+    "hotel-booking",
+    "logistics-dispatch",
+    "avionics-airworthiness",
+    "textile-mill-production",
+    "music-streaming",
+    "event-scheduler",
+    "wildlife-tracker",
+    "ham-radio-logbook",
+    "water-utility-metering",
+    "seismic-monitoring",
+    "library-circulation",
+    "recipe-manager"
+  ],
+  "truth_option": 9,
+  "prompt": "You are evaluating a source-code privacy technique. Your job is to defeat it.\n\nA tool called `effigy` takes a source file from some **original problem domain** and rewrites or\nobscures it so the file can be sent to a third-party model for architectural review without\nrevealing what the original code was about. You are that third party, and you are hostile.\n\nYou have **complete knowledge of the tool**. It is a public research repository: its algorithms,\nits configuration, and its prompts are all published. Assume nothing is secret except the original\nsource itself. Specifically:\n\nIdentical to `structure-only` above, with one further step: **numeric literals are also\ncanonicalised.** `0` and `1` are left alone; every other distinct number is replaced by its\nfirst-appearance index. Equal numbers stay equal \u2014 so a chain like `[1:9]`, `[9:15]`, `[15:23]`\nstill reads as a contiguous fixed-width layout \u2014 but the actual values, and their ordering, are\ngone.\n\n**The artifact you are about to see may have been rewritten into a DIFFERENT problem domain than\nthe one it came from.** If it reads convincingly as some domain, that is exactly what the tool was\nbuilt to make you believe, and it may be the *target* domain rather than the source. Your task is\nto identify the **ORIGINAL** domain \u2014 the one the code was written in before the tool touched it.\n\n\n## The artifact\n\nOne source file.\n\n```ts\n// -\n// -\n// -\n// -\n// -\n// -\n// -\n\nconst Ident_0001 = \"str_0001\";\n\nexport interface Ident_0002 {\n  ident_0003: string;\n  ident_0004: string;\n  ident_0005?: string;\n}\n\nexport interface Ident_0006 {\n  ident_0007: string;\n  ident_0008: string;\n  ident_0009?: string;\n  ident_0010?: Ident_0002;\n}\n\nexport interface Ident_0011 {\n  ident_0012?: string;\n  ident_0013: number;\n  ident_0014: number;\n}\n\nexport interface Ident_0015 {\n  ident_0016: string;\n  ident_0003: string;\n  ident_0007: string;\n  ident_0008: string;\n  ident_0017: string;\n  ident_0018: string;\n  ident_0019: number;\n  ident_0020: string;\n  ident_0021: boolean;\n  ident_0022?: string;\n  ident_0023?: Ident_0011;\n  ident_0024?: Ident_0006;\n}\n\nexport interface Ident_0025 {\n  ident_0016: string;\n  ident_0007: string;\n  ident_0003: string;\n  ident_0018: string;\n  ident_0019: number;\n  ident_0020: string;\n  ident_0021: boolean;\n}\n\nexport interface Ident_0026 {\n  ident_0027?: number;\n  ident_0028?: number;\n  ident_0017?: string;\n}\n\nexport interface Ident_0029 {\n  ident_0008: string;\n  ident_0030: number;\n  ident_0027: number;\n  ident_0028: number;\n  ident_0031: Ident_0025[];\n}\n\nexport interface Ident_0032 {\n  ident_0021?: boolean;\n  ident_0033?: string;\n  ident_0034?: boolean;\n}\n\nexport class Ident_0035 extends Error {\n  ident_0036: number;\n  ident_0037: string;\n\n  constructor(ident_0036: number, ident_0037: string, ident_0038: string) {\n    super(ident_0038);\n    this.ident_0039 = \"str_0002\";\n    this.ident_0036 = ident_0036;\n    this.ident_0037 = ident_0037;\n  }\n}\n\n// -\n// -\nasync function ident_0040<Ident_0041>(ident_0042: string, ident_0043?: RequestInit): Promise<Ident_0041> {\n  const ident_0044 = await fetch(ident_0042, ident_0043);\n  if (!ident_0044.ident_0045) {\n    let ident_0037 = \"str_0003\";\n    let ident_0038 = `str_0004${ident_0044.ident_0036}str_0005`;\n    try {\n      const ident_0046 = await ident_0044.ident_0047();\n      if (ident_0046 && ident_0046.ident_0048) {\n        ident_0037 = ident_0046.ident_0048.ident_0037 || ident_0037;\n        ident_0038 = ident_0046.ident_0048.ident_0038 || ident_0038;\n      }\n    } catch {\n      // Body was not the JSON error envelope; keep the defaults above.\n    }\n    throw new Ident_0035(ident_0044.ident_0036, ident_0037, ident_0038);\n  }\n  return (await ident_0044.ident_0047()) as Ident_0041;\n}\n\nexport function ident_0049(ident_0008: string, ident_0050: Ident_0026): string {\n  const ident_0051 = new URLSearchParams();\n  if (ident_0050.ident_0027) ident_0051.ident_0052(\"str_0006\", String(ident_0050.ident_0027));\n  if (ident_0050.ident_0028) ident_0051.ident_0052(\"str_0007\", String(ident_0050.ident_0028));\n  if (ident_0050.ident_0017) ident_0051.ident_0052(\"str_0008\", ident_0050.ident_0017);\n  return `str_0009${Ident_0001}str_0010${encodeURIComponent(ident_0008)}str_0011${ident_0051.ident_0053()}str_0005`;\n}\n\nexport async function ident_0054(\n  ident_0008: string,\n  ident_0050: Ident_0026 = {},\n): Promise<Ident_0029> {\n  if (ident_0008.ident_0055() === \"str_0012\") {\n    throw new Ident_0035(2, \"str_0013\", \"str_0014\");\n  }\n  return ident_0040<Ident_0029>(ident_0049(ident_0008, ident_0050));\n}\n\nexport async function ident_0056(ident_0016: string): Promise<Ident_0015> {\n  return ident_0040<Ident_0015>(`str_0009${Ident_0001}str_0015${encodeURIComponent(ident_0016)}str_0005`);\n}\n\nexport async function ident_0057(ident_0007: string): Promise<Ident_0006> {\n  return ident_0040<Ident_0006>(`str_0009${Ident_0001}str_0016${encodeURIComponent(ident_0007)}str_0005`);\n}\n\nexport async function ident_0058(ident_0016: string, ident_0059: Ident_0032): Promise<Ident_0015> {\n  return ident_0040<Ident_0015>(`str_0009${Ident_0001}str_0015${encodeURIComponent(ident_0016)}str_0017`, {\n    ident_0060: \"str_0018\",\n    ident_0061: { \"str_0019\": \"str_0020\" },\n    ident_0046: JSON.ident_0062(ident_0059),\n  });\n}\n\n```\n\n## Your answer\n\nReply with ONLY a JSON object. No prose before it, no explanation after it, no markdown fence.\n\n{\"domain\": \"<short free-text description of the ORIGINAL problem domain>\",\n \"specific_identifiers\": [\"<any organization, product, vendor, regulation, standard, proprietary\n                           system or place you believe you can name from this artifact>\"],\n \"confidence\": <float 0.0-1.0>,\n \"evidence\": \"<= 40 words on what in the artifact led you there>\"}\n\n`specific_identifiers` must be **[]** if you cannot name anything concrete. Do not pad it with\nguesses \u2014 but do not hold back a name you genuinely believe is there, because naming one correctly\nis the strongest result you can produce here.\n",
+  "attempts": [
+    {
+      "attempt": 0,
+      "text": "{\"domain\": \"TypeScript client SDK for a public REST API exposing a text-searchable, paginated directory of geolocated entities (e.g., business/place listings, properties, or tracked assets) with a related organization-like sub-resource and a status/flag update endpoint\",\n \"specific_identifiers\": [],\n \"confidence\": 0.3,\n \"evidence\": \"Fetch client: search with limit/offset/filter returning {query,total,limit,offset,items}; entity carries a two-number lat/lng-style object, boolean flag, numeric attribute, and embedded related resource; PATCH-style update sends two booleans plus a string; no auth. All domain vocabulary erased.\"}",
+      "finish_reason": "stop",
+      "served_model": "moonshotai/Kimi-K3",
+      "latency_s": 108.89,
+      "parsed_ok": true
+    }
+  ],
+  "parsed": {
+    "domain": "TypeScript client SDK for a public REST API exposing a text-searchable, paginated directory of geolocated entities (e.g., business/place listings, properties, or tracked assets) with a related organization-like sub-resource and a status/flag update endpoint",
+    "specific_identifiers": [],
+    "confidence": 0.3,
+    "evidence": "Fetch client: search with limit/offset/filter returning {query,total,limit,offset,items}; entity carries a two-number lat/lng-style object, boolean flag, numeric attribute, and embedded related resource; PATCH-style update sends two booleans plus a string; no auth. All domain vocabulary erased."
+  }
+}

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Husk — Transformation Tester</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<main>
+  <header>
+    <h1>Husk</h1>
+    <p class="sub">Paste code, pick a transformation, see the husked result.</p>
+  </header>
+
+  <section class="io">
+    <label for="input">Input</label>
+    <textarea id="input" rows="14" spellcheck="false" placeholder="Paste source code here…"></textarea>
+  </section>
+
+  <section class="controls">
+    <div class="ctrl">
+      <label for="solution">Solution</label>
+      <select id="solution"></select>
+      <p id="solution-desc" class="hint"></p>
+    </div>
+
+    <div class="ctrl">
+      <label for="crumb" id="crumb-label">Crumb level</label>
+      <select id="crumb">
+        <option value="0">0 — pure structure</option>
+        <option value="1" selected>1 — domain category</option>
+        <option value="2">2 — subdomain</option>
+        <option value="3">3 — process shape</option>
+      </select>
+    </div>
+
+    <div class="ctrl ctrl-target-id">
+      <label for="target-id">Target preset <span class="muted">(LLM only)</span></label>
+      <select id="target-id" disabled>
+        <option value="">— deterministic default —</option>
+      </select>
+    </div>
+
+    <div class="ctrl ctrl-target">
+      <label for="target">Target domain <span class="muted">(LLM only — overrides preset)</span></label>
+      <input type="text" id="target" placeholder="e.g. a chess engine" disabled />
+    </div>
+
+    <div class="ctrl ctrl-model">
+      <label for="model">Model <span class="muted">(LLM only)</span></label>
+      <select id="model" disabled>
+        <option value="">— server default —</option>
+      </select>
+      <p class="hint" id="model-hint">$ cheapest → $$$$ priciest (per-token price)</p>
+    </div>
+
+    <div class="ctrl ctrl-emit-map">
+      <label for="emit-map">
+        <input type="checkbox" id="emit-map" />
+        Emit re-identification map
+      </label>
+      <p class="hint">Reversible solutions only (fpe, literal-tagging). The map re-identifies your source — it stays in this browser and is never persisted.</p>
+    </div>
+
+    <div class="ctrl ctrl-action">
+      <button id="run" type="button">Husk it</button>
+    </div>
+  </section>
+
+  <section class="status">
+    <span id="status">Idle.</span>
+  </section>
+
+  <section class="io">
+    <div class="output-header">
+      <label for="output">Output</label>
+      <button id="copy" type="button" class="copy">Copy</button>
+    </div>
+    <textarea id="output" rows="14" spellcheck="false" readonly placeholder="(output appears here)"></textarea>
+  </section>
+
+  <details class="meta">
+    <summary>Response metadata</summary>
+    <pre id="meta">(empty)</pre>
+  </details>
+
+  <details class="dehusk" id="dehusk-panel">
+    <summary>Dehusk a diagnosis <span class="muted" id="dehusk-hint">(husk with “Emit re-identification map” first)</span></summary>
+    <p class="hint">Paste an LLM's diagnosis of the husked code. Every pseudonym it mentions is rewritten back into the real identifier/literal, closing the round-trip. Substitution happens in this browser using the map from the last husk — the map is not sent anywhere.</p>
+    <section class="io">
+      <label for="diagnosis">Diagnosis (husked terms)</label>
+      <textarea id="diagnosis" rows="8" spellcheck="false" placeholder="Paste the LLM's diagnosis here…"></textarea>
+    </section>
+    <div class="ctrl ctrl-action">
+      <button id="dehusk-run" type="button" disabled>Dehusk it</button>
+    </div>
+    <section class="io">
+      <div class="output-header">
+        <label for="dehusked">Re-identified diagnosis</label>
+        <button id="dehusk-copy" type="button" class="copy">Copy</button>
+      </div>
+      <textarea id="dehusked" rows="8" spellcheck="false" readonly placeholder="(re-identified diagnosis appears here)"></textarea>
+    </section>
+  </details>
+</main>
+<script src="app.js"></script>
+</body>
+</html>

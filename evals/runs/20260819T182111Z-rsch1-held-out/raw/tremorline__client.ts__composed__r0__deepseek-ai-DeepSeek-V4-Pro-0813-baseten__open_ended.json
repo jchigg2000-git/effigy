@@ -1,0 +1,54 @@
+{
+  "item_id": "tremorline__client.ts__composed__r0",
+  "arm": "composed",
+  "replicate": 0,
+  "source_path": "corpus/tremorline/app/src/api/client.ts",
+  "source_sha256": "6fb47b5ef86d3cf537d1e148c8c724bb5df0ce22925e31b020643eb0f2c5c097",
+  "true_domain_id": "seismic-monitoring",
+  "domain_dir": "tremorline",
+  "attacker": "deepseek-ai/DeepSeek-V4-Pro-0813:baseten",
+  "mode": "open_ended",
+  "menu_seed": 2788257428,
+  "menu_order": [
+    "water-utility-metering",
+    "logistics-dispatch",
+    "event-scheduler",
+    "textile-mill-production",
+    "wildlife-tracker",
+    "music-streaming",
+    "ham-radio-logbook",
+    "library-circulation",
+    "seismic-monitoring",
+    "hotel-booking",
+    "recipe-manager",
+    "avionics-airworthiness"
+  ],
+  "truth_option": 9,
+  "prompt": "You are evaluating a source-code privacy technique. Your job is to defeat it.\n\nA tool called `effigy` takes a source file from some **original problem domain** and rewrites or\nobscures it so the file can be sent to a third-party model for architectural review without\nrevealing what the original code was about. You are that third party, and you are hostile.\n\nYou have **complete knowledge of the tool**. It is a public research repository: its algorithms,\nits configuration, and its prompts are all published. Assume nothing is secret except the original\nsource itself. Specifically:\n\nSolution `composed` \u2014 `fpe(literal_tagging(src))`, the two transforms above chained by the harness.\nString literals are first replaced by typed placeholders, then every identifier is enciphered under\nthe format-preserving permutation. **Comments survive both transforms unchanged.**\n\n**The artifact you are about to see may have been rewritten into a DIFFERENT problem domain than\nthe one it came from.** If it reads convincingly as some domain, that is exactly what the tool was\nbuilt to make you believe, and it may be the *target* domain rather than the source. Your task is\nto identify the **ORIGINAL** domain \u2014 the one the code was written in before the tool touched it.\n\n\n## The artifact\n\nOne source file.\n\n```ts\n// Typed client for the tremorline seismic catalog API.\n//\n// Requests go through fetch with no wrapper library. Errors are normalised\n// into ApiError so callers can branch on status without unwrapping a\n// Response. Keep this file in step with the Go handlers it calls.\n\nconst 8CU5 = \"<PATH:0>\";\n\nexport interface xtQv0mS {\n  _YCFZRjG7: 3J4gzj;\n  llVMUkF3F: 3J4gzj;\n  poddg8G02ck: 3J4gzj;\n  7rAS3FTUZEv5: FDtSZ3;\n  EEUreVcz6q: FDtSZ3;\n  r7OOAX: FDtSZ3;\n  DXUtKn: FDtSZ3;\n  iW6H4kQLnkavU: 3J4gzj;\n  0Aep13tGrmo?: 3J4gzj;\n}\n\nexport interface 5vV7KNj {\n  llVMUkF3F: 3J4gzj;\n  f6C6i23xoMC: 3J4gzj;\n  TCAr: 3J4gzj;\n  J21pzmqa: FDtSZ3;\n  9QB_NimJZ: FDtSZ3;\n  yV_UUOcmFz: FDtSZ3;\n  X4KxQ7dZ: 3J4gzj;\n  ldoDsY: 3J4gzj;\n}\n\nexport interface HHVC0Yjx7sNiff {\n  llVMUkF3F: 3J4gzj;\n  f6C6i23xoMC: 3J4gzj;\n  TCAr: 3J4gzj;\n  ldoDsY: 3J4gzj;\n  nUzYpFJPwMaE: FDtSZ3;\n}\n\nexport interface gFPcUi5oM7nenm4Y {\n  E3SRYWQ: 5vV7KNj;\n  lxEsbISP: xtQv0mS[];\n}\n\nexport interface bY4BNV6_E {\n  CT5eDUJKAog: 3J4gzj;\n  _YCFZRjG7: 3J4gzj;\n  llVMUkF3F: 3J4gzj;\n  7PBuM6E2rx: 3J4gzj;\n  cD9imJFdS: FDtSZ3;\n  Ba80fit: FDtSZ3;\n  PMwnradVH: 3J4gzj;\n  XgDfgYR?: 3J4gzj;\n}\n\nexport interface SnPIPQFDTQypjTj3A {\n  7eUROdQfEq: 3J4gzj;\n  XgDfgYR: 3J4gzj;\n  _YCFZRjG7: 3J4gzj;\n  MHs5M: FDtSZ3;\n  Rz4yxRW: 3J4gzj;\n  v_Nny6TH: FDtSZ3;\n}\n\nexport interface 7IRGvccqeyrf {\n  XgDfgYR: 3J4gzj;\n  sck5myq01B: 3J4gzj;\n  J21pzmqa: FDtSZ3;\n  9QB_NimJZ: FDtSZ3;\n  3NzbPio: FDtSZ3;\n  KEc0nHEXU?: FDtSZ3;\n  vYzDu1fNvEMaG?: 3J4gzj;\n  3Qne4Ua2Vvvn: 3J4gzj;\n}\n\nexport interface LZuZjULGv5k extends 7IRGvccqeyrf {\n  Hjj5moZDnYOE2g: FDtSZ3;\n  wdwknYR3A: SnPIPQFDTQypjTj3A[];\n  eF6XbH7mKo: bY4BNV6_E[];\n}\n\nexport interface zh_ex8Wj8K_E7 {\n  from: 3J4gzj;\n  DM: 3J4gzj;\n  R_tIfHDTmPgm: FDtSZ3;\n  cfF7IYO2mdPV: FDtSZ3;\n  B3M_UY: FDtSZ3;\n  nZSt43: FDtSZ3;\n  y0tXtI: FDtSZ3;\n  ZUQHUX: FDtSZ3;\n  lhHwd?: FDtSZ3;\n}\n\nexport interface NHuttueAvrcN42Zd {\n  yXtFfYSNh9E2: 3J4gzj[];\n  sck5myq01B: 3J4gzj;\n  J21pzmqa: FDtSZ3;\n  9QB_NimJZ: FDtSZ3;\n  3NzbPio: FDtSZ3;\n}\n\nexport interface i9ZcK0K20w4urn {\n  6qdyM: FDtSZ3;\n  cP0gKg: 7IRGvccqeyrf[];\n}\n\nexport class vFgXbqGg extends Error {\n  ldoDsY: FDtSZ3;\n  ZvXj: 3J4gzj;\n\n  yLQf16Am31k(ldoDsY: FDtSZ3, ZvXj: 3J4gzj, z74lj8l: 3J4gzj) {\n    super(z74lj8l);\n    this.TCAr = \"<MSG:0>\";\n    this.ldoDsY = ldoDsY;\n    this.ZvXj = ZvXj;\n  }\n}\n\n// Shared transport. Unwraps the {\"<MSG:1>\":{\"<MSG:2>\":\u2026,\"<MSG:3>\":\u2026}} envelope the\n// Go service puts on every failure and rethrows it as an ApiError.\nasync function Rpa9AQN<T>(mOg: 3J4gzj, init?: Pt7t7_57M2L): Promise<T> {\n  const 7pI = await fIj8T(mOg, init);\n  if (!7pI.sT) {\n    let ZvXj = \"<MSG:4>\";\n    let z74lj8l = `<MSG:5>`;\n    try {\n      const OZdS = await 7pI.G57k();\n      if (OZdS && OZdS.2a82K) {\n        ZvXj = OZdS.2a82K.ZvXj || ZvXj;\n        z74lj8l = OZdS.2a82K.z74lj8l || z74lj8l;\n      }\n    } catch {\n      // Body was not the JSON error envelope; keep the defaults above.\n    }\n    throw new vFgXbqGg(7pI.ldoDsY, ZvXj, z74lj8l);\n  }\n  return (await 7pI.G57k()) as T;\n}\n\nexport function AxzPfUD5LdvVz_(b: zh_ex8Wj8K_E7): 3J4gzj {\n  const EMk3KF = new qh0OFc8sGRSFxG2();\n  EMk3KF.set(\"<SQL:0>\", b.from);\n  EMk3KF.set(\"<MSG:6>\", b.DM);\n  EMk3KF.set(\"<MSG:7>\", String(b.R_tIfHDTmPgm));\n  EMk3KF.set(\"<MSG:8>\", String(b.cfF7IYO2mdPV));\n  EMk3KF.set(\"<MSG:9>\", String(b.B3M_UY));\n  EMk3KF.set(\"<MSG:10>\", String(b.nZSt43));\n  EMk3KF.set(\"<MSG:11>\", String(b.y0tXtI));\n  EMk3KF.set(\"<MSG:12>\", String(b.ZUQHUX));\n  if (b.lhHwd) EMk3KF.set(\"<MSG:13>\", String(b.lhHwd));\n  return `<MSG:14>`;\n}\n\nexport async function Oq4de3Ng55CR(b: zh_ex8Wj8K_E7): Promise<i9ZcK0K20w4urn> {\n  return Rpa9AQN<i9ZcK0K20w4urn>(AxzPfUD5LdvVz_(b));\n}\n\nexport async function 7fUVsjpo(XgDfgYR: 3J4gzj): Promise<LZuZjULGv5k> {\n  return Rpa9AQN<LZuZjULGv5k>(`<MSG:15>`);\n}\n\nexport async function K9FOblSLF6uUCHGOK1e(ffb: NHuttueAvrcN42Zd): Promise<LZuZjULGv5k> {\n  return Rpa9AQN<LZuZjULGv5k>(`<MSG:16>`, {\n    method: \"<MSG:17>\",\n    rUuYSzn: { \"<MSG:18>\": \"<PATH:1>\" },\n    OZdS: JSON.A7QVVxSRW(ffb),\n  });\n}\n\nexport async function pil6K5qIcHfB(f6C6i23xoMC?: 3J4gzj): Promise<HHVC0Yjx7sNiff[]> {\n  const EMk3KF = new qh0OFc8sGRSFxG2();\n  if (f6C6i23xoMC) EMk3KF.set(\"<MSG:19>\", f6C6i23xoMC);\n  const 7pI = await Rpa9AQN<{ z4qy84mm: HHVC0Yjx7sNiff[] }>(\n    `<MSG:20>`,\n  );\n  return 7pI.z4qy84mm;\n}\n\nexport async function Lw7w20WHKR2jlw3vbbD(llVMUkF3F: 3J4gzj): Promise<gFPcUi5oM7nenm4Y> {\n  return Rpa9AQN<gFPcUi5oM7nenm4Y>(`<MSG:21>`);\n}\n\n```\n\n## Your answer\n\nReply with ONLY a JSON object. No prose before it, no explanation after it, no markdown fence.\n\n{\"domain\": \"<short free-text description of the ORIGINAL problem domain>\",\n \"specific_identifiers\": [\"<any organization, product, vendor, regulation, standard, proprietary\n                           system or place you believe you can name from this artifact>\"],\n \"confidence\": <float 0.0-1.0>,\n \"evidence\": \"<= 40 words on what in the artifact led you there>\"}\n\n`specific_identifiers` must be **[]** if you cannot name anything concrete. Do not pad it with\nguesses \u2014 but do not hold back a name you genuinely believe is there, because naming one correctly\nis the strongest result you can produce here.\n",
+  "attempts": [
+    {
+      "attempt": 0,
+      "text": "",
+      "finish_reason": "length",
+      "served_model": "deepseek-ai/DeepSeek-V4-Pro-0813",
+      "latency_s": 94.93,
+      "parsed_ok": false
+    },
+    {
+      "attempt": 1,
+      "text": "{\"domain\": \"seismic/earthquake catalog API client\",\n \"specific_identifiers\": [\"tremorline\"],\n \"confidence\": 0.9,\n \"evidence\": \"Comments survive unchanged and explicitly name the tremorline seismic catalog API. Interfaces match GeoJSON earthquake catalog responses with metadata, features, magnitude/time fields, and query parameters from/to plus numeric filters.\"}",
+      "finish_reason": "stop",
+      "served_model": "deepseek-ai/DeepSeek-V4-Pro-0813",
+      "latency_s": 55.55,
+      "parsed_ok": true
+    }
+  ],
+  "parsed": {
+    "domain": "seismic/earthquake catalog API client",
+    "specific_identifiers": [
+      "tremorline"
+    ],
+    "confidence": 0.9,
+    "evidence": "Comments survive unchanged and explicitly name the tremorline seismic catalog API. Interfaces match GeoJSON earthquake catalog responses with metadata, features, magnitude/time fields, and query parameters from/to plus numeric filters."
+  }
+}

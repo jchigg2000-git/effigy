@@ -1,0 +1,128 @@
+package graphapi
+
+import (
+	"database/sql"
+	"encoding/json"
+	"log/slog"
+	"net/http"
+	"os"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
+)
+
+// GraphServer carries the dependencies a request handler needs: the database
+// handle, the logger, and the router they are wired into. Constructed once
+// at startup by NewGraphServer.
+type GraphServer struct {
+	db     *sql.DB
+	logger *slog.Logger
+	router http.Handler
+}
+
+// corsAllowList reads the comma-separated origin list. An empty value means
+// the middleware is a no-op, which is the developer-machine default.
+func corsAllowList() []string {
+	raw := strings.TrimSpace(os.Getenv("GRAPHWORKS_CORS_ORIGINS"))
+	if raw == "" {
+		return nil
+	}
+	out := []string{}
+	for _, part := range strings.Split(raw, ",") {
+		if p := strings.TrimSpace(part); p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
+func corsMiddleware(next http.Handler) http.Handler {
+	allow := corsAllowList()
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		origin := r.Header.Get("Origin")
+		if origin != "" && len(allow) > 0 {
+			for _, a := range allow {
+				if a == origin || a == "*" {
+					w.Header().Set("Access-Control-Allow-Origin", origin)
+					w.Header().Set("Vary", "Origin")
+					w.Header().Set("Access-Control-Allow-Methods", "GET, PATCH, OPTIONS")
+					w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type")
+					w.Header().Set("Access-Control-Max-Age", "300")
+					break
+				}
+			}
+		}
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func NewGraphServer(db *sql.DB, logger *slog.Logger) *GraphServer {
+	s := &GraphServer{db: db, logger: logger}
+	r := chi.NewRouter()
+	r.Use(corsMiddleware)
+	r.Get("/graph-healthz", s.handleGraphHealth)
+	r.Get("/graph-readyz", s.handleGraphReady)
+	r.Route("/graph-routes/{routeCode}", func(rt chi.Router) {
+		rt.Get("/graph-reads", s.handleListGraphRouteReads)
+	})
+	r.Route("/graph-reads/{readId}", func(rr chi.Router) {
+		rr.Get("/", s.handleGetGraphRead)
+		rr.Patch("/graph-exception", s.handleGraphReadException)
+	})
+	r.Route("/graph-service-points/{spId}", func(spr chi.Router) {
+		spr.Get("/", s.handleGetGraphServicePoint)
+		spr.Get("/graph-reads", s.handleGraphServicePointReads)
+	})
+	s.router = r
+	return s
+}
+
+func (s *GraphServer) Handler() http.Handler { return s.router }
+
+func (s *GraphServer) handleGraphHealth(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]any{"status": "ok", "service": "graphworks"})
+}
+
+// handleGraphReady answers the readiness probe by counting metered reads. The
+// query runs here, against the struct's own handle, because there is
+// nowhere else for it to live.
+func (s *GraphServer) handleGraphReady(w http.ResponseWriter, r *http.Request) {
+	var n int
+	if err := s.db.QueryRowContext(r.Context(), `SELECT count(*) FROM graph_reads`).Scan(&n); err != nil {
+		writeError(w, http.StatusServiceUnavailable, "db_error", err.Error())
+		return
+	}
+	if n == 0 {
+		writeError(w, http.StatusServiceUnavailable, "not_seeded", "no graph reads loaded")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"status": "ok", "graph_reads": n})
+}
+
+func (s *GraphServer) serverError(w http.ResponseWriter, err error) {
+	s.logger.Error("request failed", "err", err)
+	writeError(w, http.StatusInternalServerError, "internal", "internal server error")
+}
+
+type graphAPIError struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
+
+type errorEnvelope struct {
+	Error graphAPIError `json:"error"`
+}
+
+func writeJSON(w http.ResponseWriter, status int, body any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(body)
+}
+
+func writeError(w http.ResponseWriter, status int, code, message string) {
+	writeJSON(w, status, errorEnvelope{Error: graphAPIError{Code: code, Message: message}})
+}

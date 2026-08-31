@@ -1,0 +1,375 @@
+/* ------------------------------------------------------------------------
+   stacks — inter-branch catalog and circulation UI
+   Plain hand-written CSS. No framework, no build-time preprocessor, no
+   utility classes. Light theme only.
+   ------------------------------------------------------------------------ */
+:root {
+  --ink: #1b1f24;
+  --ink-soft: #55606b;
+  --ink-faint: #8a949e;
+  --paper: #ffffff;
+  --paper-sunk: #f4f6f8;
+  --paper-rule: #dde3e9;
+  --accent: #1f5f8b;
+  --accent-dark: #16455f;
+  --accent-wash: #e8f1f7;
+  --warn: #a8331f;
+  --warn-wash: #fbeceb;
+  --radius: 4px;
+  --gap: 16px;
+  --gap-tight: 8px;
+  --shadow: 0 1px 2px rgba(27, 31, 36, 0.08);
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+body {
+  background: var(--paper-sunk);
+  color: var(--ink);
+  font-family: "Iowan Old Style", Georgia, "Times New Roman", serif;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+/* --- typography ---------------------------------------------------------- */
+h1,
+h2,
+h3 {
+  margin: 0 0 var(--gap-tight) 0;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+h1 {
+  font-size: 22px;
+}
+h2 {
+  font-size: 18px;
+}
+h3 {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-soft);
+  margin-top: var(--gap);
+}
+p {
+  margin: 0 0 var(--gap-tight) 0;
+}
+a {
+  color: var(--accent);
+}
+
+/* --- shell and header ---------------------------------------------------- */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--paper-rule);
+  box-shadow: var(--shadow);
+}
+.app-header h1 {
+  margin: 0;
+  font-size: 20px;
+  letter-spacing: 0.12em;
+  text-transform: lowercase;
+}
+.app-header p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+.app-body {
+  display: grid;
+  grid-template-columns: minmax(360px, 2fr) 3fr;
+  gap: var(--gap);
+  padding: var(--gap);
+  align-items: start;
+}
+.app-column-left,
+.app-column-right {
+  background: var(--paper);
+  border: 1px solid var(--paper-rule);
+  border-radius: var(--radius);
+  padding: var(--gap);
+  min-width: 0;
+}
+
+/* --- buttons ------------------------------------------------------------- */
+.btn {
+  font: inherit;
+  padding: 6px 14px;
+  border: 1px solid var(--paper-rule);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+}
+.btn:hover:enabled {
+  background: var(--paper-sunk);
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--paper);
+}
+.btn-primary:hover:enabled {
+  background: var(--accent-dark);
+  border-color: var(--accent-dark);
+}
+.btn:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* --- forms --------------------------------------------------------------- */
+.search-form,
+.edit-form {
+  display: flex;
+  flex-direction: column;
+}
+.search-form label,
+.edit-form label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+  margin-top: var(--gap-tight);
+}
+.search-form input,
+.search-form select,
+.edit-form input {
+  font: inherit;
+  padding: 6px 8px;
+  border: 1px solid var(--paper-rule);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+}
+.search-actions,
+.edit-actions {
+  display: flex;
+  gap: var(--gap-tight);
+  margin-top: var(--gap);
+}
+.hint {
+  margin-top: var(--gap-tight);
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+
+/* --- results table ------------------------------------------------------- */
+.results-table {
+  width: 100%;
+  margin-top: var(--gap);
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.results-table th {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 2px solid var(--paper-rule);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+.results-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--paper-rule);
+  vertical-align: top;
+}
+.results-table tbody tr {
+  cursor: pointer;
+}
+.results-table tbody tr.row-selected {
+  background: var(--accent-wash);
+}
+.result-count {
+  margin-top: var(--gap);
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+/* --- holding detail ------------------------------------------------------ */
+.holding-detail-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--gap);
+  border-bottom: 1px solid var(--paper-rule);
+  padding-bottom: var(--gap-tight);
+}
+.holding-detail-head p {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--ink-faint);
+}
+.detail-grid {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 4px var(--gap);
+  margin: var(--gap) 0 0 0;
+}
+.detail-grid dt {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+}
+.detail-grid dd {
+  margin: 0;
+}
+.shelf-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--gap-tight);
+}
+.shelf-grid > div {
+  display: flex;
+  flex-direction: column;
+  background: var(--paper-sunk);
+  border: 1px solid var(--paper-rule);
+  border-radius: var(--radius);
+  padding: var(--gap-tight);
+}
+.shelf-grid span:first-child {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-faint);
+}
+.loan-count {
+  display: inline-block;
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--accent-wash);
+  color: var(--accent-dark);
+  font-size: 11px;
+  text-align: center;
+}
+.loan-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.loan-list li {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 2fr;
+  gap: var(--gap-tight);
+  padding: 6px 0;
+  border-bottom: 1px solid var(--paper-rule);
+  font-size: 13px;
+}
+.export-row {
+  margin-top: var(--gap);
+}
+
+/* --- login curtain ------------------------------------------------------- */
+.login-shell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--gap);
+}
+.login-card {
+  display: flex;
+  flex-direction: column;
+  width: 320px;
+  padding: 24px;
+  background: var(--paper);
+  border: 1px solid var(--paper-rule);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.login-card h1 {
+  letter-spacing: 0.12em;
+  text-transform: lowercase;
+}
+.login-lead {
+  margin-bottom: var(--gap);
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+.login-card label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+  margin-top: var(--gap-tight);
+}
+.login-card input {
+  font: inherit;
+  padding: 6px 8px;
+  border: 1px solid var(--paper-rule);
+  border-radius: var(--radius);
+}
+.login-hint {
+  margin-top: var(--gap-tight);
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+
+/* --- states -------------------------------------------------------------- */
+.error-banner {
+  margin: 0 var(--gap) 0 var(--gap);
+  padding: var(--gap-tight) 12px;
+  background: var(--warn-wash);
+  border: 1px solid var(--warn);
+  border-radius: var(--radius);
+  color: var(--warn);
+  font-size: 13px;
+}
+.loading-note {
+  margin-top: var(--gap);
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+.empty-note {
+  margin-top: var(--gap);
+  padding: var(--gap);
+  background: var(--paper-sunk);
+  border: 1px dashed var(--paper-rule);
+  border-radius: var(--radius);
+  color: var(--ink-faint);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* --- narrow viewports ---------------------------------------------------- */
+@media (max-width: 900px) {
+  .app-body {
+    grid-template-columns: 1fr;
+  }
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+  .shelf-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .loan-list li {
+    grid-template-columns: 1fr 1fr;
+  }
+}

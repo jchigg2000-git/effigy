@@ -1,0 +1,74 @@
+package ident_0002
+
+import (
+	"database/sql"
+	"errors"
+	"net/http"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
+
+	"str_0001/ident_0001"
+)
+
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+func (ident_0003 *Ident_0004) ident_0005(ident_0006 http.ResponseWriter, ident_0007 *http.Request) {
+	ident_0008 := strings.TrimSpace(ident_0009.Ident_0010(ident_0007, "str_0002"))
+	var ident_0011 ident_0001.Ident_0012
+	ident_0013 := ident_0003.ident_0014.Ident_0015(ident_0007.Ident_0016(), `str_0003
+
+`, ident_0008).
+		Ident_0017(&ident_0011.Ident_0018, &ident_0011.Ident_0019, &ident_0011.Ident_0020, &ident_0011.Ident_0021)
+	if errors.Is(ident_0013, sql.ErrNoRows) {
+		ident_0022(ident_0006, http.StatusNotFound, "str_0004", "str_0005")
+		return
+	}
+	if ident_0013 != nil {
+		ident_0003.ident_0023(ident_0006, ident_0013)
+		return
+	}
+	ident_0024(ident_0006, http.StatusOK, ident_0011)
+}
+
+// -
+// -
+// -
+// -
+func (ident_0003 *Ident_0004) ident_0025(ident_0006 http.ResponseWriter, ident_0007 *http.Request) {
+	ident_0008 := strings.TrimSpace(ident_0009.Ident_0010(ident_0007, "str_0002"))
+	var ident_0026 string
+	ident_0013 := ident_0003.ident_0014.Ident_0015(ident_0007.Ident_0016(),
+		`str_0006`, ident_0008).Ident_0017(&ident_0026)
+	if errors.Is(ident_0013, sql.ErrNoRows) {
+		ident_0022(ident_0006, http.StatusNotFound, "str_0004", "str_0005")
+		return
+	}
+	if ident_0013 != nil {
+		ident_0003.ident_0023(ident_0006, ident_0013)
+		return
+	}
+
+	var ident_0027, ident_0028, ident_0029, ident_0030 int
+	ident_0013 = ident_0003.ident_0014.Ident_0015(ident_0007.Ident_0016(), `str_0007
+
+`, ident_0008).
+		Ident_0017(&ident_0027, &ident_0028, &ident_0029, &ident_0030)
+	if ident_0013 != nil {
+		ident_0003.ident_0023(ident_0006, ident_0013)
+		return
+	}
+	ident_0024(ident_0006, http.StatusOK, map[string]any{
+		"str_0002": ident_0008,
+		"str_0008": ident_0027,
+		"str_0009": ident_0028,
+		"str_0010": ident_0029,
+		"str_0011": ident_0030,
+	})
+}

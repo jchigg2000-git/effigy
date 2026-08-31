@@ -1,0 +1,45 @@
+{
+  "key": "meterworks__App.tsx__llm-translation-ungated__r0",
+  "arm": "llm-translation-ungated",
+  "replicate": 0,
+  "source_path": "corpus/meterworks/app/src/App.tsx",
+  "source_sha256": "a837cfa4f34b5bd6b26cbb3668905e652444c7108847e2828925eafa533cc3c0",
+  "true_domain_id": "water-utility-metering",
+  "language": "tsx",
+  "artifact_sha256": "ba8f8221231747bfa1f9638c7643613862618c68169a6d63ae071c595286f376",
+  "artifact_lines": 165,
+  "latency_s": 10.1,
+  "solution_meta": {
+    "model": "Qwen/Qwen2.5-Coder-7B-Instruct",
+    "base_url": "https://router.huggingface.co/v1",
+    "target_domain": "a generic event-loop scheduler over opaque tasks",
+    "target_id": "event-scheduler",
+    "temperature": 0.2,
+    "postcondition": {
+      "src_code_lines": 155,
+      "husk_code_lines": 154,
+      "similarity_ratio": 0.825,
+      "ident_retention": 0.705,
+      "code_verbatim": 0.688,
+      "longest_identical_run": 17,
+      "longest_identical_run_share": 0.11,
+      "copied_spans": 9,
+      "copied_span_lines": 78,
+      "copied_span_share": 0.503,
+      "thresholds": {
+        "run_lines": 999999,
+        "run_share": 9.0,
+        "copied_share": 9.0,
+        "retention": 9.0,
+        "ratio": 9.0,
+        "min_code_lines": 12
+      },
+      "verdict": "ok"
+    },
+    "usage": {
+      "prompt_tokens": 2408,
+      "completion_tokens": 1235,
+      "total_tokens": 3643
+    }
+  }
+}

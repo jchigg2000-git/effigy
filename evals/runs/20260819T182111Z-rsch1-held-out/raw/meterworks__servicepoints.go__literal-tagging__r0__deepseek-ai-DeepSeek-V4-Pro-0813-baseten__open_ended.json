@@ -1,0 +1,46 @@
+{
+  "item_id": "meterworks__servicepoints.go__literal-tagging__r0",
+  "arm": "literal-tagging",
+  "replicate": 0,
+  "source_path": "corpus/meterworks/api/internal/api/servicepoints.go",
+  "source_sha256": "2914066e847ea915c87850a8063de75ef0792bace5e2fff410600eab337f8290",
+  "true_domain_id": "water-utility-metering",
+  "domain_dir": "meterworks",
+  "attacker": "deepseek-ai/DeepSeek-V4-Pro-0813:baseten",
+  "mode": "open_ended",
+  "menu_seed": 3972009670,
+  "menu_order": [
+    "music-streaming",
+    "seismic-monitoring",
+    "library-circulation",
+    "textile-mill-production",
+    "water-utility-metering",
+    "wildlife-tracker",
+    "ham-radio-logbook",
+    "hotel-booking",
+    "logistics-dispatch",
+    "event-scheduler",
+    "avionics-airworthiness",
+    "recipe-manager"
+  ],
+  "truth_option": 5,
+  "prompt": "You are evaluating a source-code privacy technique. Your job is to defeat it.\n\nA tool called `effigy` takes a source file from some **original problem domain** and rewrites or\nobscures it so the file can be sent to a third-party model for architectural review without\nrevealing what the original code was about. You are that third party, and you are hostile.\n\nYou have **complete knowledge of the tool**. It is a public research repository: its algorithms,\nits configuration, and its prompts are all published. Assume nothing is secret except the original\nsource itself. Specifically:\n\nSolution `literal-tagging` \u2014 string-literal and PII tagging with type-class placeholders.\n\nEvery string literal is replaced by a typed placeholder such as `<URL:n>`, `<PATH:n>`, `<MSG:n>`.\nThe same literal content maps to the same placeholder throughout the file, so deduplication and\ncoupling are preserved. Triple-quoted, double-quoted, single-quoted and backtick literals are all\nmatched.\n\n**Identifiers, comments and code structure are untouched.** Every function, variable, type, field,\ntable and column name survives exactly as written in the original.\n\n**The artifact you are about to see may have been rewritten into a DIFFERENT problem domain than\nthe one it came from.** If it reads convincingly as some domain, that is exactly what the tool was\nbuilt to make you believe, and it may be the *target* domain rather than the source. Your task is\nto identify the **ORIGINAL** domain \u2014 the one the code was written in before the tool touched it.\n\n\n## The artifact\n\nOne source file.\n\n```go\npackage api\n\nimport (\n\t\"<PATH:0>\"\n\t\"<MSG:0>\"\n\t\"<PATH:1>\"\n\t\"<MSG:1>\"\n\t\"<MSG:2>\"\n\n\t\"<PATH:2>\"\n\n\t\"<PATH:3>\"\n)\n\nfunc (s *Server) handleGetServicePoint(w http.ResponseWriter, r *http.Request) {\n\tspID := strings.TrimSpace(chi.URLParam(r, \"<MSG:3>\"))\n\tvar sp model.ServicePoint\n\tvar mt model.Meter\n\terr := s.db.QueryRowContext(r.Context(), `<SQL:0>`, spID).Scan(&sp.ServicePointID, &sp.RouteCode,\n\t\t&sp.AccountRef, &mt.MeterID, &mt.SerialNumber, &mt.SizeCode)\n\tif errors.Is(err, sql.ErrNoRows) {\n\t\twriteError(w, http.StatusNotFound, \"<MSG:4>\", \"<MSG:5>\")\n\t\treturn\n\t}\n\tif err != nil {\n\t\ts.serverError(w, err)\n\t\treturn\n\t}\n\tsp.Meter = &mt\n\twriteJSON(w, http.StatusOK, sp)\n}\n\n// handleServicePointReads returns the read history at one service point,\n// most recent first. Unlike the route listing, a service point that does\n// not exist is a 404: it is a first-class row, not an inferred grouping.\nfunc (s *Server) handleServicePointReads(w http.ResponseWriter, r *http.Request) {\n\tspID := strings.TrimSpace(chi.URLParam(r, \"<MSG:3>\"))\n\tq := r.URL.Query()\n\tlimit := 50\n\tif n, err := strconv.Atoi(strings.TrimSpace(q.Get(\"<MSG:6>\"))); err == nil && n > 0 && n <= 500 {\n\t\tlimit = n\n\t}\n\toffset := 0\n\tif n, err := strconv.Atoi(strings.TrimSpace(q.Get(\"<MSG:7>\"))); err == nil && n > 0 {\n\t\toffset = n\n\t}\n\n\tvar known string\n\terr := s.db.QueryRowContext(r.Context(),\n\t\t`<SQL:1>`, spID).Scan(&known)\n\tif errors.Is(err, sql.ErrNoRows) {\n\t\twriteError(w, http.StatusNotFound, \"<MSG:4>\", \"<MSG:5>\")\n\t\treturn\n\t}\n\tif err != nil {\n\t\ts.serverError(w, err)\n\t\treturn\n\t}\n\n\trows, err := s.db.QueryContext(r.Context(), `<SQL:2>`, spID, limit, offset)\n\tif err != nil {\n\t\ts.serverError(w, err)\n\t\treturn\n\t}\n\tdefer rows.Close()\n\tout := []readSummary{}\n\tfor rows.Next() {\n\t\tvar it readSummary\n\t\tit.ServicePointID = spID\n\t\tif err := rows.Scan(&it.ReadID, &it.MeterID, &it.ReadType, &it.ReadValue,\n\t\t\t&it.ReadDate, &it.ToleranceFlag); err != nil {\n\t\t\ts.serverError(w, err)\n\t\t\treturn\n\t\t}\n\t\tout = append(out, it)\n\t}\n\tif err := rows.Err(); err != nil {\n\t\ts.serverError(w, err)\n\t\treturn\n\t}\n\twriteJSON(w, http.StatusOK, map[string]any{\n\t\t\"<MSG:8>\": spID,\n\t\t\"<MSG:9>\":          len(out),\n\t\t\"<MSG:6>\":          limit,\n\t\t\"<MSG:7>\":         offset,\n\t\t\"<MSG:10>\":          out,\n\t})\n}\n\n```\n\n## Your answer\n\nReply with ONLY a JSON object. No prose before it, no explanation after it, no markdown fence.\n\n{\"domain\": \"<short free-text description of the ORIGINAL problem domain>\",\n \"specific_identifiers\": [\"<any organization, product, vendor, regulation, standard, proprietary\n                           system or place you believe you can name from this artifact>\"],\n \"confidence\": <float 0.0-1.0>,\n \"evidence\": \"<= 40 words on what in the artifact led you there>\"}\n\n`specific_identifiers` must be **[]** if you cannot name anything concrete. Do not pad it with\nguesses \u2014 but do not hold back a name you genuinely believe is there, because naming one correctly\nis the strongest result you can produce here.\n",
+  "attempts": [
+    {
+      "attempt": 0,
+      "text": "{\"domain\": \"Electric utility meter reading / MultiSpeak interoperability API\", \"specific_identifiers\": [\"MultiSpeak\"], \"confidence\": 0.85, \"evidence\": \"Identifiers such as ServicePoint, Meter, RouteCode, AccountRef, SerialNumber, SizeCode, ReadType, ReadValue, ReadDate, and ToleranceFlag match the MultiSpeak utility interoperability schema exactly.\"}",
+      "finish_reason": "stop",
+      "served_model": "deepseek-ai/DeepSeek-V4-Pro-0813",
+      "latency_s": 32.67,
+      "parsed_ok": true
+    }
+  ],
+  "parsed": {
+    "domain": "Electric utility meter reading / MultiSpeak interoperability API",
+    "specific_identifiers": [
+      "MultiSpeak"
+    ],
+    "confidence": 0.85,
+    "evidence": "Identifiers such as ServicePoint, Meter, RouteCode, AccountRef, SerialNumber, SizeCode, ReadType, ReadValue, ReadDate, and ToleranceFlag match the MultiSpeak utility interoperability schema exactly."
+  }
+}

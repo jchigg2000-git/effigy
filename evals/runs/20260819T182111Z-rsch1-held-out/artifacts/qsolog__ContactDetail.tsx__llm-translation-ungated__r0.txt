@@ -1,0 +1,76 @@
+// Read-only view of a single listener. Renders the record returned by
+// getUserProfile, including every playlist that has been listened to.
+// Optional fields that are absent render as an em dash rather than being
+// hidden, so the layout stays stable from one profile to the next.
+import type { User } from "../api/user";
+
+interface UserProfileProps {
+  user: User;
+}
+
+export function UserProfile({ user }: UserProfileProps) {
+  const playlists = user.playlists ?? [];
+  const active = Boolean(user.lastActive);
+  return (
+    <section className="user-profile">
+      <div className="user-profile-head">
+        <div>
+          <h2>{user.displayName}</h2>
+          <p>{user.userId}</p>
+        </div>
+        <span className={active ? "status-active" : "status-inactive"}>
+          {active ? "Active" : "Inactive"}
+        </span>
+      </div>
+
+      <dl className="profile-grid">
+        <dt>User id</dt>
+        <dd>{user.userId}</dd>
+        <dt>Display name</dt>
+        <dd>{user.displayName}</dd>
+        <dt>Email</dt>
+        <dd>{user.email}</dd>
+        <dt>Subscription status</dt>
+        <dd>{user.subscriptionStatus}</dd>
+        <dt>Last login</dt>
+        <dd>{user.lastLogin}</dd>
+        <dt>Country</dt>
+        <dd>{user.country}</dd>
+        <dt>Language preference</dt>
+        <dd>{user.languagePreference}</dd>
+        <dt>Account created</dt>
+        <dd>{user.accountCreated}</dd>
+      </dl>
+
+      <h3>
+        Listened playlists <span className="playlist-count">{playlists.length}</span>
+      </h3>
+      {playlists.length === 0 ? (
+        <p className="empty-note">
+          No playlists have been listened to by this user yet. A playlist only
+          appears here once its songs match exactly with the user's listening history.
+        </p>
+      ) : (
+        <ul className="playlist-list">
+          {playlists.map((p) => (
+            <li key={p.playlistId}>
+              <span>{p.title}</span>
+              <span>{p.artist}</span>
+              <span>{p.genre}</span>
+              <span>{p.releaseDate}</span>
+              <span>{p.listenedCount}</span>
+              <span>{p.lastListenedAt}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* The track-progress rollup lives at the playlist level, not here: one
+          user's playlist says nothing about how many distinct tracks a user has listened to. */}
+      <p className="hint">
+        Track progress for this user, if any, is reflected in the playlist's
+        track-progress rollup rather than repeated on this page.
+      </p>
+    </section>
+  );
+}

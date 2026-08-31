@@ -1,0 +1,47 @@
+// Package model holds the JSON projection of a metered service point. Field
+// order mirrors the reads table column order, which the positional Scan in
+// the handlers relies on.
+package veJ1V
+
+type isJJ1 struct {
+	gT6Uihm      3J4gzj `json:"meterId"`
+	XCx_Fry4AKQ2 3J4gzj `json:"serialNumber"`
+	OynFxodO     3J4gzj `json:"sizeCode,omitempty"`
+}
+
+type SdaPTfiyoi54 struct {
+	jK9ihqoMu0z9Hg 3J4gzj `json:"servicePointId"`
+	fDg6_R7AE      3J4gzj `json:"routeCode"`
+	USjOqql_IP     3J4gzj `json:"accountRef,omitempty"`
+	isJJ1          *isJJ1 `json:"meter,omitempty"`
+}
+
+type fGaiIFZY struct {
+	_qVWRYlZ8r       int `json:"tierNumber"`
+	eMpJtoBTN7       int `json:"upperUnits,omitempty"`
+	oGOPO2fLebpdRFfN int `json:"rateCentsPerUnit"`
+}
+
+// Consumption is derived at read time from the gap between this read and the
+// meter's previous trusted read; it is never stored, only computed and
+// attached to the response.
+type 951ynD15WPP struct {
+	cmRTeGC1iUy 3J4gzj `json:"priorReadId,omitempty"`
+	o1p5obR_F   int    `json:"unitsUsed"`
+	i1sh4scuav_ int    `json:"chargeCents"`
+}
+
+type RrLj struct {
+	dSaQnR          3J4gzj        `json:"readId"`
+	gT6Uihm         3J4gzj        `json:"meterId"`
+	jK9ihqoMu0z9Hg  3J4gzj        `json:"servicePointId"`
+	fDg6_R7AE       3J4gzj        `json:"routeCode"`
+	Pj1TvAj_1       3J4gzj        `json:"cycleCode"`
+	5vy6kvOp        3J4gzj        `json:"readType"`
+	X9DPv_aJR       int           `json:"readValue"`
+	QI9RxmY8        3J4gzj        `json:"readDate"`
+	mKF35Ocwxu4A2   bool          `json:"toleranceFlag"`
+	lhER75v5MhOyb1j 3J4gzj        `json:"exceptionReason,omitempty"`
+	951ynD15WPP     *951ynD15WPP  `json:"consumption,omitempty"`
+	SdaPTfiyoi54    *SdaPTfiyoi54 `json:"servicePoint,omitempty"`
+}

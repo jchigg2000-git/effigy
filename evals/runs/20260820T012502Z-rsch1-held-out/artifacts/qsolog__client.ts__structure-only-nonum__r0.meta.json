@@ -1,0 +1,52 @@
+{
+  "key": "qsolog__client.ts__structure-only-nonum__r0",
+  "arm": "structure-only-nonum",
+  "replicate": 0,
+  "source_path": "corpus/qsolog/app/src/api/client.ts",
+  "source_sha256": "f995c2de8b737a36791b87e1d7b34da11a48667fa5fe57a25b5efec52575376c",
+  "true_domain_id": "ham-radio-logbook",
+  "language": "ts",
+  "artifact_sha256": "82307ac4c2287062fe0d5dcf1d92597e24e1ccaa042020d45f9e64d64b047743",
+  "artifact_lines": 190,
+  "latency_s": 0.9,
+  "solution_meta": {
+    "generated_by": "evals/canonicalize.py",
+    "preserved_tokens": [
+      "Boolean",
+      "Error",
+      "JSON",
+      "Promise",
+      "RequestInit",
+      "String",
+      "URLSearchParams",
+      "encodeURIComponent",
+      "fetch"
+    ],
+    "preserved_import_paths": [],
+    "n_idents_canonicalised": 75,
+    "n_strings_canonicalised": 23,
+    "n_runes_canonicalised": 0,
+    "n_numbers_canonicalised": 1,
+    "counters_delta": {
+      "lines": 0,
+      "bytes": 264,
+      "funcs": 0,
+      "structs": 0,
+      "interfaces": 0,
+      "imports": 0,
+      "exports": 0,
+      "string_literals": -3,
+      "max_brace_depth": 0
+    },
+    "blind_delta": {
+      "bytes": [
+        4957,
+        5221
+      ],
+      "string_literals": [
+        25,
+        22
+      ]
+    }
+  }
+}

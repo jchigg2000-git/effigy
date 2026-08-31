@@ -1,0 +1,181 @@
+// Typed client for the tremorline seismic catalog API.
+//
+// Requests go through fetch with no wrapper library. Errors are normalised
+// into ApiError so callers can branch on status without unwrapping a
+// Response. Keep this file in step with the Go handlers it calls.
+
+const BASE = "<PATH:0>";
+
+export interface Channel {
+  channelId: string;
+  stationId: string;
+  channelCode: string;
+  sampleRateHz: number;
+  azimuthDeg: number;
+  dipDeg: number;
+  depthM: number;
+  validityStart: string;
+  validityEnd?: string;
+}
+
+export interface Station {
+  stationId: string;
+  networkCode: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  elevationM: number;
+  operator: string;
+  status: string;
+}
+
+export interface StationSummary {
+  stationId: string;
+  networkCode: string;
+  name: string;
+  status: string;
+  channelCount: number;
+}
+
+export interface StationInventory {
+  station: Station;
+  channels: Channel[];
+}
+
+export interface Detection {
+  detectionId: string;
+  channelId: string;
+  stationId: string;
+  detectedAt: string;
+  amplitude: number;
+  periodS: number;
+  phaseHint: string;
+  eventId?: string;
+}
+
+export interface MagnitudeEstimate {
+  estimateId: string;
+  eventId: string;
+  channelId: string;
+  value: number;
+  magType: string;
+  residual: number;
+}
+
+export interface EventSummary {
+  eventId: string;
+  originTime: string;
+  latitude: number;
+  longitude: number;
+  depthKm: number;
+  magnitude?: number;
+  magnitudeType?: string;
+  reviewStatus: string;
+}
+
+export interface EventDetail extends EventSummary {
+  detectionCount: number;
+  estimates: MagnitudeEstimate[];
+  detections: Detection[];
+}
+
+export interface CatalogBounds {
+  from: string;
+  to: string;
+  minMagnitude: number;
+  maxMagnitude: number;
+  minLat: number;
+  maxLat: number;
+  minLon: number;
+  maxLon: number;
+  limit?: number;
+}
+
+export interface AssociateRequest {
+  detectionIds: string[];
+  originTime: string;
+  latitude: number;
+  longitude: number;
+  depthKm: number;
+}
+
+export interface SearchResponse {
+  count: number;
+  events: EventSummary[];
+}
+
+export class ApiError extends Error {
+  status: number;
+  code: string;
+
+  constructor(status: number, code: string, message: string) {
+    super(message);
+    this.name = "<MSG:0>";
+    this.status = status;
+    this.code = code;
+  }
+}
+
+// Shared transport. Unwraps the {"<MSG:1>":{"<MSG:2>":…,"<MSG:3>":…}} envelope the
+// Go service puts on every failure and rethrows it as an ApiError.
+async function request<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(url, init);
+  if (!res.ok) {
+    let code = "<MSG:4>";
+    let message = `<MSG:5>`;
+    try {
+      const body = await res.json();
+      if (body && body.error) {
+        code = body.error.code || code;
+        message = body.error.message || message;
+      }
+    } catch {
+      // Body was not the JSON error envelope; keep the defaults above.
+    }
+    throw new ApiError(res.status, code, message);
+  }
+  return (await res.json()) as T;
+}
+
+export function buildSearchUrl(b: CatalogBounds): string {
+  const params = new URLSearchParams();
+  params.set("<SQL:0>", b.from);
+  params.set("<MSG:6>", b.to);
+  params.set("<MSG:7>", String(b.minMagnitude));
+  params.set("<MSG:8>", String(b.maxMagnitude));
+  params.set("<MSG:9>", String(b.minLat));
+  params.set("<MSG:10>", String(b.maxLat));
+  params.set("<MSG:11>", String(b.minLon));
+  params.set("<MSG:12>", String(b.maxLon));
+  if (b.limit) params.set("<MSG:13>", String(b.limit));
+  return `<MSG:14>`;
+}
+
+export async function searchEvents(b: CatalogBounds): Promise<SearchResponse> {
+  return request<SearchResponse>(buildSearchUrl(b));
+}
+
+export async function getEvent(eventId: string): Promise<EventDetail> {
+  return request<EventDetail>(`<MSG:15>`);
+}
+
+export async function associateDetections(req: AssociateRequest): Promise<EventDetail> {
+  return request<EventDetail>(`<MSG:16>`, {
+    method: "<MSG:17>",
+    headers: { "<MSG:18>": "<PATH:1>" },
+    body: JSON.stringify(req),
+  });
+}
+
+export async function listStations(networkCode?: string): Promise<StationSummary[]> {
+  const params = new URLSearchParams();
+  if (networkCode) params.set("<MSG:19>", networkCode);
+  const res = await request<{ stations: StationSummary[] }>(
+    `<MSG:20>`,
+  );
+  return res.stations;
+}
+
+export async function getStationInventory(stationId: string): Promise<StationInventory> {
+  return request<StationInventory>(`<MSG:21>`);
+}

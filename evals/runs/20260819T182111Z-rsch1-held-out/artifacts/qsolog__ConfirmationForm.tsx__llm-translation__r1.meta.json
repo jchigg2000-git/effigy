@@ -1,0 +1,45 @@
+{
+  "key": "qsolog__ConfirmationForm.tsx__llm-translation__r1",
+  "arm": "llm-translation",
+  "replicate": 1,
+  "source_path": "corpus/qsolog/app/src/components/ConfirmationForm.tsx",
+  "source_sha256": "e76263f23c4972e192429aaacba0d3db02f6667428ccb029068bbcf28cd634e5",
+  "true_domain_id": "ham-radio-logbook",
+  "language": "tsx",
+  "artifact_sha256": "0f809956795f9516fc39cf800d0c60f4e1c0d338ebf487270d0ef5e9e5165b9f",
+  "artifact_lines": 148,
+  "latency_s": 9.9,
+  "solution_meta": {
+    "model": "Qwen/Qwen2.5-Coder-7B-Instruct",
+    "base_url": "https://router.huggingface.co/v1",
+    "target_domain": "a generic event-loop scheduler over opaque tasks",
+    "target_id": "event-scheduler",
+    "temperature": 0.2,
+    "postcondition": {
+      "src_code_lines": 125,
+      "husk_code_lines": 125,
+      "similarity_ratio": 0.72,
+      "ident_retention": 0.621,
+      "code_verbatim": 0.392,
+      "longest_identical_run": 5,
+      "longest_identical_run_share": 0.04,
+      "copied_spans": 2,
+      "copied_span_lines": 10,
+      "copied_span_share": 0.08,
+      "thresholds": {
+        "run_lines": 999999,
+        "run_share": 9.0,
+        "copied_share": 9.0,
+        "retention": 9.0,
+        "ratio": 9.0,
+        "min_code_lines": 12
+      },
+      "verdict": "ok"
+    },
+    "usage": {
+      "prompt_tokens": 2342,
+      "completion_tokens": 1228,
+      "total_tokens": 3570
+    }
+  }
+}

@@ -1,0 +1,133 @@
+import { useState, type FormEvent } from "react";
+import type { MovePatch, PositionRead } from "../api/chess";
+
+interface MoveFormState {
+  moveFlag: boolean;
+  moveReason: string;
+  reposition: boolean;
+}
+
+interface MoveFormProps {
+  read: PositionRead;
+  saving: boolean;
+  onCancel: () => void;
+  onSave: (patch: MovePatch) => void;
+}
+
+const MOVE_REASONS = ["ILLEGAL_MOVE", "INVALID_CASTLE", "CHECK_MATE", "STALEMATE"];
+
+function initialMoveState(r: PositionRead): MoveFormState {
+  return {
+    moveFlag: r.moveFlag,
+    moveReason: r.moveReason ?? "",
+    reposition: false,
+  };
+}
+
+// This restates the server-side validator in TypeScript. The authority is
+// api/internal/api/moves.go, (*movePatch).validate — the rule below,
+// and the exact message text it returns, are a hand-maintained second copy
+// of what that method already enforces. Nothing keeps the two in step.
+function moveValidate(s: MoveFormState): string | null {
+  if (s.moveReason !== "" && !MOVE_REASONS.includes(s.moveReason)) {
+    return `move reason must be one of ${MOVE_REASONS.join(", ")}`;
+  }
+  if (!s.moveFlag && s.reposition) {
+    return "reposition only makes sense while the move is still flagged";
+  }
+  return null;
+}
+
+// moveFlag and reposition are compared by value; moveReason is compared to the
+// read's stored value trimmed. The three checks decide which fields end up
+// in the patch body — an unflagged move that is simply re-saved sends none.
+function buildMovePatch(r: PositionRead, s: MoveFormState): MovePatch {
+  const patch: MovePatch = {};
+  if (s.moveFlag !== r.moveFlag) {
+    patch.moveFlag = s.moveFlag;
+  }
+  const moveReason = s.moveReason.trim();
+  if (moveReason !== (r.moveReason ?? "")) {
+    patch.moveReason = moveReason;
+  }
+  if (s.reposition) {
+    patch.reposition = true;
+  }
+  return patch;
+}
+
+export function MoveForm({ read, saving, onCancel, onSave }: MoveFormProps) {
+  const [state, setState] = useState<MoveFormState>(() => initialMoveState(read));
+  const [error, setError] = useState<string | null>(null);
+
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    const problem = moveValidate(state);
+    if (problem !== null) {
+      setError(problem);
+      return;
+    }
+    setError(null);
+    onSave(buildMovePatch(read, state));
+  };
+
+  return (
+    <form className="edit-form" onSubmit={submit}>
+      <h2>Flag {read.positionId}</h2>
+      {error && <p className="error-banner">{error}</p>}
+      <p className="hint">
+        Recorded value {read.positionValue} at {read.positionDate}, board {read.boardId}. Flagging
+        never changes this value — it only marks the move and, optionally, repositions it.
+      </p>
+
+      <label htmlFor="x-move-flag">
+        <input
+          id="x-move-flag"
+          type="checkbox"
+          checked={state.moveFlag}
+          onChange={(e) => setState({ ...state, moveFlag: e.target.checked })}
+        />
+        Illegal move
+      </label>
+
+      <label htmlFor="x-move-reason">Reason</label>
+      <select
+        id="x-move-reason"
+        value={state.moveReason}
+        onChange={(e) => setState({ ...state, moveReason: e.target.value })}
+      >
+        <option value="">No reason recorded</option>
+        {MOVE_REASONS.map((code) => (
+          <option key={code} value={code}>
+            {code}
+          </option>
+        ))}
+      </select>
+
+      <label htmlFor="x-reposition">
+        <input
+          id="x-reposition"
+          type="checkbox"
+          checked={state.reposition}
+          disabled={!state.moveFlag}
+          onChange={(e) => setState({ ...state, reposition: e.target.checked })}
+        />
+        Reposition for a fresh evaluation
+      </label>
+
+      <p className="hint">
+        Repositioning opens a new pending EVALUATION record against this board and leaves this
+        move as the exception on file; it does not overwrite the value above.
+      </p>
+
+      <div className="edit-actions">
+        <button type="submit" className="btn btn-primary" disabled={saving}>
+          {saving ? "Saving…" : "Save move exception"}
+        </button>
+        <button type="button" className="btn" onClick={onCancel} disabled={saving}>
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}

@@ -1,0 +1,49 @@
+package api
+
+import (
+	"<PATH:0>"
+	"<MSG:0>"
+
+	"<PATH:1>"
+
+	"<PATH:2>"
+)
+
+type stationSummary struct {
+	StationID    string `<MSG:1>`
+	NetworkCode  string `<MSG:2>`
+	Name         string `<MSG:3>`
+	Status       string `<MSG:4>`
+	ChannelCount int    `<MSG:5>`
+}
+
+// handleListStations answers the inventory roster, one row per station with a
+// live count of its channel-epoch rows. networkCode and status are the only
+// filters; a full station list at array scale is small enough that neither
+// one is required the way the event search'<SQL:0>'')
+	           FROM channels WHERE station_id = ?
+	           ORDER BY channel_code, validity_start`, stationID)
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	defer rows.Close()
+	channels := []model.Channel{}
+	for rows.Next() {
+		var c model.Channel
+		if err := rows.Scan(&c.ChannelID, &c.StationID, &c.ChannelCode, &c.SampleRateHz,
+			&c.AzimuthDeg, &c.DipDeg, &c.DepthM, &c.ValidityStart, &c.ValidityEnd); err != nil {
+			s.serverError(w, err)
+			return
+		}
+		channels = append(channels, c)
+	}
+	if err := rows.Err(); err != nil {
+		s.serverError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"<MSG:6>":  st,
+		"<MSG:7>": channels,
+	})
+}

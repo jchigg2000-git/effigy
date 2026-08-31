@@ -1,0 +1,12 @@
+{
+  "name": "stacks",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Root runner for the stacks inter-branch catalog: Go API plus Vite SPA.",
+  "scripts": {
+    "dev": "concurrently -n api,app -c blue,green \"cd api && go run ./cmd/stacksd\" \"cd app && npm run dev\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

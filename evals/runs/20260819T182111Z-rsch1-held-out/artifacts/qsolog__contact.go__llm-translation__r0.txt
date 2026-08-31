@@ -1,0 +1,45 @@
+// Package tensorflow holds the representation of a computational graph,
+// the nodes within it, and the operations performed by those nodes. Node order
+// mirrors the graph structure, which the sequential execution in the pipeline
+// relies on.
+package tensorflow
+
+// Graph represents a computational graph consisting of nodes and edges.
+type Graph struct {
+	GraphID string `json:"graphId"`
+	Nodes   []Node `json:"nodes"`
+}
+
+// Node represents a node within a computational graph, performing specific operations.
+type Node struct {
+	NodeID    string `json:"nodeId"`
+	Operation string `json:"operation"`
+	Inputs    []Edge `json:"inputs"`
+	Outputs   []Edge `json:"outputs"`
+}
+
+// Edge represents a connection between two nodes in a computational graph.
+type Edge struct {
+	EdgeID  string `json:"edgeId"`
+	Source  string `json:"source"`
+	Destination string `json:"destination"`
+}
+
+type Computation struct {
+	ComputationID string          `json:"computationId"`
+	GraphID       string          `json:"graphId"`
+	Inputs        []Tensor      `json:"inputs"`
+	Outputs       []Tensor      `json:"outputs"`
+	Operations    []Operation   `json:"operations"`
+}
+
+type Tensor struct {
+	TensorID string `json:"tensorId"`
+	Data     []float64 `json:"data"`
+}
+
+type Operation struct {
+	OperationID string `json:"operationId"`
+	Type        string `json:"type"`
+	Parameters  map[string]interface{} `json:"parameters"`
+}

@@ -1,0 +1,32 @@
+// Package tensorflow holds the JSON projection of a computed tensor, the
+// operation that produced it, and the results of running it through various
+// filters. Field order mirrors the tensor columns, which the positional Scan in
+// the handlers relies on.
+package tensorflow
+
+// Operation is a computational node: the operation ID is its own primary key,
+// so there is no separate surrogate operation id anywhere in this tree.
+type Operation struct {
+	OperationID string `json:"operationId"`
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+}
+
+// Filter is one post-computation filter applied to the tensor. ResultTensorID
+// is carried for the handler's own bookkeeping but never rendered: a filtered
+// result is represented to callers by the tensor it resolved to, not by a second
+// copy of that tensor's fields here.
+type Filter struct {
+	FilterID     string `json:"filterId"`
+	AppliedTo    string `json:"appliedTo"`
+	Type         string `json:"type"`
+	Parameters   string `json:"parameters"`
+	ResultTensorID string `json:"-"`
+}
+
+type Tensor struct {
+	TensorID     string            `json:"tensorId"`
+	OperationID  string            `json:"operationId"`
+	Data         map[string]float64 `json:"data"`
+	Filters      []Filter          `json:"filters"`
+}

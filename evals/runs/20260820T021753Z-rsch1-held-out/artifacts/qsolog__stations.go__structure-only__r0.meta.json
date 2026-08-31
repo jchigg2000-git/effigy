@@ -1,0 +1,65 @@
+{
+  "key": "qsolog__stations.go__structure-only__r0",
+  "arm": "structure-only",
+  "replicate": 0,
+  "source_path": "corpus/qsolog/api/internal/api/stations.go",
+  "source_sha256": "0ee9d8e478d6dec639fd77236b8a141b2ea6b982fac5b83ddd05c37626f31dac",
+  "true_domain_id": "ham-radio-logbook",
+  "language": "go",
+  "artifact_sha256": "048b646dfb0e86e81087d374c76eaa7cb459d791aaa6d592397add72e4d0877d",
+  "artifact_lines": 75,
+  "latency_s": 0.1,
+  "solution_meta": {
+    "generated_by": "evals/canonicalize.py",
+    "preserved_tokens": [
+      "ErrNoRows",
+      "Is",
+      "Request",
+      "ResponseWriter",
+      "StatusNotFound",
+      "StatusOK",
+      "TrimSpace",
+      "any",
+      "errors",
+      "http",
+      "int",
+      "nil",
+      "sql",
+      "string",
+      "strings",
+      "v5"
+    ],
+    "preserved_import_paths": [
+      "\"database/sql\"",
+      "\"errors\"",
+      "\"github.com/go-chi/chi/v5\"",
+      "\"net/http\"",
+      "\"strings\""
+    ],
+    "n_idents_canonicalised": 30,
+    "n_strings_canonicalised": 11,
+    "n_runes_canonicalised": 0,
+    "n_numbers_canonicalised": 0,
+    "counters_delta": {
+      "lines": 0,
+      "bytes": -714,
+      "funcs": 0,
+      "structs": 0,
+      "interfaces": 0,
+      "imports": 0,
+      "exports": 0,
+      "string_literals": -1,
+      "max_brace_depth": 0
+    },
+    "blind_delta": {
+      "bytes": [
+        2631,
+        1917
+      ],
+      "string_literals": [
+        21,
+        20
+      ]
+    }
+  }
+}

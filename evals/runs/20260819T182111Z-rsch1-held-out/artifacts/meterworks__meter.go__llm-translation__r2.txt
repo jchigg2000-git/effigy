@@ -1,0 +1,41 @@
+// Package taskdef holds the JSON projection of an event-driven task. Field
+// order mirrors the processing sequence in the scheduler, which the sequential
+// execution in the handlers relies on.
+package taskdef
+
+type EventTask struct {
+	TaskID         string `json:"taskId"`
+	EventSource    string `json:"eventSource"`
+	EventHandlerID string `json:"eventHandlerId,omitempty"`
+}
+
+type TaskContext struct {
+	ContextID      string `json:"contextId"`
+	TaskDefinition *EventTask `json:"taskDefinition,omitempty"`
+}
+
+type TaskSchedule struct {
+	ScheduleID     int `json:"scheduleId"`
+	NextRunTime    string `json:"nextRunTime"`
+	MaxConcurrent  int `json:"maxConcurrent"`
+}
+
+// TaskResult is derived at runtime from the outcome of the task execution; it is
+// never stored, only computed and attached to the response.
+type TaskResult struct {
+	ResultID       string `json:"resultId,omitempty"`
+	Status         string `json:"status"`
+	OutputData     string `json:"outputData"`
+}
+
+type TaskExecution struct {
+	ExecutionID    string        `json:"executionId"`
+	TaskID         string        `json:"taskId"`
+	TaskContextID  string        `json:"taskContextId"`
+	ScheduleID     int           `json:"scheduleId"`
+	StartTime      string        `json:"startTime"`
+	EndTime        string        `json:"endTime"`
+	SuccessFlag    bool          `json:"successFlag"`
+	ErrorDetails   string        `json:"errorDetails,omitempty"`
+	TaskResult     *TaskResult   `json:"taskResult,omitempty"`
+}

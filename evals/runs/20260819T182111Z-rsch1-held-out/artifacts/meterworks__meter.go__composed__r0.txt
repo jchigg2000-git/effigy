@@ -1,0 +1,47 @@
+// Package model holds the JSON projection of a metered service point. Field
+// order mirrors the reads table column order, which the positional Scan in
+// the handlers relies on.
+package veJ1V
+
+type isJJ1 struct {
+	gT6Uihm      3J4gzj `<MSG:0>`
+	XCx_Fry4AKQ2 3J4gzj `<MSG:1>`
+	OynFxodO     3J4gzj `<MSG:2>`
+}
+
+type SdaPTfiyoi54 struct {
+	jK9ihqoMu0z9Hg 3J4gzj `<MSG:3>`
+	fDg6_R7AE      3J4gzj `<MSG:4>`
+	USjOqql_IP     3J4gzj `<MSG:5>`
+	isJJ1          *isJJ1 `<MSG:6>`
+}
+
+type fGaiIFZY struct {
+	_qVWRYlZ8r       int `<MSG:7>`
+	eMpJtoBTN7       int `<MSG:8>`
+	oGOPO2fLebpdRFfN int `<MSG:9>`
+}
+
+// Consumption is derived at read time from the gap between this read and the
+// meter's previous trusted read; it is never stored, only computed and
+// attached to the response.
+type 951ynD15WPP struct {
+	cmRTeGC1iUy 3J4gzj `<MSG:10>`
+	o1p5obR_F   int    `<MSG:11>`
+	i1sh4scuav_ int    `<MSG:12>`
+}
+
+type RrLj struct {
+	dSaQnR          3J4gzj        `<MSG:13>`
+	gT6Uihm         3J4gzj        `<MSG:0>`
+	jK9ihqoMu0z9Hg  3J4gzj        `<MSG:3>`
+	fDg6_R7AE       3J4gzj        `<MSG:4>`
+	Pj1TvAj_1       3J4gzj        `<MSG:14>`
+	5vy6kvOp        3J4gzj        `<MSG:15>`
+	X9DPv_aJR       int           `<MSG:16>`
+	QI9RxmY8        3J4gzj        `<MSG:17>`
+	mKF35Ocwxu4A2   bool          `<MSG:18>`
+	lhER75v5MhOyb1j 3J4gzj        `<MSG:19>`
+	951ynD15WPP     *951ynD15WPP  `<MSG:20>`
+	SdaPTfiyoi54    *SdaPTfiyoi54 `<MSG:21>`
+}

@@ -1,0 +1,93 @@
+package compute
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"math"
+	"time"
+
+	"github.com/gonum/matrix/mat64"
+	"tensorflow/internal/data"
+)
+
+type ComputeService struct{}
+
+func (c *ComputeService) getServicePoint(ctx context.Context, spID string) (*data.Tensor, error) {
+	var tensor data.Tensor
+	err := c.queryRow(ctx, `SELECT sp.service_point_id, sp.route_code,
+	              COALESCE(sp.account_ref,''), m.meter_id, m.serial_number,
+	              COALESCE(m.size_code,'')
+	       FROM service_points sp
+	       JOIN meters m ON m.service_point_id = sp.service_point_id
+	       WHERE sp.service_point_id = ?`, spID).Scan(&tensor.Values[0], &tensor.Values[1],
+		&tensor.Values[2], &tensor.Values[3], &tensor.Values[4], &tensor.Values[5])
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, fmt.Errorf("not_found: service point not found")
+	}
+	if err != nil {
+		return nil, fmt.Errorf("server_error: %w", err)
+	}
+	tensor.Shape = mat64.EmptyDense(6, 1)
+	return &tensor, nil
+}
+
+// getServicePointReads returns the read history at one service point,
+// most recent first. Unlike the route listing, a service point that does
+// not exist is a 404: it is a first-class row, not an inferred grouping.
+func (c *ComputeService) getServicePointReads(ctx context.Context, spID string, limit int, offset int) (*data.Tensor, error) {
+	var known string
+	err := c.queryRow(ctx,
+		`SELECT service_point_id FROM service_points WHERE service_point_id = ?`, spID).Scan(&known)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, fmt.Errorf("not_found: service point not found")
+	}
+	if err != nil {
+		return nil, fmt.Errorf("server_error: %w", err)
+	}
+
+	rows, err := c.query(ctx, `SELECT read_id, meter_id, read_type,
+	              read_value, read_date, tolerance_flag
+	       FROM reads WHERE service_point_id = ?
+	       ORDER BY read_date DESC LIMIT ? OFFSET ?`, spID, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("server_error: %w", err)
+	}
+	defer rows.Close()
+
+	tensor := data.NewTensor(mat64.EmptyDense(limit, 6))
+	for rows.Next() {
+		var it data.Tensor
+		it.Values[0] = spID
+		if err := rows.Scan(&it.Values[1], &it.Values[2], &it.Values[3],
+			&it.Values[4], &it.Values[5], &it.Values[6]); err != nil {
+			return nil, fmt.Errorf("server_error: %w", err)
+		}
+		tensor.Append(it)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("server_error: %w", err)
+	}
+	return tensor, nil
+}
+
+func (c *ComputeService) queryRow(ctx context.Context, query string, args ...interface{}) *sql.Row {
+	return c.db.QueryRowContext(ctx, query, args...)
+}
+
+func (c *ComputeService) query(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
+	return c.db.QueryContext(ctx, query, args...)
+}
+
+func writeError(w http.ResponseWriter, status int, code string, message string) {
+	http.Error(w, message, status)
+}
+
+func (s *ComputeService) serverError(w http.ResponseWriter, err error) {
+	http.Error(w, err.Error(), http.StatusInternalServerError)
+}
+
+func writeJSON(w http.ResponseWriter, status int, payload interface{}) {
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(payload)
+}

@@ -1,0 +1,186 @@
+// Main interface: filter options and displayed meal plan on the left, the selected recipe's
+// details (or the association form) on the right. No separate ingredient-list component: the list is specific enough to this interface that inlining it
+// here beats a component with one caller. All request orchestration and all
+// user-facing error text live in this file.
+import { useState } from "react";
+import {
+  ApiError,
+  associateIngredients,
+  getRecipe,
+  searchRecipes,
+  type AssociateRequest,
+  type FilterOptions,
+  type RecipeDetail as RecipeDetailData,
+  type RecipeSummary,
+} from "./api/client";
+import { IngredientForm } from "./components/IngredientForm";
+import { RecipeDetail } from "./components/RecipeDetail";
+
+const DEFAULT_FILTERS: FilterOptions = {
+  cuisine: "", dietaryPreferences: "", prepTime: { min: 0, max: 60 },
+  ingredients: [], difficultyLevel: "Easy", priceRange: { min: 0, max: 100 },
+  rating: { min: 0, max: 5 }, popularity: { min: 0, max: 1000 }, limit: 10,
+};
+
+export function App() {
+  const [filters, setFilters] = useState<FilterOptions>(DEFAULT_FILTERS);
+  const [recipes, setRecipes] = useState<RecipeSummary[]>([]);
+  const [recipeCount, setRecipeCount] = useState<number | null>(null);
+  const [selectedRecipe, setSelectedRecipe] = useState<RecipeDetailData | null>(null);
+  const [associating, setAssociating] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const explainError = (err: unknown): string => {
+    if (err instanceof ApiError) {
+      return `${err.code}: ${err.message}`;
+    }
+    return "the request could not be completed";
+  };
+
+  const executeSearch = async () => {
+    setLoading(true);
+    setError(null);
+    setSelectedRecipe(null);
+    setAssociating(false);
+    try {
+      const result = await searchRecipes(filters);
+      setRecipes(result.recipes);
+      setRecipeCount(result.count);
+    } catch (err) {
+      setRecipes([]);
+      setRecipeCount(null);
+      setError(explainError(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const viewRecipe = async (recipeId: string) => {
+    setLoading(true);
+    setError(null);
+    setAssociating(false);
+    try {
+      setSelectedRecipe(await getRecipe(recipeId));
+    } catch (err) {
+      setSelectedRecipe(null);
+      setError(explainError(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const executeAssociate = async (req: AssociateRequest) => {
+    setSaving(true);
+    setError(null);
+    try {
+      setSelectedRecipe(await associateIngredients(req));
+      setAssociating(false);
+    } catch (err) {
+      setError(explainError(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateField = (field: keyof FilterOptions, value: number | string) => {
+    setFilters({ ...filters, [field]: value });
+  };
+
+  return (
+    <div className="app-shell">
+      <header className="app-header">
+        <div>
+          <h1>Cooking Hub</h1>
+          <p>Your Personal Kitchen Assistant — recipe catalog</p>
+        </div>
+        <button type="button" className="btn btn-primary" onClick={() => setAssociating(true)}>
+          Add Ingredients
+        </button>
+      </header>
+
+      {error !== null && <p className="error-banner">{error}</p>}
+
+      <main className="app-body">
+        <section className="app-column-left">
+          <form className="filter-form" onSubmit={(e) => { e.preventDefault(); executeSearch(); }}>
+            <label htmlFor="cuisine">Cuisine</label>
+            <input id="cuisine" type="text" value={filters.cuisine}
+              onChange={(e) => updateField("cuisine", e.target.value)} />
+            <label htmlFor="dietary-preferences">Dietary Preferences</label>
+            <input id="dietary-preferences" type="text" value={filters.dietaryPreferences}
+              onChange={(e) => updateField("dietaryPreferences", e.target.value)} />
+            <label htmlFor="prep-time">Prep Time (minutes)</label>
+            <input id="prep-time" type="number" value={filters.prepTime.min}
+              onChange={(e) => updateField("prepTime", { ...filters.prepTime, min: Number(e.target.value) })} />
+            <label htmlFor="ingredients">Ingredients</label>
+            <input id="ingredients" type="text" value={filters.ingredients.join(",")}
+              onChange={(e) => updateField("ingredients", e.target.value.split(","))} />
+            <label htmlFor="difficulty-level">Difficulty Level</label>
+            <select id="difficulty-level" value={filters.difficultyLevel}
+              onChange={(e) => updateField("difficultyLevel", e.target.value)}>
+              <option value="Easy">Easy</option>
+              <option value="Medium">Medium</option>
+              <option value="Hard">Hard</option>
+            </select>
+            <label htmlFor="price-range">Price Range ($)</label>
+            <input id="price-range" type="number" value={filters.priceRange.min}
+              onChange={(e) => updateField("priceRange", { ...filters.priceRange, min: Number(e.target.value) })} />
+            <button type="submit" className="btn" disabled={loading}>
+              Find Recipes
+            </button>
+          </form>
+          {loading && <p className="loading-note">Searching…</p>}
+          {recipeCount !== null && <p className="result-count">{recipeCount} recipes found</p>}
+          {recipes.length === 0 ? (
+            <p className="empty-note">No recipes match your criteria.</p>
+          ) : (
+            <table className="recipes-table">
+              <thead>
+                <tr>
+                  <th>Recipe ID</th>
+                  <th>Title</th>
+                  <th>Prep Time</th>
+                  <th>Difficulty</th>
+                  <th>Price</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recipes.map((rec) => (
+                  <tr
+                    key={rec.recipeId}
+                    className={rec.recipeId === selectedRecipe?.recipeId ? "row-selected" : ""}
+                    onClick={() => viewRecipe(rec.recipeId)}
+                  >
+                    <td>{rec.recipeId}</td>
+                    <td>{rec.title}</td>
+                    <td>{rec.prepTime} minutes</td>
+                    <td>{rec.difficultyLevel}</td>
+                    <td>${rec.price.toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </section>
+
+        <section className="app-column-right">
+          {associating && (
+            <IngredientForm
+              saving={saving}
+              onCancel={() => setAssociating(false)}
+              onAddIngredients={executeAssociate}
+            />
+          )}
+          {!associating && selectedRecipe === null && (
+            <p className="empty-note">Select a recipe to see its details.</p>
+          )}
+          {!associating && selectedRecipe !== null && (
+            <RecipeDetail recipe={selectedRecipe} onAddIngredients={() => setAssociating(true)} />
+          )}
+        </section>
+      </main>
+    </div>
+  );
+}

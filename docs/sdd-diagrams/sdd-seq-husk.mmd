@@ -1,0 +1,27 @@
+sequenceDiagram
+    actor U as Reviewer
+    participant UI as Static UI
+    participant API as POST /husk/{slug}
+    participant R as registry.get
+    participant S as Solution.fn
+    U->>UI: paste code, pick solution, submit
+    UI->>API: POST {input, crumb_level, options}
+    API->>R: get(slug)
+    alt unknown slug
+        R-->>API: None
+        API-->>UI: 404 unknown_solution
+    else found
+        R-->>API: Solution
+        API->>S: fn(input, crumb_level, options)
+        alt BackendUnavailable
+            S-->>API: raise
+            API-->>UI: 502 backend_unavailable
+        else other error
+            S-->>API: raise
+            API-->>UI: 500 solution_failed
+        else success
+            S-->>API: (output, meta)
+            API-->>UI: 200 HuskResponse
+        end
+    end
+    UI-->>U: render output + meta

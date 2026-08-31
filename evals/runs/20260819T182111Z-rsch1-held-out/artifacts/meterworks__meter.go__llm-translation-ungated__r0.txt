@@ -1,0 +1,46 @@
+// Package taskmodel holds the JSON projection of an event-driven task. Field
+// order mirrors the data handling sequence in the scheduler, which the sequential
+// processing in the handlers relies on.
+package taskmodel
+
+type EventTask struct {
+	TaskID         string `json:"taskId"`
+	EventName      string `json:"eventName"`
+	TriggerData    string `json:"triggerData,omitempty"`
+}
+
+type SchedulerPoint struct {
+	SchedulerID    string `json:"schedulerId"`
+	ProcessCode    string `json:"processCode"`
+	ResourceRef    string `json:"resourceRef,omitempty"`
+	EventTask      *EventTask `json:"eventTask,omitempty"`
+}
+
+type TaskPriorityLevel struct {
+	LevelNumber      int `json:"levelNumber"`
+	MaxEvents        int `json:"maxEvents,omitempty"`
+	PriorityWeight int `json:"priorityWeight"`
+}
+
+// TaskProgress is derived at runtime from the status of the current task relative to the
+// last known state; it is never stored, only computed and
+// attached to the response.
+type TaskProgress struct {
+	PreviousStateID string `json:"previousStateId,omitempty"`
+	EventsProcessed int    `json:"eventsProcessed"`
+	RemainingCost   int    `json:"remainingCost"`
+}
+
+type TaskExecution struct {
+	ExecutionID      string        `json:"executionId"`
+	TaskID           string        `json:"taskId"`
+	SchedulerID      string        `json:"schedulerId"`
+	ProcessCode      string        `json:"processCode"`
+	TaskType         string        `json:"taskType"`
+	ExecutionValue   int           `json:"executionValue"`
+	ExecutionTime    string        `json:"executionTime"`
+	StatusFlag       bool          `json:"statusFlag"`
+	ErrorReason      string        `json:"errorReason,omitempty"`
+	TaskProgress     *TaskProgress  `json:"taskProgress,omitempty"`
+	SchedulerPoint   *SchedulerPoint `json:"schedulerPoint,omitempty"`
+}

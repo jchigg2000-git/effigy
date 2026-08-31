@@ -1,0 +1,19 @@
+{"tree":"qwen-coder-7b","husker":"Qwen/Qwen2.5-Coder-7B-Instruct","target_id":"logistics-dispatch",
+ "reviewer":"sonnet agent, multi-file, scoped to the tree",
+ "findings":[
+  {"smell":"god_object","present":true,"confidence":0.65,"evidence":"DispatchSystem struct{db *sql.DB; logger *slog.Logger; seedPath, adminToken string; router http.Handler}"},
+  {"smell":"inline_sql_in_handler","present":true,"confidence":0.85,"evidence":"getRoute: s.db.QueryRowContext(r.Context(), `SELECT route_id...FROM routes WHERE route_id = ?`)"},
+  {"smell":"layering_violation","present":true,"confidence":0.85,"evidence":"store.Connect only does sql.Open + db.Exec(schema); handlers call s.db.QueryRowContext directly"},
+  {"smell":"inline_magic_literals","present":true,"confidence":0.75,"evidence":"envOr(\"LOGISTICS_ADDR\", \":8080\"); r.Post(\"/admin/ingest\", ...) all inline"},
+  {"smell":"concatenated_sql","present":true,"confidence":0.9,"evidence":"sqlStr := `SELECT...` + strings.Join(conds, \" AND \") built from 6 optional conds"},
+  {"smell":"deep_nested_switch","present":true,"confidence":0.85,"evidence":"switch tag { case \"583\": switch sub(sfs,'a') { case \"DEPARTURE\": ... } }"},
+  {"smell":"closure_over_mutable_state","present":true,"confidence":0.85,"evidence":"flushShipment := func(){...}; flushEntry := func(){flushShipment(); ...} mutate captured state"},
+  {"smell":"wide_positional_bind","present":true,"confidence":0.8,"evidence":"Scan(&sh.ShipmentID,...,&rt.Distance) - 9 positional binds from a join (source had 19)"},
+  {"smell":"duplicated_error_handling","present":true,"confidence":0.8,"evidence":"errors.Is(err, sql.ErrNoRows) ladder repeated verbatim 6 times"}
+ ],
+ "path_leak":{
+  "note":"File PATHS and NAMES are not husked at all -- only file contents are.",
+  "surviving_source_domain_paths":["stacks/","marc21.go","dublincore.go","holdings.go","HoldingDetail.tsx","HoldingEditForm.tsx","branches.go","cmd/stacksd"],
+  "term_counts":{"stacks":23,"Holding":2,"holding":2,"marc":1,"branch":1},
+  "why_it_matters":"marc21.go is MARC 21, a library cataloguing standard; dublincore.go is Dublin Core, library metadata. The source domain is recoverable from the filesystem alone without opening a single file."
+ }}

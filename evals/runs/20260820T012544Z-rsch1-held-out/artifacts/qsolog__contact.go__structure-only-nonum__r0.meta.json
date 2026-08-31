@@ -1,0 +1,44 @@
+{
+  "key": "qsolog__contact.go__structure-only-nonum__r0",
+  "arm": "structure-only-nonum",
+  "replicate": 0,
+  "source_path": "corpus/qsolog/api/internal/model/contact.go",
+  "source_sha256": "6b4d7aaa3dbe7d705cd23b696f7037ddaf6dac3a2dcba258d1ab8c4fb3bc0cbf",
+  "true_domain_id": "ham-radio-logbook",
+  "language": "go",
+  "artifact_sha256": "af40c4c192ef67c75a5ea57f0d570abc1917b27875914fccad9a67f9bfee2267",
+  "artifact_lines": 47,
+  "latency_s": 0.1,
+  "solution_meta": {
+    "generated_by": "evals/canonicalize.py",
+    "preserved_tokens": [
+      "string"
+    ],
+    "preserved_import_paths": [],
+    "n_idents_canonicalised": 24,
+    "n_strings_canonicalised": 21,
+    "n_runes_canonicalised": 0,
+    "n_numbers_canonicalised": 0,
+    "counters_delta": {
+      "lines": 0,
+      "bytes": -1054,
+      "funcs": 0,
+      "structs": 0,
+      "interfaces": 0,
+      "imports": 0,
+      "exports": 0,
+      "string_literals": -1,
+      "max_brace_depth": 0
+    },
+    "blind_delta": {
+      "bytes": [
+        2071,
+        1017
+      ],
+      "string_literals": [
+        27,
+        26
+      ]
+    }
+  }
+}

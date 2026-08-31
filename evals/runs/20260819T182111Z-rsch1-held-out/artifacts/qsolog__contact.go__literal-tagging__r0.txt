@@ -1,0 +1,44 @@
+// Package model holds the JSON projection of a logged contact, the station
+// that logged it, and the confirmations run against it. Field order mirrors
+// the contacts table column order, which the positional Scan in the handlers
+// relies on.
+package model
+
+// Station is an operator station: the callsign is its own primary key, so
+// there is no separate surrogate station id anywhere in this tree.
+type Station struct {
+	StationID     string `<MSG:0>`
+	Callsign      string `<MSG:1>`
+	GridSquare    string `<MSG:2>`
+	OperatorClass string `<MSG:3>`
+}
+
+// Confirmation is one inbound claim run against the logbook. MatchedContactID
+// is carried for the handler'<MSG:4>'s fields here.
+type Confirmation struct {
+	ConfirmationID   string `<MSG:5>`
+	ReceivedFrom     string `<MSG:6>`
+	Band             string `<MSG:7>`
+	Mode             string `<MSG:8>`
+	ContactDate      string `<MSG:9>`
+	MatchStatus      string `<MSG:10>`
+	LoggedAt         string `<MSG:11>`
+	MatchedContactID string `<MSG:12>`
+}
+
+type Contact struct {
+	ContactID      string         `<MSG:13>`
+	StationID      string         `<MSG:0>`
+	WorkedCallsign string         `<MSG:14>`
+	Band           string         `<MSG:7>`
+	Mode           string         `<MSG:8>`
+	ContactDate    string         `<MSG:9>`
+	ContactTime    string         `<MSG:15>`
+	SignalSent     string         `<MSG:16>`
+	SignalReceived string         `<MSG:17>`
+	GridSquare     string         `<MSG:2>`
+	EntityCode     string         `<MSG:18>`
+	ConfirmedOn    string         `<MSG:19>`
+	Station        *Station       `<MSG:20>`
+	Confirmations  []Confirmation `<MSG:21>`
+}

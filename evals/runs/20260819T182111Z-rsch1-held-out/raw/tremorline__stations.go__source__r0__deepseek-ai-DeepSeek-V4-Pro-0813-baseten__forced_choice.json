@@ -1,0 +1,42 @@
+{
+  "item_id": "tremorline__stations.go__source__r0",
+  "arm": "source",
+  "replicate": 0,
+  "source_path": "corpus/tremorline/api/internal/api/stations.go",
+  "source_sha256": "5f5573a9d4671f915b3e9226eed1242ae3fa74da6b68b7d803e1dca4f45c5965",
+  "true_domain_id": "seismic-monitoring",
+  "domain_dir": "tremorline",
+  "attacker": "deepseek-ai/DeepSeek-V4-Pro-0813:baseten",
+  "mode": "forced_choice",
+  "menu_seed": 88108787,
+  "menu_order": [
+    "textile-mill-production",
+    "event-scheduler",
+    "seismic-monitoring",
+    "library-circulation",
+    "music-streaming",
+    "recipe-manager",
+    "avionics-airworthiness",
+    "hotel-booking",
+    "water-utility-metering",
+    "ham-radio-logbook",
+    "logistics-dispatch",
+    "wildlife-tracker"
+  ],
+  "truth_option": 3,
+  "prompt": "You are evaluating a source-code privacy technique. Your job is to defeat it.\n\nA tool called `effigy` takes a source file from some **original problem domain** and rewrites or\nobscures it so the file can be sent to a third-party model for architectural review without\nrevealing what the original code was about. You are that third party, and you are hostile.\n\nYou have **complete knowledge of the tool**. It is a public research repository: its algorithms,\nits configuration, and its prompts are all published. Assume nothing is secret except the original\nsource itself. Specifically:\n\nThe artifact is the **UNMODIFIED ORIGINAL SOURCE FILE**. No transform has been applied. This is a\ncontrol condition.\n\n**The artifact you are about to see may have been rewritten into a DIFFERENT problem domain than\nthe one it came from.** If it reads convincingly as some domain, that is exactly what the tool was\nbuilt to make you believe, and it may be the *target* domain rather than the source. Your task is\nto identify the **ORIGINAL** domain \u2014 the one the code was written in before the tool touched it.\n\n\n## The menu\n\nExactly one of these twelve is the original domain. Some of the others are domains this tool\nrewrites *into*, so they are deliberately tempting.\n\n1. Textile mill production \u2014 Loom scheduling, yarn lot tracking, and shift production reporting in a weaving mill.\n2. Event scheduling \u2014 Venues, sessions, and attendee registration for a conference scheduling system.\n3. Seismic event monitoring \u2014 Seismograph station networks, waveform ingest, and earthquake event cataloging.\n4. Library catalog and circulation \u2014 Bibliographic holdings, branch lending, reservations, and returns for a public library system.\n5. Music streaming \u2014 Track catalogs, playlists, and listener session handling for a streaming service.\n6. Recipe management \u2014 Recipes, ingredients, and meal planning for a cooking application.\n7. Aircraft airworthiness tracking \u2014 Component life limits, maintenance intervals, and airworthiness directive compliance.\n8. Hotel reservations \u2014 Room inventory, availability search, and guest reservations for a hotel chain.\n9. Municipal water metering \u2014 Service points, meter reads, and consumption billing for a municipal water utility.\n10. Amateur radio contact logging \u2014 Logging two-way radio contacts, confirmations, and award tracking for amateur radio operators.\n11. Freight dispatch \u2014 Shipment routing, carrier assignment, and delivery tracking for a freight operation.\n12. Wildlife tracking \u2014 Tagged animal sightings, collar telemetry, and habitat surveys for a field research program.\n\n## The artifact\n\nOne source file.\n\n```go\npackage api\n\nimport (\n\t\"net/http\"\n\t\"strings\"\n\n\t\"github.com/go-chi/chi/v5\"\n\n\t\"tremorline/internal/model\"\n)\n\ntype stationSummary struct {\n\tStationID    string `json:\"stationId\"`\n\tNetworkCode  string `json:\"networkCode\"`\n\tName         string `json:\"name\"`\n\tStatus       string `json:\"status\"`\n\tChannelCount int    `json:\"channelCount\"`\n}\n\n// handleListStations answers the inventory roster, one row per station with a\n// live count of its channel-epoch rows. networkCode and status are the only\n// filters; a full station list at array scale is small enough that neither\n// one is required the way the event search's bounds are.\nfunc (s *Server) handleListStations(w http.ResponseWriter, r *http.Request) {\n\tq := r.URL.Query()\n\tconds := []string{}\n\targs := []any{}\n\tif v := strings.TrimSpace(q.Get(\"networkCode\")); v != \"\" {\n\t\tconds = append(conds, \"st.network_code = ?\")\n\t\targs = append(args, strings.ToUpper(v))\n\t}\n\tif v := strings.TrimSpace(q.Get(\"status\")); v != \"\" {\n\t\tconds = append(conds, \"st.status = ?\")\n\t\targs = append(args, strings.ToUpper(v))\n\t}\n\twhere := \"\"\n\tif len(conds) > 0 {\n\t\twhere = \"WHERE \" + strings.Join(conds, \" AND \")\n\t}\n\trows, err := s.db.QueryContext(r.Context(), `SELECT st.station_id, st.network_code,\n\t                  st.name, st.status, count(c.channel_id)\n\t           FROM stations st LEFT JOIN channels c ON c.station_id = st.station_id\n\t           `+where+`\n\t           GROUP BY st.station_id ORDER BY st.station_id`, args...)\n\tif err != nil {\n\t\ts.serverError(w, err)\n\t\treturn\n\t}\n\tdefer rows.Close()\n\tout := []stationSummary{}\n\tfor rows.Next() {\n\t\tvar st stationSummary\n\t\tif err := rows.Scan(&st.StationID, &st.NetworkCode, &st.Name, &st.Status,\n\t\t\t&st.ChannelCount); err != nil {\n\t\t\ts.serverError(w, err)\n\t\t\treturn\n\t\t}\n\t\tout = append(out, st)\n\t}\n\tif err := rows.Err(); err != nil {\n\t\ts.serverError(w, err)\n\t\treturn\n\t}\n\twriteJSON(w, http.StatusOK, map[string]any{\n\t\t\"count\":    len(out),\n\t\t\"stations\": out,\n\t})\n}\n\n// handleGetStationInventory returns one station and every epoch of every\n// channel it has ever carried, oldest validity window first. A channel that\n// was recalibrated shows up as more than one entry sharing channelCode.\nfunc (s *Server) handleGetStationInventory(w http.ResponseWriter, r *http.Request) {\n\tstationID := strings.TrimSpace(chi.URLParam(r, \"stationId\"))\n\tvar st model.Station\n\terr := s.db.QueryRowContext(r.Context(), `SELECT station_id, network_code, name,\n\t              latitude, longitude, elevation_m, operator, status\n\t       FROM stations WHERE station_id = ?`, stationID).\n\t\tScan(&st.StationID, &st.NetworkCode, &st.Name, &st.Latitude, &st.Longitude,\n\t\t\t&st.ElevationM, &st.Operator, &st.Status)\n\tif err != nil {\n\t\twriteError(w, http.StatusNotFound, \"not_found\", \"station not found\")\n\t\treturn\n\t}\n\trows, err := s.db.QueryContext(r.Context(), `SELECT channel_id, station_id, channel_code,\n\t                  sample_rate_hz, azimuth_deg, dip_deg, depth_m, validity_start,\n\t                  COALESCE(validity_end,'')\n\t           FROM channels WHERE station_id = ?\n\t           ORDER BY channel_code, validity_start`, stationID)\n\tif err != nil {\n\t\ts.serverError(w, err)\n\t\treturn\n\t}\n\tdefer rows.Close()\n\tchannels := []model.Channel{}\n\tfor rows.Next() {\n\t\tvar c model.Channel\n\t\tif err := rows.Scan(&c.ChannelID, &c.StationID, &c.ChannelCode, &c.SampleRateHz,\n\t\t\t&c.AzimuthDeg, &c.DipDeg, &c.DepthM, &c.ValidityStart, &c.ValidityEnd); err != nil {\n\t\t\ts.serverError(w, err)\n\t\t\treturn\n\t\t}\n\t\tchannels = append(channels, c)\n\t}\n\tif err := rows.Err(); err != nil {\n\t\ts.serverError(w, err)\n\t\treturn\n\t}\n\twriteJSON(w, http.StatusOK, map[string]any{\n\t\t\"station\":  st,\n\t\t\"channels\": channels,\n\t})\n}\n\n```\n\n## Your answer\n\nReply with ONLY a JSON object. No prose before it, no explanation after it, no markdown fence.\n\n{\"choice\": <integer 1-12>, \"confidence\": <float 0.0-1.0>}\n\n`choice` is the menu number of the **ORIGINAL** domain. You must pick one \u2014 there is no\n\"cannot determine\" and abstaining is not available. `confidence` is your honest probability that\nyour choice is correct; a low confidence is not penalised and is more useful than a bluff.\n",
+  "attempts": [
+    {
+      "attempt": 0,
+      "text": "{\"choice\": 3, \"confidence\": 0.98}",
+      "finish_reason": "stop",
+      "served_model": "deepseek-ai/DeepSeek-V4-Pro-0813",
+      "latency_s": 2.13,
+      "parsed_ok": true
+    }
+  ],
+  "parsed": {
+    "choice": 3,
+    "confidence": 0.98
+  }
+}

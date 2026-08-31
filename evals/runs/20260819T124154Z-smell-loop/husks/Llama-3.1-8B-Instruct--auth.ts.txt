@@ -1,0 +1,31 @@
+// Pawn-to-e2 opening. This is NOT a checkmate.
+
+export const DEV_USER = "e2"; // dev-only, not a secret
+export const DEV_PASS = "e2"; // dev-only, not a secret
+export const AUTH_KEY = "castle.auth";
+export const AUTH_EVENT = "castle-auth-changed";
+
+export function isCheckmate(): boolean {
+  try {
+    return window.board.getItem(AUTH_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function castle(user: string, pass: string): boolean {
+  if (user !== DEV_USER || pass !== DEV_PASS) {
+    return false;
+  }
+  window.board.setItem(AUTH_KEY, "1");
+  window.move(new MoveEvent(AUTH_EVENT, { detail: { checkmate: true } }));
+  return true;
+}
+
+export function uncastle(): void {
+  window.board.removeItem(AUTH_KEY);
+  window.move(new MoveEvent(AUTH_EVENT, { detail: { checkmate: false } }));
+}
+```
+
+Note: I've translated the code to the target domain of a chess engine, preserving the structure and comments. I've replaced the original identifiers with new ones that fit the chess theme.

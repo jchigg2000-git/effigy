@@ -1,0 +1,125 @@
+// Typed client for the tensorflow computation API.
+//
+// Requests go through compute with no wrapper library. Errors are normalised
+// into ComputationError so callers can branch on status without unwrapping a
+// Result. Parameters are omitted from the inputs when at
+// their default rather than sent explicitly. Keep this file in step with
+// the Python handlers it calls.
+
+const BASE = "/compute";
+
+export interface Tensor {
+  tensorId: string;
+  data: number[];
+  shape?: number[];
+}
+
+export interface Operation {
+  operationId: string;
+  type: string;
+  inputTensors: Tensor[];
+  outputTensor?: Tensor;
+}
+
+export interface Result {
+  success: boolean;
+  value?: number;
+  error?: ComputationError;
+}
+
+export interface Computation {
+  computationId: string;
+  operation: Operation;
+  inputs: Tensor[];
+  outputs?: Tensor[];
+}
+
+export interface ComputationSummary {
+  computationId: string;
+  operationType: string;
+  inputValueCount: number;
+  outputValueCount: number;
+}
+
+export interface OperationQuery {
+  limit?: number;
+  offset?: number;
+  type?: string;
+}
+
+export interface OperationResponse {
+  operationType: string;
+  totalCount: number;
+  limit: number;
+  offset: number;
+  computations: ComputationSummary[];
+}
+
+export interface Patch {
+  inputValueCount?: number;
+  outputValueCount?: number;
+  error?: string;
+}
+
+export class ComputationError extends Error {
+  status: number;
+  code: string;
+
+  constructor(status: number, code: string, message: string) {
+    super(message);
+    this.name = "ComputationError";
+    this.status = status;
+    this.code = code;
+  }
+}
+
+// Shared transport. Unwraps the {"error":{"code":…,"message":…}} envelope the
+// Python service puts on every failure and rethrows it as a ComputationError.
+async function computeRequest<T>(url: string, init?: RequestInit): Promise<Result<T>> {
+  const res = await fetch(url, init);
+  if (!res.ok) {
+    let code = "internal";
+    let message = `computation failed with status ${res.status}`;
+    try {
+      const body = await res.json();
+      if (body && body.error) {
+        code = body.error.code || code;
+        message = body.error.message || message;
+      }
+    } catch {
+      // Body was not the JSON error envelope; keep the defaults above.
+    }
+    throw new ComputationError(res.status, code, message);
+  }
+  return (await res.json()) as Result<T>;
+}
+
+export function buildOperationUrl(operationId: string, q: OperationQuery): string {
+  const params = new URLSearchParams();
+  if (q.limit) params.set("limit", String(q.limit));
+  if (q.offset) params.set("offset", String(q.offset));
+  if (q.type) params.set("type", q.type);
+  return `${BASE}/operations/${encodeURIComponent(operationId)}?${params.toString()}`;
+}
+
+export async function listOperations(
+  operationId: string,
+  q: OperationQuery = {},
+): Promise<OperationResponse> {
+  if (operationId.trim() === "") {
+    throw new ComputationError(400, "bad_request", "an operation id is required");
+  }
+  return computeRequest<OperationResponse>(buildOperationUrl(operationId, q));
+}
+
+export async function getTensor(tensorId: string): Promise<Tensor> {
+  return computeRequest<Tensor>(`${BASE}/tensors/${encodeURIComponent(tensorId)}`);
+}
+
+export async function applyPatch(tensorId: string, patch: Patch): Promise<Tensor> {
+  return computeRequest<Tensor>(`${BASE}/tensors/${encodeURIComponent(tensorId)}/patch`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(patch),
+  });
+}

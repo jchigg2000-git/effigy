@@ -1,0 +1,250 @@
+package graphapi
+
+import (
+	"context"
+	"database/sql"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"regexp"
+	"strconv"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
+)
+
+// fetchNode pulls one node together with its edges. Four fields come from nodes,
+// two from edges, in the order the SELECT list declares them.
+func (g *GraphService) fetchNode(ctx context.Context, nodeID string) (GraphNode, error) {
+	var nd GraphNode
+	var ed Edge
+	err := g.db.QueryRowContext(ctx, `SELECT n.node_id, n.label, e.edge_id, e.target_node_id
+	       FROM nodes n
+	       JOIN edges e ON e.source_node_id = n.node_id
+	       WHERE n.node_id = ?`, nodeID).Scan(&nd.NodeID, &nd.Label, &ed.EdgeID, &ed.TargetNodeID)
+	if err != nil {
+		return GraphNode{}, err
+	}
+	nd.Edges = append(nd.Edges, ed)
+	return nd, nil
+}
+
+// precedingNode finds the most recent trusted node connected by an edge, taken
+// before this one. Estimated nodes are skipped: they carry no register
+// value the tiered calculation can build an interval from.
+func (g *GraphService) precedingNode(ctx context.Context, nodeID, edgeID, edgeDate string) (string, int, bool) {
+	var id string
+	var value int
+	err := g.db.QueryRowContext(ctx, `SELECT target_node_id, read_value FROM reads
+	       WHERE node_id = ? AND edge_id != ? AND edge_date < ? AND read_type != 'ESTIMATED'
+	       ORDER BY edge_date DESC LIMIT 1`, nodeID, edgeID, edgeDate).Scan(&id, &value)
+	if err != nil {
+		return "", 0, false
+	}
+	return id, value, true
+}
+
+func (g *GraphService) calculateRates(ctx context.Context, cycleCode string) ([]RateTier, error) {
+	rows, err := g.db.QueryContext(ctx, `SELECT tier_number, COALESCE(upper_units,0),
+	              rate_cents_per_unit FROM rate_tiers WHERE cycle_code = ?
+	       ORDER BY tier_number`, cycleCode)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []RateTier{}
+	for rows.Next() {
+		var t RateTier
+		if err := rows.Scan(&t.TierNumber, &t.UpperUnits, &t.RateCentsPerUnit); err != nil {
+			return nil, err
+		}
+		out = append(out, t)
+	}
+	return out, rows.Err()
+}
+
+// accumulateTieredCost traverses the rate schedule in tier order and accumulates
+// a cost in cents. Each tier absorbs the portion of usage between the
+// previous tier's threshold and its own; a tier whose UpperUnits is zero is
+// the open-ended top tier and absorbs everything still unclaimed.
+func accumulateTieredCost(usageUnits int, tiers []RateTier) int {
+	if usageUnits <= 0 {
+		return 0
+	}
+	total := 0
+	lower := 0
+	for _, t := range tiers {
+		upper := t.UpperUnits
+		if upper == 0 || upper > usageUnits {
+			upper = usageUnits
+		}
+		if span := upper - lower; span > 0 {
+			total += span * t.RateCentsPerUnit
+		}
+		lower = upper
+		if lower >= usageUnits {
+			break
+		}
+	}
+	return total
+}
+
+func (g *GraphService) traverseGraph(ctx context.Context, startNodeID string) ([]GraphNode, error) {
+	node, err := g.fetchNode(ctx, startNodeID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, errors.New("node not found")
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	stack := []GraphNode{node}
+	visited := make(map[string]bool)
+	result := []GraphNode{}
+
+	for len(stack) > 0 {
+		current := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+
+		if visited[current.NodeID] {
+			continue
+		}
+		visited[current.NodeID] = true
+		result = append(result, current)
+
+		for _, edge := range current.Edges {
+			target, err := g.fetchNode(ctx, edge.TargetNodeID)
+			if err != nil {
+				return nil, err
+			}
+			stack = append(stack, target)
+		}
+	}
+
+	return result, nil
+}
+
+type NodeSummary struct {
+	NodeID         string `json:"nodeId"`
+	Label          string `json:"label"`
+	EdgeID         string `json:"edgeId"`
+	TargetNodeID   string `json:"targetNodeId"`
+}
+
+// pageRouteNodes paginates the nodes connected by edges along one route.
+// There is no routes table to check the code against — a route is a
+// property of the nodes assigned to it, not a first-class row — so
+// an unrecognized route simply pages to zero results rather than 404ing.
+func (g *GraphService) pageRouteNodes(w http.ResponseWriter, r *http.Request) {
+	routeCode := strings.TrimSpace(chi.URLParam(r, "routeCode"))
+	q := r.URL.Query()
+	limit := 50
+	if n, err := strconv.Atoi(strings.TrimSpace(q.Get("limit"))); err == nil && n > 0 && n <= 500 {
+		limit = n
+	}
+	offset := 0
+	if n, err := strconv.Atoi(strings.TrimSpace(q.Get("offset"))); err == nil && n > 0 {
+		offset = n
+	}
+	cycleCode := strings.TrimSpace(q.Get("cycleCode"))
+
+	sqlStr := `SELECT n.node_id, n.label, e.edge_id, e.target_node_id
+	           FROM nodes n
+	           JOIN edges e ON e.source_node_id = n.node_id
+	           WHERE n.route_code = ?`
+	args := []any{routeCode}
+	if cycleCode != "" {
+		sqlStr += " AND n.cycle_code = ?"
+		args = append(args, cycleCode)
+	}
+	sqlStr += " ORDER BY n.edge_date DESC, n.node_id LIMIT ? OFFSET ?"
+	args = append(args, limit, offset)
+
+	rows, err := g.db.QueryContext(r.Context(), sqlStr, args...)
+	if err != nil {
+		g.serverError(w, err)
+		return
+	}
+	defer rows.Close()
+	out := []NodeSummary{}
+	for rows.Next() {
+		var it NodeSummary
+		if err := rows.Scan(&it.NodeID, &it.Label, &it.EdgeID, &it.TargetNodeID); err != nil {
+			g.serverError(w, err)
+			return
+		}
+		out = append(out, it)
+	}
+	if err := rows.Err(); err != nil {
+		g.serverError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"routeCode": routeCode,
+		"count":     len(out),
+		"limit":     limit,
+		"offset":    offset,
+		"nodes":     out,
+	})
+}
+
+// updateNodeException updates a node as outside tolerance and,
+// optionally, requeues it: rather than mutating the register value in
+// place, requeuing inserts a new pending RE-READ node against the same route
+// so a field team can supply a fresh, trusted number. The original node is
+// never deleted; it stays as the exception record of what was first observed.
+func (g *GraphService) updateNodeException(w http.ResponseWriter, r *http.Request) {
+	nodeID := strings.TrimSpace(chi.URLParam(r, "nodeId"))
+	var p ExceptionPatch
+	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
+		writeError(w, http.StatusBadRequest, "bad_request", err.Error())
+		return
+	}
+	if msg := p.validate(); msg != "" {
+		writeError(w, http.StatusBadRequest, "bad_request", msg)
+		return
+	}
+	node, err := g.fetchNode(ctx, nodeID)
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, http.StatusNotFound, "not_found", "node not found")
+		return
+	}
+	if err != nil {
+		g.serverError(w, err)
+		return
+	}
+
+	tolerance := node.ToleranceFlag
+	if p.ToleranceFlag != nil {
+		tolerance = *p.ToleranceFlag
+	}
+	reason := node.ExceptionReason
+	if p.Reason != nil {
+		reason = *p.Reason
+	}
+	if _, err := g.db.ExecContext(r.Context(),
+		`UPDATE nodes SET tolerance_flag = ?, exception_reason = ? WHERE node_id = ?`,
+		tolerance, nullStr(reason), nodeID); err != nil {
+		g.serverError(w, err)
+		return
+	}
+
+	if p.Requeue != nil && *p.Requeue {
+		newID := nodeID + "-RQ"
+		if _, err := g.db.ExecContext(r.Context(),
+			`INSERT INTO nodes (node_id, label, route_code, cycle_code,
+			        tolerance_flag)
+			 VALUES (?, ?, ?, ?, 0)`,
+			newID, node.Label, node.RouteCode, node.CycleCode); err != nil {
+			g.serverError(w, err)
+			return
+		}
+	}
+
+	updated, err := g.fetchNode(ctx, nodeID)
+	if err != nil {
+		g.serverError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, updated)
+}

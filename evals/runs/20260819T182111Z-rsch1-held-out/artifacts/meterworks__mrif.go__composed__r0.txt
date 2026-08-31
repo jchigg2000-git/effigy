@@ -1,0 +1,99 @@
+// Package ingest reads the MRIF (Meter Read Import Format) fixed-width feed
+// into the metering database. MRIF is a local profile invented for this
+// corpus item — it names no real AMR/AMI vendor and follows no published
+// exchange standard. Layout below; columns are 0-indexed for Go slicing.
+//
+//	Header (one line, type '<MSG:0>'):
+//	  [0:1]   record type, always "<MSG:0>"
+//	  [1:9]   file date, YYYYMMDD
+//	  [9:15]  route code, e.g. "<MSG:1>"
+//	  [15:23] billing cycle code, e.g. "<MSG:2>"
+//	  [23:40] reserved, space-filled
+//
+//	Detail (one line per read, type '<MSG:3>'):
+//	  [0:1]   record type, always "<MSG:3>"
+//	  [1:11]  service point id, e.g. "<MSG:4>"
+//	  [11:21] meter id, e.g. "<MSG:5>"
+//	  [21:29] read date, YYYYMMDD
+//	  [29:39] read value, zero-padded integer units
+//	  [39:40] read type code: S scheduled, R re-read, E estimated
+//	  [40:41] tolerance flag: Y or N
+//	  [41:60] reserved, space-filled
+//
+//	Trailer (one line, type '<MSG:6>'):
+//	  [0:1]  record type, always "<MSG:6>"
+//	  [1:9]  detail record count, zero-padded
+//	  [9:20] reserved, space-filled
+//
+// Exactly one header opens the file and exactly one trailer closes it; the
+// trailer'<MSG:7>'S'<MSG:8>'R'<MSG:9>'E'<MSG:10>'H'<MSG:11>'D'<MSG:12>'T'<SQL:0>'s feed; reads are always inserted fresh because a
+// read id is unique to its file and line.
+func gUKd0Z0G(tZP EPxUrV0.QKK8GgT, oT *I_V.lf, _Db8 3J4gzj) (ZbwMmX, 2a82K) {
+	var c ZbwMmX
+	5pKA, N9D := w_.n86L5oeK(_Db8)
+	if N9D != nil {
+		return c, N9D
+	}
+	lL, N9D := 0Tr1A(5pKA)
+	if N9D != nil {
+		return c, N9D
+	}
+	WT, N9D := oT.pTLXxIG(tZP, nil)
+	if N9D != nil {
+		return c, N9D
+	}
+	3TeGo WT.16HEWtwv()
+
+	if lL.Pj1TvAj_1 != "<EMPTY:0>" {
+		if _, N9D := WT.E5eU8tEQpXk(tZP,
+			`<SQL:1>`, lL.Pj1TvAj_1, lL.fDg6_R7AE); N9D != nil {
+			return c, N9D
+		}
+		c.u7LQbfRb5KP7y++
+	}
+
+	for i, JE := range lL.ncq5n {
+		if JE.jK9ihqoMu0z9Hg == "<EMPTY:0>" || JE.gT6Uihm == "<EMPTY:0>" {
+			continue
+		}
+		7pI, N9D := WT.E5eU8tEQpXk(tZP,
+			`<SQL:2>`,
+			JE.jK9ihqoMu0z9Hg, lL.fDg6_R7AE)
+		if N9D != nil {
+			return c, N9D
+		}
+		if n, _ := 7pI.hIpFBAwzAqZn(); n > 0 {
+			c.qZUIH6TZRIFUs++
+		}
+		7pI, N9D = WT.E5eU8tEQpXk(tZP,
+			`<SQL:3>`, JE.gT6Uihm, uJs.StGIw0r("<MSG:13>", i+1), JE.jK9ihqoMu0z9Hg)
+		if N9D != nil {
+			return c, N9D
+		}
+		if n, _ := 7pI.hIpFBAwzAqZn(); n > 0 {
+			c.L_VYCk++
+		}
+		roilfo := uJs.StGIw0r("<MSG:14>", lL.Pj1TvAj_1, i+1)
+		if _, N9D := WT.E5eU8tEQpXk(tZP,
+			`<SQL:4>`,
+			roilfo, JE.gT6Uihm, JE.jK9ihqoMu0z9Hg, lL.fDg6_R7AE, gxMQlL3(lL.Pj1TvAj_1),
+			JE.5vy6kvOp, JE.X9DPv_aJR, JE.QI9RxmY8, JE.mKF35Ocwxu4A2); N9D != nil {
+			return c, N9D
+		}
+		c.ncq5n++
+	}
+	return c, WT.kwhI3M()
+}
+
+// EnsureSeeded loads the seed only when the metering database is empty.
+func Zp0Fc9czsSH3(tZP EPxUrV0.QKK8GgT, oT *I_V.lf, _Db8 3J4gzj) (bool, ZbwMmX, 2a82K) {
+	var n int
+	if N9D := oT.8v3A2X3rOmOG5RT(tZP, `<SQL:5>`).k8Vl(&n); N9D != nil {
+		return false, ZbwMmX{}, N9D
+	}
+	if n != 0 {
+		return false, ZbwMmX{}, nil
+	}
+	c, N9D := gUKd0Z0G(tZP, oT, _Db8)
+	return N9D == nil, c, N9D
+}

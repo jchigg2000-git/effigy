@@ -1,0 +1,189 @@
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+
+const Ident_0001 = "str_0001";
+
+export interface Ident_0002 {
+  ident_0003: string;
+  ident_0004: string;
+  ident_0005?: string;
+  ident_0006?: string;
+}
+
+export interface Ident_0007 {
+  ident_0008: string;
+  ident_0009: string;
+  ident_0010: string;
+  ident_0011: string;
+  ident_0012: string;
+  ident_0013: string;
+  ident_0014: string;
+}
+
+export interface Ident_0015 {
+  ident_0016: string;
+  ident_0003: string;
+  ident_0017: string;
+  ident_0010: string;
+  ident_0011: string;
+  ident_0012: string;
+  ident_0018: string;
+  ident_0019?: string;
+  ident_0020?: string;
+  ident_0005?: string;
+  ident_0021?: string;
+  ident_0022?: string;
+  ident_0023?: Ident_0002;
+  ident_0024: Ident_0007[];
+}
+
+export interface Ident_0025 {
+  ident_0016: string;
+  ident_0003: string;
+  ident_0017: string;
+  ident_0010: string;
+  ident_0011: string;
+  ident_0012: string;
+  ident_0021?: string;
+  ident_0026: boolean;
+}
+
+export interface Ident_0027 {
+  ident_0010?: string;
+  ident_0011?: string;
+  ident_0003?: string;
+  ident_0028?: string;
+  ident_0029?: string;
+  ident_0030?: number;
+}
+
+export interface Ident_0031 {
+  ident_0032: number;
+  ident_0030: number;
+  ident_0033: Ident_0025[];
+}
+
+export interface Ident_0034 {
+  ident_0003: string;
+  ident_0009: string;
+  ident_0010: string;
+  ident_0011: string;
+  ident_0012: string;
+}
+
+export interface Ident_0035 {
+  ident_0008: string;
+  ident_0013: string;
+  ident_0036?: string;
+  ident_0037?: Ident_0025;
+}
+
+export interface Ident_0038 {
+  ident_0010: string;
+  ident_0011: string;
+  ident_0039: number;
+  ident_0040: number;
+}
+
+export interface Ident_0041 {
+  ident_0003: string;
+  ident_0042: number;
+  ident_0043: number;
+  ident_0044: number;
+  ident_0039: number;
+}
+
+export class Ident_0045 extends Error {
+  ident_0046: number;
+  ident_0047: string;
+
+  constructor(ident_0046: number, ident_0047: string, ident_0048: string) {
+    super(ident_0048);
+    this.ident_0049 = "str_0002";
+    this.ident_0046 = ident_0046;
+    this.ident_0047 = ident_0047;
+  }
+}
+
+// -
+// -
+async function ident_0050<Ident_0051>(ident_0052: string, ident_0053?: RequestInit): Promise<Ident_0051> {
+  const ident_0054 = await fetch(ident_0052, ident_0053);
+  if (!ident_0054.ident_0055) {
+    let ident_0047 = "str_0003";
+    let ident_0048 = `str_0004${ident_0054.ident_0046}str_0005`;
+    try {
+      const ident_0056 = await ident_0054.ident_0057();
+      if (ident_0056 && ident_0056.ident_0058) {
+        ident_0047 = ident_0056.ident_0058.ident_0047 || ident_0047;
+        ident_0048 = ident_0056.ident_0058.ident_0048 || ident_0048;
+      }
+    } catch {
+      // Body was not the JSON error envelope; keep the defaults above.
+    }
+    throw new Ident_0045(ident_0054.ident_0046, ident_0047, ident_0048);
+  }
+  return (await ident_0054.ident_0057()) as Ident_0051;
+}
+
+export function ident_0059(ident_0060: Ident_0027): string {
+  const ident_0061 = new URLSearchParams();
+  if (ident_0060.ident_0010) ident_0061.ident_0062("str_0006", ident_0060.ident_0010);
+  if (ident_0060.ident_0011) ident_0061.ident_0062("str_0007", ident_0060.ident_0011);
+  if (ident_0060.ident_0003) ident_0061.ident_0062("str_0008", ident_0060.ident_0003);
+  if (ident_0060.ident_0028) ident_0061.ident_0062("str_0009", ident_0060.ident_0028);
+  if (ident_0060.ident_0029) ident_0061.ident_0062("str_0010", ident_0060.ident_0029);
+  if (ident_0060.ident_0030) ident_0061.ident_0062("str_0011", String(ident_0060.ident_0030));
+  return `str_0012${Ident_0001}str_0013${ident_0061.ident_0063()}str_0005`;
+}
+
+export function ident_0064(ident_0060: Ident_0027): boolean {
+  return Boolean(ident_0060.ident_0010 || ident_0060.ident_0011 || ident_0060.ident_0003 || ident_0060.ident_0028 || ident_0060.ident_0029);
+}
+
+export async function ident_0065(ident_0060: Ident_0027): Promise<Ident_0031> {
+  if (!ident_0064(ident_0060)) {
+    throw new Ident_0045(
+      2,
+      "str_0014",
+      "str_0015",
+    );
+  }
+  return ident_0050<Ident_0031>(ident_0059(ident_0060));
+}
+
+export async function ident_0066(ident_0067: string): Promise<Ident_0015> {
+  return ident_0050<Ident_0015>(`str_0012${Ident_0001}str_0016${encodeURIComponent(ident_0067)}str_0005`);
+}
+
+export async function ident_0068(ident_0067: string): Promise<Ident_0002> {
+  return ident_0050<Ident_0002>(`str_0012${Ident_0001}str_0017${encodeURIComponent(ident_0067)}str_0005`);
+}
+
+export async function ident_0069(ident_0067: string): Promise<Ident_0041> {
+  return ident_0050<Ident_0041>(`str_0012${Ident_0001}str_0017${encodeURIComponent(ident_0067)}str_0018`);
+}
+
+export async function ident_0070(
+  ident_0056: Ident_0034,
+): Promise<Ident_0035> {
+  return ident_0050<Ident_0035>(`str_0012${Ident_0001}str_0019`, {
+    ident_0071: "str_0020",
+    ident_0072: { "str_0021": "str_0022" },
+    ident_0056: JSON.ident_0073(ident_0056),
+  });
+}
+
+export async function ident_0074(ident_0003?: string): Promise<Ident_0038[]> {
+  const ident_0061 = new URLSearchParams();
+  if (ident_0003) ident_0061.ident_0062("str_0008", ident_0003);
+  const ident_0054 = await ident_0050<{ ident_0075: Ident_0038[] }>(
+    `str_0012${Ident_0001}str_0023${ident_0061.ident_0063()}str_0005`,
+  );
+  return ident_0054.ident_0075;
+}

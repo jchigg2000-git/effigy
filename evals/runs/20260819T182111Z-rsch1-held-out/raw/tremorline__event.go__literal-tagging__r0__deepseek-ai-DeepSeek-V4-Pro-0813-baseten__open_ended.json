@@ -1,0 +1,44 @@
+{
+  "item_id": "tremorline__event.go__literal-tagging__r0",
+  "arm": "literal-tagging",
+  "replicate": 0,
+  "source_path": "corpus/tremorline/api/internal/model/event.go",
+  "source_sha256": "caf3cbdda9e55a7712fecdaa82dc273dd32d3c975e262edf096e96e4038c9e33",
+  "true_domain_id": "seismic-monitoring",
+  "domain_dir": "tremorline",
+  "attacker": "deepseek-ai/DeepSeek-V4-Pro-0813:baseten",
+  "mode": "open_ended",
+  "menu_seed": 4243535947,
+  "menu_order": [
+    "textile-mill-production",
+    "event-scheduler",
+    "wildlife-tracker",
+    "music-streaming",
+    "water-utility-metering",
+    "seismic-monitoring",
+    "recipe-manager",
+    "library-circulation",
+    "hotel-booking",
+    "avionics-airworthiness",
+    "ham-radio-logbook",
+    "logistics-dispatch"
+  ],
+  "truth_option": 6,
+  "prompt": "You are evaluating a source-code privacy technique. Your job is to defeat it.\n\nA tool called `effigy` takes a source file from some **original problem domain** and rewrites or\nobscures it so the file can be sent to a third-party model for architectural review without\nrevealing what the original code was about. You are that third party, and you are hostile.\n\nYou have **complete knowledge of the tool**. It is a public research repository: its algorithms,\nits configuration, and its prompts are all published. Assume nothing is secret except the original\nsource itself. Specifically:\n\nSolution `literal-tagging` \u2014 string-literal and PII tagging with type-class placeholders.\n\nEvery string literal is replaced by a typed placeholder such as `<URL:n>`, `<PATH:n>`, `<MSG:n>`.\nThe same literal content maps to the same placeholder throughout the file, so deduplication and\ncoupling are preserved. Triple-quoted, double-quoted, single-quoted and backtick literals are all\nmatched.\n\n**Identifiers, comments and code structure are untouched.** Every function, variable, type, field,\ntable and column name survives exactly as written in the original.\n\n**The artifact you are about to see may have been rewritten into a DIFFERENT problem domain than\nthe one it came from.** If it reads convincingly as some domain, that is exactly what the tool was\nbuilt to make you believe, and it may be the *target* domain rather than the source. Your task is\nto identify the **ORIGINAL** domain \u2014 the one the code was written in before the tool touched it.\n\n\n## The artifact\n\nOne source file.\n\n```go\n// Package model holds the JSON projection of the seismic catalog. Field order\n// mirrors each table's column order, which the positional Scan calls in the\n// handlers rely on.\npackage model\n\n// NetworkCode values are drawn from the RR0-RR9 block, an invented range\n// chosen because no real-world network code registry assigns it to a\n// permanent or temporary network. Nothing in this tree should be read as\n// identifying an actual seismic network.\ntype Station struct {\n\tStationID   string  `<MSG:0>`\n\tNetworkCode string  `<MSG:1>`\n\tName        string  `<MSG:2>`\n\tLatitude    float64 `<MSG:3>`\n\tLongitude   float64 `<MSG:4>`\n\tElevationM  float64 `<MSG:5>`\n\tOperator    string  `<MSG:6>`\n\tStatus      string  `<MSG:7>`\n}\n\n// Channel is one validity epoch of one channel. A channel that has been\n// recalibrated carries more than one row sharing ChannelCode but not\n// ChannelID; ValidityEnd is empty for the epoch still in force.\ntype Channel struct {\n\tChannelID     string  `<MSG:8>`\n\tStationID     string  `<MSG:0>`\n\tChannelCode   string  `<MSG:9>`\n\tSampleRateHz  float64 `<MSG:10>`\n\tAzimuthDeg    float64 `<MSG:11>`\n\tDipDeg        float64 `<MSG:12>`\n\tDepthM        float64 `<MSG:13>`\n\tValidityStart string  `<MSG:14>`\n\tValidityEnd   string  `<MSG:15>`\n}\n\ntype Detection struct {\n\tDetectionID string  `<MSG:16>`\n\tChannelID   string  `<MSG:8>`\n\tStationID   string  `<MSG:0>`\n\tDetectedAt  string  `<MSG:17>`\n\tAmplitude   float64 `<MSG:18>`\n\tPeriodS     float64 `<MSG:19>`\n\tPhaseHint   string  `<MSG:20>`\n\tEventID     string  `<MSG:21>`\n}\n\ntype MagnitudeEstimate struct {\n\tEstimateID string  `<MSG:22>`\n\tEventID    string  `<MSG:23>`\n\tChannelID  string  `<MSG:8>`\n\tValue      float64 `<MSG:24>`\n\tMagType    string  `<MSG:25>`\n\tResidual   float64 `<MSG:26>`\n}\n\ntype Event struct {\n\tEventID        string              `<MSG:23>`\n\tOriginTime     string              `<MSG:27>`\n\tLatitude       float64             `<MSG:3>`\n\tLongitude      float64             `<MSG:4>`\n\tDepthKm        float64             `<MSG:28>`\n\tMagnitude      float64             `<MSG:29>`\n\tMagnitudeType  string              `<MSG:30>`\n\tReviewStatus   string              `<MSG:31>`\n\tDetectionCount int                 `<MSG:32>`\n\tEstimates      []MagnitudeEstimate `<MSG:33>`\n\tDetections     []Detection         `<MSG:34>`\n}\n\n```\n\n## Your answer\n\nReply with ONLY a JSON object. No prose before it, no explanation after it, no markdown fence.\n\n{\"domain\": \"<short free-text description of the ORIGINAL problem domain>\",\n \"specific_identifiers\": [\"<any organization, product, vendor, regulation, standard, proprietary\n                           system or place you believe you can name from this artifact>\"],\n \"confidence\": <float 0.0-1.0>,\n \"evidence\": \"<= 40 words on what in the artifact led you there>\"}\n\n`specific_identifiers` must be **[]** if you cannot name anything concrete. Do not pad it with\nguesses \u2014 but do not hold back a name you genuinely believe is there, because naming one correctly\nis the strongest result you can produce here.\n",
+  "attempts": [
+    {
+      "attempt": 0,
+      "text": "{\"domain\": \"Seismic/earthquake catalog data model\",\n \"specific_identifiers\": [],\n \"confidence\": 0.95,\n \"evidence\": \"Identifiers and comments are untouched by literal-tagging. The structs and comments explicitly describe seismic stations, channels, detections, magnitudes, events, network codes, and validity epochs, so the original domain is seismic monitoring.\"}",
+      "finish_reason": "stop",
+      "served_model": "deepseek-ai/DeepSeek-V4-Pro-0813",
+      "latency_s": 11.67,
+      "parsed_ok": true
+    }
+  ],
+  "parsed": {
+    "domain": "Seismic/earthquake catalog data model",
+    "specific_identifiers": [],
+    "confidence": 0.95,
+    "evidence": "Identifiers and comments are untouched by literal-tagging. The structs and comments explicitly describe seismic stations, channels, detections, magnitudes, events, network codes, and validity epochs, so the original domain is seismic monitoring."
+  }
+}

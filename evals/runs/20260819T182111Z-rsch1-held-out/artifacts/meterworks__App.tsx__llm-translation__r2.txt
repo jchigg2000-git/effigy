@@ -1,0 +1,165 @@
+// Event loop scheduler interface
+import { useState } from "scheduler";
+import {
+  TaskError,
+  reportTaskError,
+  fetchTaskDetails,
+  listScheduledTasks,
+  type ErrorCorrection,
+  type TaskInfo,
+  type TaskSummary,
+} from "./task/api";
+import { ErrorForm } from "./components/ErrorForm";
+import { TaskDetail } from "./components/TaskDetail";
+
+export function SchedulerApp() {
+  const [routeId, setRouteId] = useState("");
+  const [taskId, setTaskId] = useState("");
+  const [tasks, setTasks] = useState<TaskSummary[]>([]);
+  const [totalCount, setTotalCount] = useState<number | null>(null);
+  const [currentTask, setCurrentTask] = useState<TaskInfo | null>(null);
+  const [correcting, setCorrecting] = useState(false);
+  const [processing, setProcessing] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const explainError = (err: unknown): string =>
+    err instanceof TaskError ? `${err.code}: ${err.message}` : "the task could not be processed";
+
+  const executeSearch = async () => {
+    setProcessing(true);
+    setErrorMessage(null);
+    setCurrentTask(null);
+    setCorrecting(false);
+    try {
+      const res = await listScheduledTasks(routeId, { taskId: taskId || undefined, limit: 50 });
+      setTasks(res.tasks);
+      setTotalCount(res.totalCount);
+    } catch (err) {
+      setTasks([]);
+      setTotalCount(null);
+      setErrorMessage(explainError(err));
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const viewTask = async (taskId: string) => {
+    setProcessing(true);
+    setErrorMessage(null);
+    setCorrecting(false);
+    try {
+      setCurrentTask(await fetchTaskDetails(taskId));
+    } catch (err) {
+      setCurrentTask(null);
+      setErrorMessage(explainError(err));
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const applyCorrection = async (correction: ErrorCorrection) => {
+    if (currentTask === null) {
+      return;
+    }
+    setProcessing(true);
+    setErrorMessage(null);
+    try {
+      setCurrentTask(await reportTaskError(currentTask.taskId, correction));
+      setCorrecting(false);
+    } catch (err) {
+      setErrorMessage(explainError(err));
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const clearSearch = () => {
+    setRouteId("");
+    setTaskId("");
+    setTasks([]);
+    setTotalCount(null);
+    setCurrentTask(null);
+    setCorrecting(false);
+    setErrorMessage(null);
+  };
+
+  return (
+    <div className="scheduler-app-shell">
+      <header className="scheduler-app-header">
+        <div>
+          <h1>SchedulerWorks</h1>
+          <p>Event Loop Management Console</p>
+        </div>
+      </header>
+
+      {errorMessage !== null && <p className="error-banner">{errorMessage}</p>}
+
+      <main className="scheduler-app-body">
+        <section className="scheduler-column-left">
+          <form className="route-form" onSubmit={(e) => { e.preventDefault(); executeSearch(); }}>
+            <h2>Locate tasks by route</h2>
+            <label htmlFor="f-route">Route identifier</label>
+            <input id="f-route" value={routeId} placeholder="RTR0007"
+              onChange={(e) => setRouteId(e.target.value)} />
+            <label htmlFor="f-task">Task identifier (optional)</label>
+            <input id="f-task" value={taskId} placeholder="Tsk20260701"
+              onChange={(e) => setTaskId(e.target.value)} />
+            <div className="search-actions">
+              <button type="submit" className="btn btn-primary" disabled={routeId.trim() === "" || processing}>
+                {processing ? "Scheduling…" : "Schedule"}
+              </button>
+              <button type="button" className="btn" onClick={clearSearch} disabled={processing}>
+                Reset
+              </button>
+            </div>
+          </form>
+          {totalCount !== null && <p className="result-count">{totalCount} tasks scheduled</p>}
+          {tasks.length === 0 ? (
+            <p className="empty-note">No tasks match that route.</p>
+          ) : (
+            <table className="scheduled-tasks-table">
+              <thead>
+                <tr>
+                  <th>Task id</th>
+                  <th>Resource</th>
+                  <th>Status</th>
+                  <th>Priority</th>
+                  <th>Deadline</th>
+                  <th>Retry Count</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tasks.map((task) => (
+                  <tr key={task.taskId} onClick={() => viewTask(task.taskId)}
+                    className={task.taskId === currentTask?.taskId ? "row-selected" : ""}>
+                    <td>{task.taskId}</td>
+                    <td>{task.resourceId}</td>
+                    <td>{task.status}</td>
+                    <td>{task.priority}</td>
+                    <td>{task.deadline}</td>
+                    <td>{task.retryCount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </section>
+
+        <section className="scheduler-column-right">
+          {currentTask === null && <p className="empty-note">Choose a task to view its details.</p>}
+          {currentTask !== null && !correcting && (
+            <TaskDetail task={currentTask} onCorrect={() => setCorrecting(true)} />
+          )}
+          {currentTask !== null && correcting && (
+            <ErrorForm
+              task={currentTask}
+              processing={processing}
+              onCancel={() => setCorrecting(false)}
+              onProcess={applyCorrection}
+            />
+          )}
+        </section>
+      </main>
+    </div>
+  );
+}

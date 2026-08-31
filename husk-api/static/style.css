@@ -1,0 +1,123 @@
+:root {
+  color-scheme: light dark;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --gap: 0.75rem;
+  --radius: 6px;
+  --border: rgba(127, 127, 127, 0.35);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 1.5rem;
+  line-height: 1.4;
+}
+
+main {
+  max-width: 960px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+header h1 {
+  margin: 0 0 0.25rem;
+  font-size: 1.5rem;
+  letter-spacing: -0.02em;
+}
+
+header .sub {
+  margin: 0;
+  opacity: 0.7;
+  font-size: 0.95rem;
+}
+
+label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: 0.25rem;
+}
+
+textarea, select, input[type="text"], button {
+  font: inherit;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: inherit;
+  padding: 0.5rem 0.6rem;
+}
+
+textarea {
+  width: 100%;
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.9rem;
+  min-height: 8rem;
+}
+
+button {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 0.55rem 1rem;
+}
+
+button:hover { background: rgba(127, 127, 127, 0.12); }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.controls {
+  display: grid;
+  grid-template-columns: 2fr 1fr 2fr auto;
+  gap: var(--gap);
+  align-items: end;
+}
+
+@media (max-width: 720px) {
+  .controls { grid-template-columns: 1fr 1fr; }
+  .ctrl-action { grid-column: 1 / -1; }
+}
+
+.hint {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+  opacity: 0.65;
+}
+
+.muted { opacity: 0.5; font-weight: normal; }
+
+.hint.warn { color: #b8860b; opacity: 0.95; font-weight: 500; }
+
+.status {
+  font-size: 0.9rem;
+  font-family: ui-monospace, monospace;
+  opacity: 0.85;
+  min-height: 1.2em;
+}
+
+.status.error { color: #c0392b; }
+.status.running { color: #1f6feb; }
+.status.ok { color: #16a34a; }
+
+.output-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+}
+
+.copy {
+  padding: 0.25rem 0.6rem;
+  font-size: 0.8rem;
+}
+
+details.meta pre {
+  font-family: ui-monospace, monospace;
+  font-size: 0.8rem;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  background: rgba(127, 127, 127, 0.08);
+  padding: 0.6rem;
+  border-radius: var(--radius);
+  margin: 0.5rem 0 0;
+}

@@ -1,0 +1,189 @@
+// Typed client for the qsolog contact-logging API.
+//
+// Requests go through fetch with no wrapper library. Errors are normalised
+// into ApiError so callers can branch on status without unwrapping a
+// Response. Search parameters are omitted from the query string when empty
+// rather than sent blank. Keep this file in step with the Go handlers it
+// calls.
+
+const BASE = "<PATH:0>";
+
+export interface Station {
+  stationId: string;
+  callsign: string;
+  gridSquare?: string;
+  operatorClass?: string;
+}
+
+export interface Confirmation {
+  confirmationId: string;
+  receivedFrom: string;
+  band: string;
+  mode: string;
+  contactDate: string;
+  matchStatus: string;
+  loggedAt: string;
+}
+
+export interface Contact {
+  contactId: string;
+  stationId: string;
+  workedCallsign: string;
+  band: string;
+  mode: string;
+  contactDate: string;
+  contactTime: string;
+  signalSent?: string;
+  signalReceived?: string;
+  gridSquare?: string;
+  entityCode?: string;
+  confirmedOn?: string;
+  station?: Station;
+  confirmations: Confirmation[];
+}
+
+export interface ContactSummary {
+  contactId: string;
+  stationId: string;
+  workedCallsign: string;
+  band: string;
+  mode: string;
+  contactDate: string;
+  entityCode?: string;
+  confirmed: boolean;
+}
+
+export interface SearchFilters {
+  band?: string;
+  mode?: string;
+  stationId?: string;
+  from?: string;
+  to?: string;
+  limit?: number;
+}
+
+export interface SearchResponse {
+  count: number;
+  limit: number;
+  contacts: ContactSummary[];
+}
+
+export interface ConfirmationRequest {
+  stationId: string;
+  receivedFrom: string;
+  band: string;
+  mode: string;
+  contactDate: string;
+}
+
+export interface ConfirmationResult {
+  confirmationId: string;
+  matchStatus: string;
+  matchedContactId?: string;
+  contact?: ContactSummary;
+}
+
+export interface BandModeProgress {
+  band: string;
+  mode: string;
+  confirmedContacts: number;
+  distinctEntities: number;
+}
+
+export interface StationSummary {
+  stationId: string;
+  totalContacts: number;
+  distinctBands: number;
+  distinctModes: number;
+  confirmedContacts: number;
+}
+
+export class ApiError extends Error {
+  status: number;
+  code: string;
+
+  constructor(status: number, code: string, message: string) {
+    super(message);
+    this.name = "<MSG:0>";
+    this.status = status;
+    this.code = code;
+  }
+}
+
+// Shared transport. Unwraps the {"<MSG:1>":{"<MSG:2>":…,"<MSG:3>":…}} envelope the
+// Go service puts on every failure and rethrows it as an ApiError.
+async function request<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(url, init);
+  if (!res.ok) {
+    let code = "<MSG:4>";
+    let message = `<MSG:5>`;
+    try {
+      const body = await res.json();
+      if (body && body.error) {
+        code = body.error.code || code;
+        message = body.error.message || message;
+      }
+    } catch {
+      // Body was not the JSON error envelope; keep the defaults above.
+    }
+    throw new ApiError(res.status, code, message);
+  }
+  return (await res.json()) as T;
+}
+
+export function buildSearchUrl(f: SearchFilters): string {
+  const params = new URLSearchParams();
+  if (f.band) params.set("<MSG:6>", f.band);
+  if (f.mode) params.set("<MSG:7>", f.mode);
+  if (f.stationId) params.set("<MSG:8>", f.stationId);
+  if (f.from) params.set("<SQL:0>", f.from);
+  if (f.to) params.set("<MSG:9>", f.to);
+  if (f.limit) params.set("<MSG:10>", String(f.limit));
+  return `<MSG:11>`;
+}
+
+export function hasAnyFilter(f: SearchFilters): boolean {
+  return Boolean(f.band || f.mode || f.stationId || f.from || f.to);
+}
+
+export async function searchContacts(f: SearchFilters): Promise<SearchResponse> {
+  if (!hasAnyFilter(f)) {
+    throw new ApiError(
+      400,
+      "<MSG:12>",
+      "<SQL:1>",
+    );
+  }
+  return request<SearchResponse>(buildSearchUrl(f));
+}
+
+export async function getContact(id: string): Promise<Contact> {
+  return request<Contact>(`<MSG:13>`);
+}
+
+export async function getStation(id: string): Promise<Station> {
+  return request<Station>(`<MSG:14>`);
+}
+
+export async function getStationSummary(id: string): Promise<StationSummary> {
+  return request<StationSummary>(`<MSG:15>`);
+}
+
+export async function submitConfirmation(
+  body: ConfirmationRequest,
+): Promise<ConfirmationResult> {
+  return request<ConfirmationResult>(`<MSG:16>`, {
+    method: "<MSG:17>",
+    headers: { "<MSG:18>": "<PATH:1>" },
+    body: JSON.stringify(body),
+  });
+}
+
+export async function getAwardProgress(stationId?: string): Promise<BandModeProgress[]> {
+  const params = new URLSearchParams();
+  if (stationId) params.set("<MSG:8>", stationId);
+  const res = await request<{ progress: BandModeProgress[] }>(
+    `<MSG:19>`,
+  );
+  return res.progress;
+}

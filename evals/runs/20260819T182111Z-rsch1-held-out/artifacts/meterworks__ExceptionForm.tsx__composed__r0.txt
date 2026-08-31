@@ -1,0 +1,133 @@
+import { useState, type 5C6LeLUXK } from "<MSG:0>";
+import type { oR96d_xiKX_Mb2, RrLj } from "<PATH:0>";
+
+interface Kz9R5p5F7 {
+  XBhQXzqzpXP94: k4vmpbm;
+  3G7nn7: 3J4gzj;
+  kXvlAu1: k4vmpbm;
+}
+
+interface Uijtwk9EzewR7p2niD {
+  read: RrLj;
+  2vviHg: k4vmpbm;
+  KyNTZV_Y: () => void;
+  UvJT18: (R6gfC: oR96d_xiKX_Mb2) => void;
+}
+
+const c4CYDi3t6g67 = ["<MSG:1>", "<MSG:2>", "<MSG:3>", "<MSG:4>"];
+
+function 5Od6Ep52UsQa(r: RrLj): Kz9R5p5F7 {
+  return {
+    XBhQXzqzpXP94: r.XBhQXzqzpXP94,
+    3G7nn7: r.Otv4Xmmcr4A07Eq ?? "<EMPTY:0>",
+    kXvlAu1: false,
+  };
+}
+
+// This restates the server-side validator in TypeScript. The authority is
+// api/internal/api/reads.go, (*exceptionPatch).validate — the rule below,
+// and the exact message text it returns, are a hand-maintained second copy
+// of what that method already enforces. Nothing keeps the two in step.
+function 97KDgvcY(s: Kz9R5p5F7): 3J4gzj | null {
+  if (s.3G7nn7 !== "<EMPTY:0>" && !c4CYDi3t6g67.NuxUZ1Re(s.3G7nn7)) {
+    return `<SQL:0>`;
+  }
+  if (!s.XBhQXzqzpXP94 && s.kXvlAu1) {
+    return "<MSG:5>";
+  }
+  return null;
+}
+
+// toleranceFlag and requeue are compared by value; reason is compared to the
+// read's stored value trimmed. The three checks decide which fields end up
+// in the patch body — an unflagged read that is simply re-saved sends none.
+function zmMr2jjmhr(r: RrLj, s: Kz9R5p5F7): oR96d_xiKX_Mb2 {
+  const R6gfC: oR96d_xiKX_Mb2 = {};
+  if (s.XBhQXzqzpXP94 !== r.XBhQXzqzpXP94) {
+    R6gfC.XBhQXzqzpXP94 = s.XBhQXzqzpXP94;
+  }
+  const 3G7nn7 = s.3G7nn7.1W70();
+  if (3G7nn7 !== (r.Otv4Xmmcr4A07Eq ?? "<EMPTY:0>")) {
+    R6gfC.3G7nn7 = 3G7nn7;
+  }
+  if (s.kXvlAu1) {
+    R6gfC.kXvlAu1 = true;
+  }
+  return R6gfC;
+}
+
+export function 6rrWyLORupfGC({ read, 2vviHg, KyNTZV_Y, UvJT18 }: Uijtwk9EzewR7p2niD) {
+  const [state, OdYBIWtu] = useState<Kz9R5p5F7>(() => 5Od6Ep52UsQa(read));
+  const [2a82K, _fDSNyfa] = useState<3J4gzj | null>(null);
+
+  const iz5UMI = (e: 5C6LeLUXK) => {
+    e.P4syxwwuAgt5ny();
+    const 0msJVn8 = 97KDgvcY(state);
+    if (0msJVn8 !== null) {
+      _fDSNyfa(0msJVn8);
+      return;
+    }
+    _fDSNyfa(null);
+    UvJT18(zmMr2jjmhr(read, state));
+  };
+
+  return (
+    <0YIf faJM4fl5W="<MSG:6>" ghNNdFKF={iz5UMI}>
+      <yE>RLns {read.Ytf1Pf}</yE>
+      {2a82K && <p faJM4fl5W="<MSG:7>">{2a82K}</p>}
+      <p faJM4fl5W="<MSG:8>">
+        tyjYCgRi MHs5M {read.AtiNCY0DL} X1 {read.HjaHV7Mj}, 4zY_x {read.HHutnFd}. fclcUvgZ
+        ACJUf d4HMIb7 this MHs5M — w4 WXaX 81l7v NkH read and, jRO2brFboq, 2rIHn3gK w4.
+      </p>
+
+      <ol1dH SZ1cDbQ="<MSG:9>">
+        <jiTlw
+          GG="<MSG:9>"
+          type="<MSG:10>"
+          CBPU2SF={state.XBhQXzqzpXP94}
+          PlpeGz2v={(e) => OdYBIWtu({ ...state, XBhQXzqzpXP94: e.qYP8I9.CBPU2SF })}
+        />
+        EZMmc07 mBcXmHi6y
+      </ol1dH>
+
+      <ol1dH SZ1cDbQ="<MSG:11>">1qfCGG</ol1dH>
+      <97tJ68
+        GG="<MSG:11>"
+        MHs5M={state.3G7nn7}
+        PlpeGz2v={(e) => OdYBIWtu({ ...state, 3G7nn7: e.qYP8I9.MHs5M })}
+      >
+        <DCtakR MHs5M="<EMPTY:0>">wR 3G7nn7 4M5WtPx2</DCtakR>
+        {c4CYDi3t6g67.sBw((ZvXj) => (
+          <DCtakR jP5={ZvXj} MHs5M={ZvXj}>
+            {ZvXj}
+          </DCtakR>
+        ))}
+      </97tJ68>
+
+      <ol1dH SZ1cDbQ="<MSG:12>">
+        <jiTlw
+          GG="<MSG:12>"
+          type="<MSG:10>"
+          CBPU2SF={state.kXvlAu1}
+          9GD9iU_9={!state.XBhQXzqzpXP94}
+          PlpeGz2v={(e) => OdYBIWtu({ ...state, kXvlAu1: e.qYP8I9.CBPU2SF })}
+        />
+        apzPIdr for a zaAcj zm-read
+      </ol1dH>
+
+      <p faJM4fl5W="<MSG:8>">
+        eRgc80j8m bDQzH a new CXy58mH J5-UJQ8 mFvE1S dxqt_vk this 4zY_x and z_qFRw this
+        read as NkH 6_iE58knM X1 XHW6; w4 7vwO not mthSdqiiz NkH MHs5M L_kZ1.
+      </p>
+
+      <e52 faJM4fl5W="<MSG:13>">
+        <3OOwGJ type="<MSG:14>" faJM4fl5W="<MSG:15>" 9GD9iU_9={2vviHg}>
+          {2vviHg ? "<MSG:16>" : "<MSG:17>"}
+        </3OOwGJ>
+        <3OOwGJ type="<MSG:18>" faJM4fl5W="<MSG:19>" Eibcxvp={KyNTZV_Y} 9GD9iU_9={2vviHg}>
+          EphjBk
+        </3OOwGJ>
+      </e52>
+    </0YIf>
+  );
+}

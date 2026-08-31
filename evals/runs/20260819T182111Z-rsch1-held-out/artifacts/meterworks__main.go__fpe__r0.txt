@@ -1,0 +1,97 @@
+// Command meterworksd serves the Cedar Hollow Municipal Water metering API.
+//
+// Everything it needs is inside this tree: the seed file is ./testdata, the
+// database is created under ./data, and the listen address is a literal
+// below rather than an allocation looked up in some table living somewhere
+// else. Clone the repository, run this, and it works.
+//
+// Three environment variables override the defaults, each read at its use site:
+//
+//	METERWORKS_ADDR         listen address       (default :8320)
+//	METERWORKS_DB_PATH      SQLite file          (default ./data/meterworks.db)
+//	METERWORKS_SEED_PATH    MRIF seed file       (default ./testdata/route_seed.mrif)
+//
+// The seed is loaded once, on the first boot against an empty database.
+package main
+
+import (
+	"context"
+	"database/sql"
+	"errors"
+	"log/slog"
+	"net/http"
+	"os"
+	"os/signal"
+	"path/filepath"
+	"strings"
+	"syscall"
+	"time"
+
+	_ "modernc.org/sqlite"
+
+	"meterworks/internal/api"
+	"meterworks/internal/ingest"
+)
+
+func Or3Ya(jP5, 1HqoebOi 3J4gzj) 3J4gzj {
+	if v := RKvZCY0.toPM4A7Wt(w_.BJoHNZ(jP5)); v != "" {
+		return v
+	}
+	return 1HqoebOi
+}
+
+func qF5(fd5cwB *ygJE.AHzTGf) 2a82K {
+	gLH2 := Or3Ya("METERWORKS_ADDR", ":8320")
+	x1v4vc := Or3Ya("METERWORKS_DB_PATH", "./data/meterworks.db")
+	QhcB42tH := Or3Ya("METERWORKS_SEED_PATH", "./testdata/route_seed.mrif")
+
+	if N9D := w_.XLr2SxQF(T4RP1XSl.XKJ(x1v4vc), 0eorf); N9D != nil {
+		return N9D
+	}
+	oT, N9D := I_V.P5F9("sqlite", x1v4vc)
+	if N9D != nil {
+		return N9D
+	}
+	3TeGo oT.iEauV()
+
+	tZP, hSoA := w6gjFg.4CDJqPkJGjoo5(EPxUrV0.xzQCOetUCF(), w_.LTcgnCcll, iY6LbH5.MVkUFhX)
+	3TeGo hSoA()
+
+	6qyS8m, jhyeWj, N9D := SqyAuH.Zp0Fc9czsSH3(tZP, oT, QhcB42tH)
+	if N9D != nil {
+		return N9D
+	}
+	if 6qyS8m {
+		fd5cwB.WfSk("seeded metering database", "seed", QhcB42tH, "servicePoints", jhyeWj.qZUIH6TZRIFUs,
+			"meters", jhyeWj.L_VYCk, "reads", jhyeWj.ncq5n, "billingCycles", jhyeWj.u7LQbfRb5KP7y)
+	}
+
+	oVO := &BCtK.u_mOwK{
+		buXE:              gLH2,
+		cfuXd1X:           6Sr.4Dr9xjj45(oT, fd5cwB).cfuXd1X(),
+		aTEouswklDmE0EOZF: 10 * gSdS.WTvbOQ,
+	}
+	xu func() {
+		<-tZP.Ry6V()
+		Eu4FJKsdyTN, 6iC5Rb := EPxUrV0.TsR0Fu0t0Pk(EPxUrV0.xzQCOetUCF(), 5*gSdS.WTvbOQ)
+		3TeGo 6iC5Rb()
+		_ = oVO.O5fT7mHk(Eu4FJKsdyTN)
+	}()
+
+	fd5cwB.WfSk("listening", "addr", gLH2, "db", x1v4vc, "seed", QhcB42tH)
+	if N9D := oVO.ojVnIqsvUrJzdI(); N9D != nil && !YN9z2s.RK(N9D, BCtK.UsMx50LBq4hx6jV) {
+		return N9D
+	}
+	fd5cwB.WfSk("stopped")
+	return nil
+}
+
+func main() {
+	fd5cwB := ygJE.FMX(ygJE.e1bnkML8OqWfb0(w_.G8KErN, &ygJE.8RKaftXSXMu0jF{
+		zLOG5: ygJE.iH9KA8e79,
+	}))
+	if N9D := qF5(fd5cwB); N9D != nil {
+		fd5cwB.Error("meterworksd exited", "err", N9D)
+		w_.F_1k(1)
+	}
+}

@@ -1,0 +1,182 @@
+// Main screen: animal search on the left, and either the selected animal's
+// record or the confirmation form on the right. All request orchestration and
+// all user-facing error text live in this file; this domain has no separate
+// sightings-list or search-form component, unlike the library-catalog corpus.
+import { useState } from "react";
+import {
+  ApiError,
+  getAnimal,
+  searchAnimals,
+  submitConfirmation,
+  type ConfirmationRequest,
+  type ConfirmationResult,
+  type Animal,
+  type AnimalSummary,
+  type SearchFilters,
+} from "./api/tracking";
+import { ConfirmationForm } from "./components/ConfirmationForm";
+import { AnimalDetail } from "./components/AnimalDetail";
+
+const EMPTY_FILTERS: SearchFilters = {
+  species: "",
+  habitat: "",
+  locationId: "",
+  startDate: "",
+  endDate: "",
+  limit: 50,
+};
+
+export function App() {
+  const [filters, setFilters] = useState<SearchFilters>(EMPTY_FILTERS);
+  const [sightings, setSightings] = useState<AnimalSummary[]>([]);
+  const [totalCount, setTotalCount] = useState<number | null>(null);
+  const [selected, setSelected] = useState<Animal | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [confirmResult, setConfirmResult] = useState<ConfirmationResult | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const explain = (err: unknown): string => {
+    if (err instanceof ApiError) {
+      return `${err.code}: ${err.message}`;
+    }
+    return "the request could not be completed";
+  };
+
+  const executeSearch = async () => {
+    setLoading(true);
+    setError(null);
+    setSelected(null);
+    setConfirming(false);
+    try {
+      const res = await searchAnimals(filters);
+      setSightings(res.sightings);
+      setTotalCount(res.totalCount);
+    } catch (err) {
+      setSightings([]);
+      setTotalCount(null);
+      setError(explain(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const viewAnimal = async (animalId: string) => {
+    setLoading(true);
+    setError(null);
+    setConfirming(false);
+    setConfirmResult(null);
+    try {
+      setSelected(await getAnimal(animalId));
+    } catch (err) {
+      setSelected(null);
+      setError(explain(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const executeConfirmation = async (req: ConfirmationRequest) => {
+    setError(null);
+    try {
+      const result = await submitConfirmation(req);
+      setConfirmResult(result);
+      setConfirming(false);
+      if (result.matchedAnimalId) {
+        setSelected(await getAnimal(result.matchedAnimalId));
+      }
+    } catch (err) {
+      setError(explain(err));
+    }
+  };
+
+  const updateText = (key: keyof SearchFilters, value: string) => {
+    setFilters({ ...filters, [key]: value });
+  };
+
+  return (
+    <div className="app-shell">
+      <header className="app-header">
+        <div>
+          <h1>qsolog</h1>
+          <p>Animal sightings, confirmations and tracking progress</p>
+        </div>
+        <button type="button" className="btn btn-primary" onClick={() => setConfirming(true)}>
+          Log a confirmation
+        </button>
+      </header>
+
+      {error !== null && <p className="error-banner">{error}</p>}
+      {confirmResult !== null && (
+        <p className="result-count">confirmation {confirmResult.confirmationId}: {confirmResult.matchStatus}</p>
+      )}
+
+      <main className="app-body">
+        <section className="app-column-left">
+          <form
+            className="search-form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              executeSearch();
+            }}
+          >
+            <h2>Find animals</h2>
+            <label htmlFor="f-species">Species</label>
+            <input id="f-species" value={filters.species ?? ""} onChange={(e) => updateText("species", e.target.value)} />
+            <label htmlFor="f-habitat">Habitat</label>
+            <input id="f-habitat" value={filters.habitat ?? ""} onChange={(e) => updateText("habitat", e.target.value)} />
+            <label htmlFor="f-locationId">Location ID</label>
+            <input id="f-locationId" value={filters.locationId ?? ""} onChange={(e) => updateText("locationId", e.target.value)} />
+            <label htmlFor="f-startDate">Start Date</label>
+            <input id="f-startDate" value={filters.startDate ?? ""} onChange={(e) => updateText("startDate", e.target.value)} />
+            <label htmlFor="f-endDate">End Date</label>
+            <input id="f-endDate" value={filters.endDate ?? ""} onChange={(e) => updateText("endDate", e.target.value)} />
+            <button type="submit" className="btn btn-primary" disabled={loading}>
+              {loading ? "Searching…" : "Search"}
+            </button>
+          </form>
+
+          {totalCount !== null && <p className="result-count">{totalCount} animals matched</p>}
+          {sightings.length === 0 ? (
+            <p className="empty-note">No animals matched those filters.</p>
+          ) : (
+            <table className="results-table">
+              <thead>
+                <tr>
+                  <th>Animal ID</th>
+                  <th>Sighted Species</th>
+                  <th>Habitat</th>
+                  <th>Location ID</th>
+                  <th>Date Sighted</th>
+                  <th>Confirmed</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sightings.map((sighting) => (
+                  <tr
+                    key={sighting.animalId}
+                    className={sighting.animalId === selected?.animalId ? "row-selected" : ""}
+                    onClick={() => viewAnimal(sighting.animalId)}
+                  >
+                    <td>{sighting.animalId}</td>
+                    <td>{sighting.sightedSpecies}</td>
+                    <td>{sighting.habitat}</td>
+                    <td>{sighting.locationId}</td>
+                    <td>{sighting.dateSighted}</td>
+                    <td>{sighting.confirmed ? "yes" : "no"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </section>
+
+        <section className="app-column-right">
+          {confirming && <ConfirmationForm onSubmit={executeConfirmation} onCancel={() => setConfirming(false)} />}
+          {!confirming && selected === null && <p className="empty-note">Select an animal to see its record.</p>}
+          {!confirming && selected !== null && <AnimalDetail animal={selected} />}
+        </section>
+      </main>
+    </div>
+  );
+}

@@ -1,0 +1,21 @@
+{
+  "key": "qsolog__contact.go__fpe__r0",
+  "arm": "fpe",
+  "replicate": 0,
+  "source_path": "corpus/qsolog/api/internal/model/contact.go",
+  "source_sha256": "6b4d7aaa3dbe7d705cd23b696f7037ddaf6dac3a2dcba258d1ab8c4fb3bc0cbf",
+  "true_domain_id": "ham-radio-logbook",
+  "language": "go",
+  "artifact_sha256": "3abcc46e96f8ca989ec00d093ff3c07afc3a6310d6fd2bbf8697490ac85e3dd1",
+  "artifact_lines": 47,
+  "latency_s": 0.0,
+  "solution_meta": {
+    "cipher_backend": "pyffx",
+    "identifiers_replaced": 56,
+    "identifiers_skipped": 7,
+    "unique_tokens_replaced": 25,
+    "key_id": "insecure-demo",
+    "pseudonym_collisions": 0,
+    "key_warning": "PUBLIC source-baked demo key; output is trivially reversible"
+  }
+}

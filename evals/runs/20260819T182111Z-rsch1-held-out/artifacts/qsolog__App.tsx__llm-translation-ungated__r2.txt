@@ -1,0 +1,179 @@
+// Root screen: animal search on the left, and either the selected animal's
+// record or the confirmation form on the right. All request orchestration and
+// all user-facing error text live in this file; this domain has no separate
+// results-table or search-form component, unlike the library-catalog corpus.
+import { useState } from "react";
+import {
+  ApiError,
+  getAnimal,
+  searchAnimals,
+  submitObservation,
+  type ObservationRequest,
+  type ObservationResult,
+  type Animal,
+  type AnimalSummary,
+  type SearchCriteria,
+} from "./api/tracking";
+import { ObservationForm } from "./components/ObservationForm";
+import { AnimalDetail } from "./components/AnimalDetail";
+
+const DEFAULT_CRITERIA: SearchCriteria = {
+  species: "",
+  location: "",
+  startDate: "",
+  endDate: "",
+  limit: 50,
+};
+
+export function WildlifeApp() {
+  const [criteria, setCriteria] = useState<SearchCriteria>(DEFAULT_CRITERIA);
+  const [records, setRecords] = useState<AnimalSummary[]>([]);
+  const [totalCount, setTotalCount] = useState<number | null>(null);
+  const [selectedAnimal, setSelectedAnimal] = useState<Animal | null>(null);
+  const [observing, setObserving] = useState(false);
+  const [observationResult, setObservationResult] = useState<ObservationResult | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const explainError = (err: unknown): string => {
+    if (err instanceof ApiError) {
+      return `${err.code}: ${err.message}`;
+    }
+    return "the request could not be completed";
+  };
+
+  const performSearch = async () => {
+    setIsLoading(true);
+    setErrorMessage(null);
+    setSelectedAnimal(null);
+    setObserving(false);
+    try {
+      const response = await searchAnimals(criteria);
+      setRecords(response.animals);
+      setTotalCount(response.count);
+    } catch (err) {
+      setRecords([]);
+      setTotalCount(null);
+      setErrorMessage(explainError(err));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const viewAnimal = async (animalId: string) => {
+    setIsLoading(true);
+    setErrorMessage(null);
+    setObserving(false);
+    setObservationResult(null);
+    try {
+      setSelectedAnimal(await getAnimal(animalId));
+    } catch (err) {
+      setSelectedAnimal(null);
+      setErrorMessage(explainError(err));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const submitObservationData = async (req: ObservationRequest) => {
+    setErrorMessage(null);
+    try {
+      const outcome = await submitObservation(req);
+      setObservationResult(outcome);
+      setObserving(false);
+      if (outcome.matchedAnimalId) {
+        setSelectedAnimal(await getAnimal(outcome.matchedAnimalId));
+      }
+    } catch (err) {
+      setErrorMessage(explainError(err));
+    }
+  };
+
+  const updateText = (key: keyof SearchCriteria, value: string) => {
+    setCriteria({ ...criteria, [key]: value });
+  };
+
+  return (
+    <div className="wildlife-app-shell">
+      <header className="wildlife-app-header">
+        <div>
+          <h1>qsolog</h1>
+          <p>Animal observation log, confirmations and tracking progress</p>
+        </div>
+        <button type="button" className="btn btn-primary" onClick={() => setObserving(true)}>
+          Log an observation
+        </button>
+      </header>
+
+      {errorMessage !== null && <p className="error-banner">{errorMessage}</p>}
+      {observationResult !== null && (
+        <p className="result-count">observation {observationResult.observationId}: {observationResult.matchStatus}</p>
+      )}
+
+      <main className="wildlife-app-body">
+        <section className="wildlife-column-left">
+          <form
+            className="search-form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              performSearch();
+            }}
+          >
+            <h2>Find animals</h2>
+            <label htmlFor="s-species">Species</label>
+            <input id="s-species" value={criteria.species ?? ""} onChange={(e) => updateText("species", e.target.value)} />
+            <label htmlFor="s-location">Location</label>
+            <input id="s-location" value={criteria.location ?? ""} onChange={(e) => updateText("location", e.target.value)} />
+            <label htmlFor="s-start-date">Start date</label>
+            <input id="s-start-date" value={criteria.startDate ?? ""} onChange={(e) => updateText("startDate", e.target.value)} />
+            <label htmlFor="s-end-date">End date</label>
+            <input id="s-end-date" value={criteria.endDate ?? ""} onChange={(e) => updateText("endDate", e.target.value)} />
+            <button type="submit" className="btn btn-primary" disabled={isLoading}>
+              {isLoading ? "Searching…" : "Search"}
+            </button>
+          </form>
+
+          {totalCount !== null && <p className="result-count">{totalCount} animals matched</p>}
+          {records.length === 0 ? (
+            <p className="empty-note">No animals matched those criteria.</p>
+          ) : (
+            <table className="results-table">
+              <thead>
+                <tr>
+                  <th>Animal id</th>
+                  <th>Common name</th>
+                  <th>Species</th>
+                  <th>Location</th>
+                  <th>Date</th>
+                  <th>Confirmed</th>
+                </tr>
+              </thead>
+              <tbody>
+                {records.map((record) => (
+                  <tr
+                    key={record.animalId}
+                    className={record.animalId === selectedAnimal?.animalId ? "row-selected" : ""}
+                    onClick={() => viewAnimal(record.animalId)}
+                  >
+                    <td>{record.animalId}</td>
+                    <td>{record.commonName}</td>
+                    <td>{record.species}</td>
+                    <td>{record.location}</td>
+                    <td>{record.observationDate}</td>
+                    <td>{record.confirmed ? "yes" : "no"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </section>
+
+        <section className="wildlife-column-right">
+          {observing && <ObservationForm onSubmit={submitObservationData} onCancel={() => setObserving(false)} />}
+          {!observing && selectedAnimal === null && <p className="empty-note">Select an animal to see its record.</p>}
+          {!observing && selectedAnimal !== null && <AnimalDetail animal={selectedAnimal} />}
+        </section>
+      </main>
+    </div>
+  );
+}

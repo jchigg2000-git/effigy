@@ -1,0 +1,13 @@
+{"tree": "_real", "reviewer": "sonnet agent, multi-file, scoped to the tree",
+ "corpus_commit": "post-c6bc23f (answer-key comments removed)",
+ "findings": [
+  {"smell":"god_object","present":true,"confidence":0.65,"files":["api/internal/api/server.go"],"evidence":"type Server struct { db *sql.DB; logger *slog.Logger; seedPath, adminToken string; router http.Handler }"},
+  {"smell":"inline_sql_in_handler","present":true,"confidence":0.95,"files":["api/internal/api/branches.go","api/internal/api/holdings.go","api/internal/api/server.go"],"evidence":"s.db.QueryRowContext(r.Context(), `SELECT branch_id, name, ... FROM branches WHERE branch_id = ?`, branchID)"},
+  {"smell":"layering_violation","present":true,"confidence":0.9,"files":["api/internal/store/store.go"],"evidence":"package store defines only func Open(path string) (*sql.DB, error); no query/exec functions exist"},
+  {"smell":"inline_magic_literals","present":true,"confidence":0.85,"files":["api/cmd/stacksd/main.go","api/internal/api/server.go","api/internal/api/holdings.go","src/api/client.ts","src/components/SearchForm.tsx"],"evidence":"envOr(\"STACKS_ADDR\", \":8300\"); r.Route(\"/holdings\", ...)"},
+  {"smell":"concatenated_sql","present":true,"confidence":0.95,"files":["api/internal/api/holdings.go"],"evidence":"sqlStr := `SELECT ... WHERE ` + strings.Join(conds, \" AND \") + \" ORDER BY title, author LIMIT ?\""},
+  {"smell":"deep_nested_switch","present":true,"confidence":0.85,"files":["api/internal/ingest/marc21.go"],"evidence":"switch tag { case \"583\": switch sub(sfs,'a') { case \"LOANSTART\": ... } case \"110\": switch sub(sfs,'4') {...} }"},
+  {"smell":"closure_over_mutable_state","present":true,"confidence":0.85,"files":["api/internal/ingest/marc21.go"],"evidence":"flushLoan := func() { if cur != nil && curLoan != nil {...} }, called from 4+ branches"},
+  {"smell":"wide_positional_bind","present":true,"confidence":0.9,"files":["api/internal/api/holdings.go","api/internal/model/holding.go"],"evidence":"Scan(&h.HoldingID, &h.BranchID, ... &br.SystemID) — 19 positional binds matching SELECT order"},
+  {"smell":"duplicated_error_handling","present":true,"confidence":0.9,"files":["api/internal/api/branches.go","api/internal/api/holdings.go"],"evidence":"if errors.Is(err, sql.ErrNoRows) {...} if err != nil {s.serverError(w, err)} repeated verbatim 6x"}
+ ]}

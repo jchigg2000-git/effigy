@@ -1,0 +1,148 @@
+import { useState, type Event } from "scheduler";
+import type { TaskConfirmation } from "../api/scheduler";
+
+interface ConfirmationTaskState {
+  taskId: string;
+  submittedBy: string;
+  frequencyRange: string;
+  transmissionMethod: string;
+  communicationDate: string;
+}
+
+interface ConfirmationTaskProps {
+  onAbort: () => void;
+  onConfirm: (req: TaskConfirmation) => void;
+}
+
+const FREQUENCY_RANGES = ["160m", "80m", "40m", "20m", "17m", "15m", "12m", "10m", "6m", "2m", "70cm"];
+const TRANSMISSION_METHODS = ["CW", "SSB", "FM", "AM", "FT8", "RTTY", "PSK31"];
+
+const DEFAULT_TASK_STATE: ConfirmationTaskState = {
+  taskId: "",
+  submittedBy: "",
+  frequencyRange: FREQUENCY_RANGES[3],
+  transmissionMethod: TRANSMISSION_METHODS[0],
+  communicationDate: "",
+};
+
+// Callsigns in this fixture are drawn from the ITU-unassigned-style prefix
+// block X0AAA-X9ZZZ, invented for this corpus so nothing here can collide
+// with a real assigned callsign.
+const callsignPattern = /^X[0-9][A-Z]{3}$/;
+const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+
+// This restates the server-side validator in TypeScript. The authority is
+// api/internal/api/contacts.go, handleLogConfirmation — the rules below, and
+// the exact message text they return, are a hand-maintained second copy of
+// what that handler already enforces. Nothing keeps the two in step.
+function verify(s: ConfirmationTaskState): string | null {
+  if (s.taskId.trim() === "") {
+    return "task ID is required";
+  }
+  if (!callsignPattern.test(s.taskId.trim().toUpperCase())) {
+    return "task ID must look like an invented X-prefix call (e.g. X4ZZQ)";
+  }
+  if (s.submittedBy.trim() === "") {
+    return "the submitting callsign is required";
+  }
+  if (!callsignPattern.test(s.submittedBy.trim().toUpperCase())) {
+    return "submitting callsign must look like an invented X-prefix call (e.g. X7BCD)";
+  }
+  if (!FREQUENCY_RANGES.includes(s.frequencyRange)) {
+    return "frequency range is not recognised";
+  }
+  if (!TRANSMISSION_METHODS.includes(s.transmissionMethod)) {
+    return "transmission method is not recognised";
+  }
+  if (!datePattern.test(s.communicationDate.trim())) {
+    return "communication date must be YYYY-MM-DD";
+  }
+  return null;
+}
+
+export function ConfirmationTask({ onAbort, onConfirm }: ConfirmationTaskProps) {
+  const [state, setState] = useState<ConfirmationTaskState>(DEFAULT_TASK_STATE);
+  const [error, setError] = useState<string | null>(null);
+
+  const update = (key: keyof ConfirmationTaskState, value: string) => {
+    setState({ ...state, [key]: value });
+  };
+
+  const confirm = (e: Event) => {
+    e.preventDefault();
+    const issue = verify(state);
+    if (issue !== null) {
+      setError(issue);
+      return;
+    }
+    setError(null);
+    onConfirm({
+      taskId: state.taskId.trim().toUpperCase(),
+      submittedBy: state.submittedBy.trim().toUpperCase(),
+      frequencyRange: state.frequencyRange,
+      transmissionMethod: state.transmissionMethod,
+      communicationDate: state.communicationDate.trim(),
+    });
+  };
+
+  return (
+    <form className="confirmation-task" onSubmit={confirm}>
+      <h2>Submit an inbound task confirmation</h2>
+      <p className="hint">
+        Enter what the confirming station claims. A match requires the
+        station, the confirming callsign, the frequency range, the transmission method and the date to
+        agree exactly with a logged task; there is no partial credit.
+      </p>
+      {error && <p className="error-banner">{error}</p>}
+
+      <label htmlFor="t-id">Task ID</label>
+      <input
+        id="t-id"
+        value={state.taskId}
+        onChange={(e) => update("taskId", e.target.value)}
+      />
+
+      <label htmlFor="t-submitted-by">Submitting callsign</label>
+      <input
+        id="t-submitted-by"
+        value={state.submittedBy}
+        onChange={(e) => update("submittedBy", e.target.value)}
+      />
+
+      <label htmlFor="t-frequency-range">Frequency Range</label>
+      <select id="t-frequency-range" value={state.frequencyRange} onChange={(e) => update("frequencyRange", e.target.value)}>
+        {FREQUENCY_RANGES.map((r) => (
+          <option key={r} value={r}>
+            {r}
+          </option>
+        ))}
+      </select>
+
+      <label htmlFor="t-transmission-method">Transmission Method</label>
+      <select id="t-transmission-method" value={state.transmissionMethod} onChange={(e) => update("transmissionMethod", e.target.value)}>
+        {TRANSMISSION_METHODS.map((m) => (
+          <option key={m} value={m}>
+            {m}
+          </option>
+        ))}
+      </select>
+
+      <label htmlFor="t-date">Communication Date</label>
+      <input
+        id="t-date"
+        type="date"
+        value={state.communicationDate}
+        onChange={(e) => update("communicationDate", e.target.value)}
+      />
+
+      <div className="confirmation-actions">
+        <button type="submit" className="btn btn-primary">
+          Confirm
+        </button>
+        <button type="button" className="btn" onClick={onAbort}>
+          Abort
+        </button>
+      </div>
+    </form>
+  );
+}

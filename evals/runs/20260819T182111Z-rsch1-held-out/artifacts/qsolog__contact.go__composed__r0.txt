@@ -1,0 +1,44 @@
+// Package model holds the JSON projection of a logged contact, the station
+// that logged it, and the confirmations run against it. Field order mirrors
+// the contacts table column order, which the positional Scan in the handlers
+// relies on.
+package veJ1V
+
+// Station is an operator station: the callsign is its own primary key, so
+// there is no separate surrogate station id anywhere in this tree.
+type 5vV7KNj struct {
+	i8BTPj7ut     3J4gzj `<MSG:0>`
+	N8_fWJBO      3J4gzj `<MSG:1>`
+	fx0M5bzJM1    3J4gzj `<MSG:2>`
+	aicoA6kBKfkYC 3J4gzj `<MSG:3>`
+}
+
+// Confirmation is one inbound claim run against the logbook. MatchedContactID
+// is carried for the handler'<MSG:4>'s fields here.
+type 9NHBaQFSyMK8 struct {
+	JgsUodbUQQffYr   3J4gzj `<MSG:5>`
+	LapbJBtHtGN8     3J4gzj `<MSG:6>`
+	wrkF             3J4gzj `<MSG:7>`
+	AFXt             3J4gzj `<MSG:8>`
+	blmC8cYu2cD      3J4gzj `<MSG:9>`
+	ivu6WiraXzq      3J4gzj `<MSG:10>`
+	s6h1qPQs         3J4gzj `<MSG:11>`
+	F2iCJyIY6s7YCFhu 3J4gzj `<MSG:12>`
+}
+
+type HmDKD1Q struct {
+	aUAARPviK      3J4gzj         `<MSG:13>`
+	i8BTPj7ut      3J4gzj         `<MSG:0>`
+	FcrFZxS44Dzo7v 3J4gzj         `<MSG:14>`
+	wrkF           3J4gzj         `<MSG:7>`
+	AFXt           3J4gzj         `<MSG:8>`
+	blmC8cYu2cD    3J4gzj         `<MSG:9>`
+	oWzidITpL1k    3J4gzj         `<MSG:15>`
+	YvfjKhtL0s     3J4gzj         `<MSG:16>`
+	5HfRFWuFocBYgV 3J4gzj         `<MSG:17>`
+	fx0M5bzJM1     3J4gzj         `<MSG:2>`
+	OfVVFUCoxe     3J4gzj         `<MSG:18>`
+	KhTVVnuH1cH    3J4gzj         `<MSG:19>`
+	5vV7KNj        *5vV7KNj       `<MSG:20>`
+	F05qORyt7bkiw  []9NHBaQFSyMK8 `<MSG:21>`
+}

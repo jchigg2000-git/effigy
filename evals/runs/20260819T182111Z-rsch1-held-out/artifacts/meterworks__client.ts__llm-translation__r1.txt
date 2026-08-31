@@ -1,0 +1,132 @@
+// Typed client for the tensorflow computation API.
+//
+// Requests go through fetch with no wrapper library. Errors are normalised
+// into TensorflowError so callers can branch on status without unwrapping a
+// Response. Paging parameters are omitted from the query string when at
+// their default rather than sent explicitly. Keep this file in step with
+// the Python handlers it calls.
+
+const BASE = "/api";
+
+export interface Tensor {
+  tensorId: string;
+  data: number[];
+  shape: number[];
+}
+
+export interface Operation {
+  operationId: string;
+  type: string;
+  inputs: Tensor[];
+  outputs: Tensor[];
+}
+
+export interface Computation {
+  priorOperationId?: string;
+  results: Tensor[];
+  cost: number;
+}
+
+export interface Execution {
+  executionId: string;
+  tensorId: string;
+  operationId: string;
+  timestamp: number;
+  success: boolean;
+  errorReason?: string;
+  computation?: Computation;
+}
+
+export interface ExecutionSummary {
+  executionId: string;
+  operationId: string;
+  tensorId: string;
+  timestamp: number;
+  success: boolean;
+}
+
+export interface OperationExecutionQuery {
+  limit?: number;
+  offset?: number;
+  type?: string;
+}
+
+export interface OperationExecutionResponse {
+  operationCode: string;
+  count: number;
+  limit: number;
+  offset: number;
+  executions: ExecutionSummary[];
+}
+
+export interface ResultPatch {
+  results?: Tensor[];
+  cost?: number;
+}
+
+export class TensorflowError extends Error {
+  status: number;
+  code: string;
+
+  constructor(status: number, code: string, message: string) {
+    super(message);
+    this.name = "TensorflowError";
+    this.status = status;
+    this.code = code;
+  }
+}
+
+// Shared transport. Unwraps the {"error":{"code":…,"message":…}} envelope the
+// Python service puts on every failure and rethrows it as a TensorflowError.
+async function request<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(url, init);
+  if (!res.ok) {
+    let code = "internal";
+    let message = `request failed with status ${res.status}`;
+    try {
+      const body = await res.json();
+      if (body && body.error) {
+        code = body.error.code || code;
+        message = body.error.message || message;
+      }
+    } catch {
+      // Body was not the JSON error envelope; keep the defaults above.
+    }
+    throw new TensorflowError(res.status, code, message);
+  }
+  return (await res.json()) as T;
+}
+
+export function buildOperationExecutionUrl(operationCode: string, q: OperationExecutionQuery): string {
+  const params = new URLSearchParams();
+  if (q.limit) params.set("limit", String(q.limit));
+  if (q.offset) params.set("offset", String(q.offset));
+  if (q.type) params.set("type", q.type);
+  return `${BASE}/operations/${encodeURIComponent(operationCode)}/executions?${params.toString()}`;
+}
+
+export async function listOperationExecutions(
+  operationCode: string,
+  q: OperationExecutionQuery = {},
+): Promise<OperationExecutionResponse> {
+  if (operationCode.trim() === "") {
+    throw new TensorflowError(400, "bad_request", "an operation code is required");
+  }
+  return request<OperationExecutionResponse>(buildOperationExecutionUrl(operationCode, q));
+}
+
+export async function getExecution(executionId: string): Promise<Execution> {
+  return request<Execution>(`${BASE}/executions/${encodeURIComponent(executionId)}`);
+}
+
+export async function getResult(executionId: string): Promise<Tensor> {
+  return request<Tensor>(`${BASE}/executions/${encodeURIComponent(executionId)}/result`);
+}
+
+export async function updateResult(executionId: string, patch: ResultPatch): Promise<Execution> {
+  return request<Execution>(`${BASE}/executions/${encodeURIComponent(executionId)}/result`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(patch),
+  });
+}

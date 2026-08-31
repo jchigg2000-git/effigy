@@ -1,0 +1,20 @@
+{
+  "key": "meterworks__servicepoints.go__literal-tagging__r0",
+  "arm": "literal-tagging",
+  "replicate": 0,
+  "source_path": "corpus/meterworks/api/internal/api/servicepoints.go",
+  "source_sha256": "2914066e847ea915c87850a8063de75ef0792bace5e2fff410600eab337f8290",
+  "true_domain_id": "water-utility-metering",
+  "language": "go",
+  "artifact_sha256": "4cd5a406fd01558aa4f8149147e462fb42109ac47da9c0b61e51029199863767",
+  "artifact_lines": 89,
+  "latency_s": 0.0,
+  "solution_meta": {
+    "literals_by_class": {
+      "PATH": 4,
+      "MSG": 16,
+      "SQL": 3
+    },
+    "total_literals_replaced": 23
+  }
+}

@@ -1,0 +1,234 @@
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+// -
+package ident_0001
+
+import (
+	"context"
+	"database/sql"
+	"fmt"
+	"os"
+	"strconv"
+	"strings"
+)
+
+type Ident_0002 struct {
+	Ident_0003 int `str_0001`
+	Ident_0004 int `str_0002`
+	Ident_0005 int `str_0003`
+	Ident_0006 int `str_0004`
+}
+
+type ident_0007 struct {
+	Ident_0008, Ident_0009, Ident_0010 string
+	Ident_0011                         int
+	Ident_0012                         string
+	Ident_0013                         bool
+}
+
+type ident_0014 struct {
+	Ident_0015, Ident_0016, Ident_0017 string
+	Ident_0005                         []ident_0007
+}
+
+var ident_0018 = map[byte]string{'A': "str_0005", 'B': "str_0006", 'C': "str_0007"}
+
+func ident_0019(ident_0020 string, ident_0021, ident_0022 int) string {
+	if ident_0022 > len(ident_0020) {
+		ident_0022 = len(ident_0020)
+	}
+	if ident_0021 >= ident_0022 {
+		return "str_0008"
+	}
+	return strings.TrimSpace(ident_0020[ident_0021:ident_0022])
+}
+
+// -
+// -
+// -
+func Ident_0023(ident_0024 []byte) (*ident_0014, error) {
+	ident_0025 := &ident_0014{}
+	ident_0026 := false
+	ident_0027 := false
+	ident_0028 := 0
+
+	ident_0029 := strings.Split(strings.ReplaceAll(string(ident_0024), "str_0009", "str_0010"), "str_0010")
+	for _, ident_0030 := range ident_0029 {
+		if strings.TrimSpace(ident_0030) == "str_0008" {
+			continue
+		}
+		switch ident_0030[0] {
+		case 'D':
+			if ident_0026 {
+				return nil, fmt.Errorf("str_0011")
+			}
+			ident_0026 = true
+			ident_0025.Ident_0015 = ident_0019(ident_0030, 1, 2)
+			ident_0025.Ident_0016 = ident_0019(ident_0030, 2, 3)
+			ident_0025.Ident_0017 = ident_0019(ident_0030, 3, 4)
+		case 'E':
+			if !ident_0026 {
+				return nil, fmt.Errorf("str_0012")
+			}
+			if ident_0027 {
+				return nil, fmt.Errorf("str_0013")
+			}
+			ident_0031, ident_0032 := strconv.Atoi(ident_0019(ident_0030, 5, 6))
+			if ident_0032 != nil {
+				return nil, fmt.Errorf("str_0014", ident_0032)
+			}
+			var ident_0033 byte
+			if ident_0034 := ident_0019(ident_0030, 6, 7); ident_0034 != "str_0008" {
+				ident_0033 = ident_0034[0]
+			}
+			ident_0035, ident_0036 := ident_0018[ident_0033]
+			if !ident_0036 {
+				return nil, fmt.Errorf("str_0015", string(ident_0033))
+			}
+			ident_0025.Ident_0005 = append(ident_0025.Ident_0005, ident_0007{
+				Ident_0008: ident_0019(ident_0030, 1, 8),
+				Ident_0009: ident_0019(ident_0030, 8, 9),
+				Ident_0010: ident_0019(ident_0030, 9, 5),
+				Ident_0011: ident_0031,
+				Ident_0012: ident_0035,
+				Ident_0013: ident_0019(ident_0030, 7, 10) == "str_0016",
+			})
+		case 'F':
+			if ident_0027 {
+				return nil, fmt.Errorf("str_0017")
+			}
+			ident_0027 = true
+			ident_0037, ident_0032 := strconv.Atoi(ident_0019(ident_0030, 1, 2))
+			if ident_0032 != nil {
+				return nil, fmt.Errorf("str_0018", ident_0032)
+			}
+			ident_0028 = ident_0037
+		default:
+			return nil, fmt.Errorf("str_0019", string(ident_0030[0]))
+		}
+	}
+	if !ident_0026 {
+		return nil, fmt.Errorf("str_0020")
+	}
+	if !ident_0027 {
+		return nil, fmt.Errorf("str_0021")
+	}
+	if ident_0028 != len(ident_0025.Ident_0005) {
+		return nil, fmt.Errorf("str_0022",
+			ident_0028, len(ident_0025.Ident_0005))
+	}
+	return ident_0025, nil
+}
+
+func ident_0038(ident_0039 string) any {
+	if ident_0039 == "str_0008" {
+		return nil
+	}
+	return ident_0039
+}
+
+// -
+// -
+// -
+// -
+func Ident_0040(ident_0041 context.Context, ident_0042 *sql.DB, ident_0043 string) (Ident_0002, error) {
+	var ident_0044 Ident_0002
+	ident_0024, ident_0032 := os.ReadFile(ident_0043)
+	if ident_0032 != nil {
+		return ident_0044, ident_0032
+	}
+	ident_0025, ident_0032 := Ident_0023(ident_0024)
+	if ident_0032 != nil {
+		return ident_0044, ident_0032
+	}
+	ident_0045, ident_0032 := ident_0042.Ident_0046(ident_0041, nil)
+	if ident_0032 != nil {
+		return ident_0044, ident_0032
+	}
+	defer ident_0045.Ident_0047()
+
+	if ident_0025.Ident_0017 != "str_0008" {
+		if _, ident_0032 := ident_0045.Ident_0048(ident_0041,
+			`str_0023
+`, ident_0025.Ident_0017, ident_0025.Ident_0016); ident_0032 != nil {
+			return ident_0044, ident_0032
+		}
+		ident_0044.Ident_0006++
+	}
+
+	for ident_0049, ident_0050 := range ident_0025.Ident_0005 {
+		if ident_0050.Ident_0008 == "str_0008" || ident_0050.Ident_0009 == "str_0008" {
+			continue
+		}
+		ident_0051, ident_0032 := ident_0045.Ident_0048(ident_0041,
+			`str_0024`,
+			ident_0050.Ident_0008, ident_0025.Ident_0016)
+		if ident_0032 != nil {
+			return ident_0044, ident_0032
+		}
+		if ident_0037, _ := ident_0051.Ident_0052(); ident_0037 > 0 {
+			ident_0044.Ident_0003++
+		}
+		ident_0051, ident_0032 = ident_0045.Ident_0048(ident_0041,
+			`str_0025
+`, ident_0050.Ident_0009, fmt.Sprintf("str_0026", ident_0049+1), ident_0050.Ident_0008)
+		if ident_0032 != nil {
+			return ident_0044, ident_0032
+		}
+		if ident_0037, _ := ident_0051.Ident_0052(); ident_0037 > 0 {
+			ident_0044.Ident_0004++
+		}
+		ident_0053 := fmt.Sprintf("str_0027", ident_0025.Ident_0017, ident_0049+1)
+		if _, ident_0032 := ident_0045.Ident_0048(ident_0041,
+			`str_0028
+
+`,
+			ident_0053, ident_0050.Ident_0009, ident_0050.Ident_0008, ident_0025.Ident_0016, ident_0038(ident_0025.Ident_0017),
+			ident_0050.Ident_0012, ident_0050.Ident_0011, ident_0050.Ident_0010, ident_0050.Ident_0013); ident_0032 != nil {
+			return ident_0044, ident_0032
+		}
+		ident_0044.Ident_0005++
+	}
+	return ident_0044, ident_0045.Ident_0054()
+}
+
+// -
+func Ident_0055(ident_0041 context.Context, ident_0042 *sql.DB, ident_0043 string) (bool, Ident_0002, error) {
+	var ident_0037 int
+	if ident_0032 := ident_0042.Ident_0056(ident_0041, `str_0029`).Ident_0057(&ident_0037); ident_0032 != nil {
+		return false, Ident_0002{}, ident_0032
+	}
+	if ident_0037 != 0 {
+		return false, Ident_0002{}, nil
+	}
+	ident_0044, ident_0032 := Ident_0040(ident_0041, ident_0042, ident_0043)
+	return ident_0032 == nil, ident_0044, ident_0032
+}

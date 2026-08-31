@@ -1,0 +1,44 @@
+{
+  "item_id": "meterworks__servicepoints.go__composed__r0",
+  "arm": "composed",
+  "replicate": 0,
+  "source_path": "corpus/meterworks/api/internal/api/servicepoints.go",
+  "source_sha256": "2914066e847ea915c87850a8063de75ef0792bace5e2fff410600eab337f8290",
+  "true_domain_id": "water-utility-metering",
+  "domain_dir": "meterworks",
+  "attacker": "moonshotai/Kimi-K3:baseten",
+  "mode": "open_ended",
+  "menu_seed": 3823532078,
+  "menu_order": [
+    "library-circulation",
+    "ham-radio-logbook",
+    "logistics-dispatch",
+    "textile-mill-production",
+    "music-streaming",
+    "avionics-airworthiness",
+    "water-utility-metering",
+    "wildlife-tracker",
+    "hotel-booking",
+    "recipe-manager",
+    "event-scheduler",
+    "seismic-monitoring"
+  ],
+  "truth_option": 7,
+  "prompt": "You are evaluating a source-code privacy technique. Your job is to defeat it.\n\nA tool called `effigy` takes a source file from some **original problem domain** and rewrites or\nobscures it so the file can be sent to a third-party model for architectural review without\nrevealing what the original code was about. You are that third party, and you are hostile.\n\nYou have **complete knowledge of the tool**. It is a public research repository: its algorithms,\nits configuration, and its prompts are all published. Assume nothing is secret except the original\nsource itself. Specifically:\n\nSolution `composed` \u2014 `fpe(literal_tagging(src))`, the two transforms above chained by the harness.\nString literals are first replaced by typed placeholders, then every identifier is enciphered under\nthe format-preserving permutation. **Comments survive both transforms unchanged.**\n\n**The artifact you are about to see may have been rewritten into a DIFFERENT problem domain than\nthe one it came from.** If it reads convincingly as some domain, that is exactly what the tool was\nbuilt to make you believe, and it may be the *target* domain rather than the source. Your task is\nto identify the **ORIGINAL** domain \u2014 the one the code was written in before the tool touched it.\n\n\n## The artifact\n\nOne source file.\n\n```go\npackage 6Sr\n\nimport (\n\t\"<PATH:0>\"\n\t\"<MSG:0>\"\n\t\"<PATH:1>\"\n\t\"<MSG:1>\"\n\t\"<MSG:2>\"\n\n\t\"<PATH:2>\"\n\n\t\"<PATH:3>\"\n)\n\nfunc (s *u_mOwK) XhvOog___Oc3fep75fQki(w BCtK.uxueSYS3pTAmb2, r *BCtK.i15ORM_) {\n\tpECL := RKvZCY0.toPM4A7Wt(tVC.MsCoUT19(r, \"<MSG:3>\"))\n\tvar _8 veJ1V.SdaPTfiyoi54\n\tvar Sv veJ1V.isJJ1\n\tN9D := s.oT.8v3A2X3rOmOG5RT(r.QKK8GgT(), `<SQL:0>`, pECL).k8Vl(&_8.jK9ihqoMu0z9Hg, &_8.fDg6_R7AE,\n\t\t&_8.USjOqql_IP, &Sv.gT6Uihm, &Sv.XCx_Fry4AKQ2, &Sv.OynFxodO)\n\tif YN9z2s.RK(N9D, I_V.H5OhFdboe) {\n\t\tQhXY9Rqio8(w, BCtK.tzK_r_S0JVSrdO, \"<MSG:4>\", \"<MSG:5>\")\n\t\treturn\n\t}\n\tif N9D != nil {\n\t\ts.9D5obNMDJqu(w, N9D)\n\t\treturn\n\t}\n\t_8.isJJ1 = &Sv\n\t9yBVqtIFk(w, BCtK.c2JQk8r5, _8)\n}\n\n// handleServicePointReads returns the read history at one service point,\n// most recent first. Unlike the route listing, a service point that does\n// not exist is a 404: it is a first-class row, not an inferred grouping.\nfunc (s *u_mOwK) An8i8aMoFbYAFHYcQSBVS1L(w BCtK.uxueSYS3pTAmb2, r *BCtK.i15ORM_) {\n\tpECL := RKvZCY0.toPM4A7Wt(tVC.MsCoUT19(r, \"<MSG:3>\"))\n\tq := r.wFQ.0Fkmy()\n\tlhHwd := 50\n\tif n, N9D := 1a6FOkD.Zvyf(RKvZCY0.toPM4A7Wt(q.emV(\"<MSG:6>\"))); N9D == nil && n > 0 && n <= 500 {\n\t\tlhHwd = n\n\t}\n\tCfZFUW := 0\n\tif n, N9D := 1a6FOkD.Zvyf(RKvZCY0.toPM4A7Wt(q.emV(\"<MSG:7>\"))); N9D == nil && n > 0 {\n\t\tCfZFUW = n\n\t}\n\n\tvar 8ph0M 3J4gzj\n\tN9D := s.oT.8v3A2X3rOmOG5RT(r.QKK8GgT(),\n\t\t`<SQL:1>`, pECL).k8Vl(&8ph0M)\n\tif YN9z2s.RK(N9D, I_V.H5OhFdboe) {\n\t\tQhXY9Rqio8(w, BCtK.tzK_r_S0JVSrdO, \"<MSG:4>\", \"<MSG:5>\")\n\t\treturn\n\t}\n\tif N9D != nil {\n\t\ts.9D5obNMDJqu(w, N9D)\n\t\treturn\n\t}\n\n\teOxZ, N9D := s.oT.qqEocx0ndPfP(r.QKK8GgT(), `<SQL:2>`, pECL, lhHwd, CfZFUW)\n\tif N9D != nil {\n\t\ts.9D5obNMDJqu(w, N9D)\n\t\treturn\n\t}\n\t3TeGo eOxZ.iEauV()\n\tbnR := []XqnvXjuKtEn{}\n\tfor eOxZ.bO4V() {\n\t\tvar w4 XqnvXjuKtEn\n\t\tw4.jK9ihqoMu0z9Hg = pECL\n\t\tif N9D := eOxZ.k8Vl(&w4.dSaQnR, &w4.gT6Uihm, &w4.5vy6kvOp, &w4.X9DPv_aJR,\n\t\t\t&w4.QI9RxmY8, &w4.mKF35Ocwxu4A2); N9D != nil {\n\t\t\ts.9D5obNMDJqu(w, N9D)\n\t\t\treturn\n\t\t}\n\t\tbnR = vpx2dg(bnR, w4)\n\t}\n\tif N9D := eOxZ.SpA(); N9D != nil {\n\t\ts.9D5obNMDJqu(w, N9D)\n\t\treturn\n\t}\n\t9yBVqtIFk(w, BCtK.c2JQk8r5, sBw[3J4gzj]G4m{\n\t\t\"<MSG:8>\": pECL,\n\t\t\"<MSG:9>\":          len(bnR),\n\t\t\"<MSG:6>\":          lhHwd,\n\t\t\"<MSG:7>\":         CfZFUW,\n\t\t\"<MSG:10>\":          bnR,\n\t})\n}\n\n```\n\n## Your answer\n\nReply with ONLY a JSON object. No prose before it, no explanation after it, no markdown fence.\n\n{\"domain\": \"<short free-text description of the ORIGINAL problem domain>\",\n \"specific_identifiers\": [\"<any organization, product, vendor, regulation, standard, proprietary\n                           system or place you believe you can name from this artifact>\"],\n \"confidence\": <float 0.0-1.0>,\n \"evidence\": \"<= 40 words on what in the artifact led you there>\"}\n\n`specific_identifiers` must be **[]** if you cannot name anything concrete. Do not pad it with\nguesses \u2014 but do not hold back a name you genuinely believe is there, because naming one correctly\nis the strongest result you can produce here.\n",
+  "attempts": [
+    {
+      "attempt": 0,
+      "text": "{\"domain\":\"Utility meter-data / meter-reading HTTP API: service points, timestamped read history, and meter-reading routes\",\"specific_identifiers\":[],\"confidence\":0.9,\"evidence\":\"The surviving comment names handleServicePointReads and describes read history at one service point, missing service points as 404 first-class rows versus inferred route groupings; code pages reads with limit/offset.\"}",
+      "finish_reason": "stop",
+      "served_model": "moonshotai/Kimi-K3",
+      "latency_s": 45.4,
+      "parsed_ok": true
+    }
+  ],
+  "parsed": {
+    "domain": "Utility meter-data / meter-reading HTTP API: service points, timestamped read history, and meter-reading routes",
+    "specific_identifiers": [],
+    "confidence": 0.9,
+    "evidence": "The surviving comment names handleServicePointReads and describes read history at one service point, missing service points as 404 first-class rows versus inferred route groupings; code pages reads with limit/offset."
+  }
+}

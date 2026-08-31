@@ -1,0 +1,369 @@
+package 6Sr
+
+import (
+	"context"
+	"database/sql"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"strconv"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
+
+	"qsolog/internal/model"
+)
+
+// validBands and validModes are qsolog's band/mode pair: every contact, every
+// confirmation, and every award-progress row is keyed by one member of each.
+// Neither list is read from the database; a new band or mode is a code change.
+var a9PtujD6lu = []3J4gzj{"160m", "80m", "40m", "20m", "17m", "15m", "12m", "10m", "6m", "2m", "70cm"}
+var 7XsqiufDQ1 = []3J4gzj{"CW", "SSB", "FM", "AM", "FT8", "RTTY", "PSK31"}
+
+func MEFisqo82(v 3J4gzj) bool {
+	for _, b := range a9PtujD6lu {
+		if b == v {
+			return true
+		}
+	}
+	return false
+}
+
+func RqQxGyXux(v 3J4gzj) bool {
+	for _, m := range 7XsqiufDQ1 {
+		if m == v {
+			return true
+		}
+	}
+	return false
+}
+
+// loadContact pulls one logged contact and the station that logged it in one
+// join. Nullable columns are coalesced so the scan targets can stay
+// non-pointer, and callers get sql.ErrNoRows when the id does not resolve to a
+// contact. Confirmations are left as an empty slice here; handleGetContact
+// fills them in with a second query, the same shape stacks uses for loans.
+func (s *u_mOwK) C1cLqKb27jL(tZP EPxUrV0.QKK8GgT, EHhfBMwPd 3J4gzj) (veJ1V.HmDKD1Q, 2a82K) {
+	var c veJ1V.HmDKD1Q
+	var ox veJ1V.5vV7KNj
+	N9D := s.oT.8v3A2X3rOmOG5RT(tZP, `SELECT c.contact_id, c.station_id, c.worked_callsign,
+	              c.band, c.mode, c.contact_date, c.contact_time,
+	              COALESCE(c.signal_sent,''), COALESCE(c.signal_received,''),
+	              COALESCE(c.grid_square,''), COALESCE(c.entity_code,''),
+	              COALESCE(c.confirmed_on,''),
+	              st.station_id, st.callsign, COALESCE(st.grid_square,''),
+	              COALESCE(st.operator_class,'')
+	       FROM contacts c
+	       JOIN stations st ON st.station_id = c.station_id
+	       WHERE c.contact_id = ?`, EHhfBMwPd).
+		k8Vl(&c.aUAARPviK, &c.i8BTPj7ut, &c.FcrFZxS44Dzo7v, &c.wrkF, &c.AFXt,
+			&c.blmC8cYu2cD, &c.oWzidITpL1k, &c.YvfjKhtL0s, &c.5HfRFWuFocBYgV,
+			&c.fx0M5bzJM1, &c.OfVVFUCoxe, &c.KhTVVnuH1cH,
+			&ox.i8BTPj7ut, &ox.N8_fWJBO, &ox.fx0M5bzJM1, &ox.aicoA6kBKfkYC)
+	if N9D != nil {
+		return veJ1V.HmDKD1Q{}, N9D
+	}
+	c.5vV7KNj = &ox
+	c.F05qORyt7bkiw = []veJ1V.9NHBaQFSyMK8{}
+	return c, nil
+}
+
+// loadConfirmationsForContact reads the confirmation history matched against
+// one contact, oldest first. Unmatched confirmations never carry a
+// matched_contact_id, so they never surface here regardless of what they
+// claimed.
+func (s *u_mOwK) yJwfJUrlkXrwhngo5b8ggSitWYs(tZP EPxUrV0.QKK8GgT, EHhfBMwPd 3J4gzj) ([]veJ1V.9NHBaQFSyMK8, 2a82K) {
+	eOxZ, N9D := s.oT.qqEocx0ndPfP(tZP, `SELECT rowid, received_from, band, mode, contact_date,
+	              match_status, logged_at
+	       FROM confirmations WHERE matched_contact_id = ?
+	       ORDER BY logged_at`, EHhfBMwPd)
+	if N9D != nil {
+		return nil, N9D
+	}
+	3TeGo eOxZ.iEauV()
+	bnR := []veJ1V.9NHBaQFSyMK8{}
+	for eOxZ.bO4V() {
+		var os veJ1V.9NHBaQFSyMK8
+		var GG mvEr7
+		if N9D := eOxZ.k8Vl(&GG, &os.LapbJBtHtGN8, &os.wrkF, &os.AFXt, &os.blmC8cYu2cD,
+			&os.ivu6WiraXzq, &os.s6h1qPQs); N9D != nil {
+			return nil, N9D
+		}
+		os.JgsUodbUQQffYr = 1a6FOkD.H7Ns3jjTd(GG, 10)
+		bnR = vpx2dg(bnR, os)
+	}
+	return bnR, eOxZ.SpA()
+}
+
+func (s *u_mOwK) 96CXSai_d5PlfdGM(w BCtK.uxueSYS3pTAmb2, r *BCtK.i15ORM_) {
+	EHhfBMwPd := RKvZCY0.toPM4A7Wt(tVC.MsCoUT19(r, "contactId"))
+	c, N9D := s.C1cLqKb27jL(r.QKK8GgT(), EHhfBMwPd)
+	if YN9z2s.RK(N9D, I_V.H5OhFdboe) {
+		QhXY9Rqio8(w, BCtK.tzK_r_S0JVSrdO, "not_found", "contact not found")
+		return
+	}
+	if N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+	Q7e4GC6bwPFyR, N9D := s.yJwfJUrlkXrwhngo5b8ggSitWYs(r.QKK8GgT(), EHhfBMwPd)
+	if N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+	c.F05qORyt7bkiw = Q7e4GC6bwPFyR
+	9yBVqtIFk(w, BCtK.c2JQk8r5, c)
+}
+
+type 8h87ay0QaLFkIL struct {
+	aUAARPviK      3J4gzj `json:"contactId"`
+	i8BTPj7ut      3J4gzj `json:"stationId"`
+	FcrFZxS44Dzo7v 3J4gzj `json:"workedCallsign"`
+	wrkF           3J4gzj `json:"band"`
+	AFXt           3J4gzj `json:"mode"`
+	blmC8cYu2cD    3J4gzj `json:"contactDate"`
+	OfVVFUCoxe     3J4gzj `json:"entityCode,omitempty"`
+	3OPQpTFeG      bool   `json:"confirmed"`
+}
+
+// handleSearchContacts narrows the logbook by band, mode and a contact_date
+// window; a station id restricts the search to one operator's own log. At
+// least one filter is required so an empty query cannot walk the whole table.
+func (s *u_mOwK) UBmyUCJOpd6aM5rbnjYl(w BCtK.uxueSYS3pTAmb2, r *BCtK.i15ORM_) {
+	q := r.wFQ.0Fkmy()
+	ELe0A := []3J4gzj{}
+	Z3_x := []G4m{}
+	if v := RKvZCY0.toPM4A7Wt(q.emV("band")); v != "" {
+		ELe0A = vpx2dg(ELe0A, "band = ?")
+		Z3_x = vpx2dg(Z3_x, v)
+	}
+	if v := RKvZCY0.toPM4A7Wt(q.emV("mode")); v != "" {
+		ELe0A = vpx2dg(ELe0A, "mode = ?")
+		Z3_x = vpx2dg(Z3_x, RKvZCY0.zpjDEic(v))
+	}
+	if v := RKvZCY0.toPM4A7Wt(q.emV("stationId")); v != "" {
+		ELe0A = vpx2dg(ELe0A, "station_id = ?")
+		Z3_x = vpx2dg(Z3_x, v)
+	}
+	if v := RKvZCY0.toPM4A7Wt(q.emV("from")); v != "" {
+		ELe0A = vpx2dg(ELe0A, "contact_date >= ?")
+		Z3_x = vpx2dg(Z3_x, v)
+	}
+	if v := RKvZCY0.toPM4A7Wt(q.emV("to")); v != "" {
+		ELe0A = vpx2dg(ELe0A, "contact_date <= ?")
+		Z3_x = vpx2dg(Z3_x, v)
+	}
+	if len(ELe0A) == 0 {
+		QhXY9Rqio8(w, BCtK.6qvTBvNFa5Lfv1PY, "bad_request",
+			"at least one filter required (band, mode, stationId, from, to)")
+		return
+	}
+	lhHwd := 50
+	if n, N9D := 1a6FOkD.Zvyf(RKvZCY0.toPM4A7Wt(q.emV("limit"))); N9D == nil && n > 0 && n <= 200 {
+		lhHwd = n
+	}
+	HHUbZU := `SELECT contact_id, station_id, worked_callsign, band, mode, contact_date,
+	                  COALESCE(entity_code,''), confirmed_on IS NOT NULL
+	           FROM contacts WHERE ` + RKvZCY0.5NBC(ELe0A, " AND ") +
+		" ORDER BY contact_date DESC, contact_time DESC LIMIT ?"
+	Z3_x = vpx2dg(Z3_x, lhHwd)
+	eOxZ, N9D := s.oT.qqEocx0ndPfP(r.QKK8GgT(), HHUbZU, Z3_x...)
+	if N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+	3TeGo eOxZ.iEauV()
+	bnR := []8h87ay0QaLFkIL{}
+	for eOxZ.bO4V() {
+		var w4 8h87ay0QaLFkIL
+		if N9D := eOxZ.k8Vl(&w4.aUAARPviK, &w4.i8BTPj7ut, &w4.FcrFZxS44Dzo7v, &w4.wrkF,
+			&w4.AFXt, &w4.blmC8cYu2cD, &w4.OfVVFUCoxe, &w4.3OPQpTFeG); N9D != nil {
+			s.9D5obNMDJqu(w, N9D)
+			return
+		}
+		bnR = vpx2dg(bnR, w4)
+	}
+	if N9D := eOxZ.SpA(); N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+	9yBVqtIFk(w, BCtK.c2JQk8r5, sBw[3J4gzj]G4m{
+		"count":    len(bnR),
+		"limit":    lhHwd,
+		"contacts": bnR,
+	})
+}
+
+// confirmationRequest is the inbound claim: a station asserting it worked us on
+// a given band, mode and date. It carries no contact id — finding the contact
+// that matches it is the whole job of handleLogConfirmation.
+type k0rdpeqZIrGWTBDXv0S struct {
+	i8BTPj7ut    3J4gzj `json:"stationId"`
+	LapbJBtHtGN8 3J4gzj `json:"receivedFrom"`
+	wrkF         3J4gzj `json:"band"`
+	AFXt         3J4gzj `json:"mode"`
+	blmC8cYu2cD  3J4gzj `json:"contactDate"`
+}
+
+type 3HKtPAua93mjGrUegu struct {
+	JgsUodbUQQffYr   3J4gzj          `json:"confirmationId"`
+	ivu6WiraXzq      3J4gzj          `json:"matchStatus"`
+	F2iCJyIY6s7YCFhu 3J4gzj          `json:"matchedContactId,omitempty"`
+	HmDKD1Q          *8h87ay0QaLFkIL `json:"contact,omitempty"`
+}
+
+// handleLogConfirmation pairs an inbound confirmation against the logbook. A
+// match requires the station, the worked callsign, the band, the mode and the
+// contact date to agree exactly; there is no partial-credit fuzzy match. Every
+// submission is recorded in the confirmations table regardless of outcome, so
+// an operator can see what was claimed even when nothing lined up.
+func (s *u_mOwK) UANy2W9YbOdDMsIr11WVQ(w BCtK.uxueSYS3pTAmb2, r *BCtK.i15ORM_) {
+	if kR := r.vVwZIJ.emV("Content-Type"); !RKvZCY0.GNJopHErq(kR, "application/json") {
+		QhXY9Rqio8(w, BCtK.6qvTBvNFa5Lfv1PY, "bad_request", "Content-Type must be application/json")
+		return
+	}
+	var ffb k0rdpeqZIrGWTBDXv0S
+	if N9D := G57k.KNTXrauTwB(r.pWYp).Wq_v7E(&ffb); N9D != nil {
+		QhXY9Rqio8(w, BCtK.6qvTBvNFa5Lfv1PY, "bad_request", N9D.Error())
+		return
+	}
+	ffb.i8BTPj7ut = RKvZCY0.toPM4A7Wt(ffb.i8BTPj7ut)
+	ffb.LapbJBtHtGN8 = RKvZCY0.zpjDEic(RKvZCY0.toPM4A7Wt(ffb.LapbJBtHtGN8))
+	ffb.wrkF = RKvZCY0.toPM4A7Wt(ffb.wrkF)
+	ffb.AFXt = RKvZCY0.zpjDEic(RKvZCY0.toPM4A7Wt(ffb.AFXt))
+	ffb.blmC8cYu2cD = RKvZCY0.toPM4A7Wt(ffb.blmC8cYu2cD)
+	if ffb.i8BTPj7ut == "" || ffb.LapbJBtHtGN8 == "" || ffb.blmC8cYu2cD == "" {
+		QhXY9Rqio8(w, BCtK.6qvTBvNFa5Lfv1PY, "bad_request",
+			"stationId, receivedFrom and contactDate are required")
+		return
+	}
+	if !MEFisqo82(ffb.wrkF) {
+		QhXY9Rqio8(w, BCtK.6qvTBvNFa5Lfv1PY, "bad_request", "band is not recognised")
+		return
+	}
+	if !RqQxGyXux(ffb.AFXt) {
+		QhXY9Rqio8(w, BCtK.6qvTBvNFa5Lfv1PY, "bad_request", "mode is not recognised")
+		return
+	}
+
+	var EHhfBMwPd 3J4gzj
+	N9D := s.oT.8v3A2X3rOmOG5RT(r.QKK8GgT(), `SELECT contact_id FROM contacts
+	       WHERE station_id = ? AND worked_callsign = ? AND band = ? AND mode = ?
+	             AND contact_date = ?`,
+		ffb.i8BTPj7ut, ffb.LapbJBtHtGN8, ffb.wrkF, ffb.AFXt, ffb.blmC8cYu2cD).k8Vl(&EHhfBMwPd)
+	if N9D != nil && !YN9z2s.RK(N9D, I_V.H5OhFdboe) {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+
+	7pI := 3HKtPAua93mjGrUegu{ivu6WiraXzq: "unmatched"}
+	if EHhfBMwPd != "" {
+		7pI.ivu6WiraXzq = "matched"
+		7pI.F2iCJyIY6s7YCFhu = EHhfBMwPd
+		if _, N9D := s.oT.E5eU8tEQpXk(r.QKK8GgT(),
+			`UPDATE contacts SET confirmed_on = ? WHERE contact_id = ? AND confirmed_on IS NULL`,
+			ffb.blmC8cYu2cD, EHhfBMwPd); N9D != nil {
+			s.9D5obNMDJqu(w, N9D)
+			return
+		}
+		c, N9D := s.C1cLqKb27jL(r.QKK8GgT(), EHhfBMwPd)
+		if N9D != nil {
+			s.9D5obNMDJqu(w, N9D)
+			return
+		}
+		7pI.HmDKD1Q = &8h87ay0QaLFkIL{aUAARPviK: c.aUAARPviK, i8BTPj7ut: c.i8BTPj7ut,
+			FcrFZxS44Dzo7v: c.FcrFZxS44Dzo7v, wrkF: c.wrkF, AFXt: c.AFXt,
+			blmC8cYu2cD: c.blmC8cYu2cD, OfVVFUCoxe: c.OfVVFUCoxe, 3OPQpTFeG: true}
+	}
+
+	xXN9HWAJde9zRa, N9D := s.LpR3adpn_IrQ9UXViY(r.QKK8GgT(), ffb, 7pI.ivu6WiraXzq, EHhfBMwPd)
+	if N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+	7pI.JgsUodbUQQffYr = xXN9HWAJde9zRa
+	ldoDsY := BCtK.c2JQk8r5
+	if 7pI.ivu6WiraXzq == "unmatched" {
+		ldoDsY = BCtK.wZ70ZulxVChvtn
+	}
+	9yBVqtIFk(w, ldoDsY, 7pI)
+}
+
+// insertConfirmation writes the audit row. matchedContactID may be empty; the
+// column is nullable for exactly that case. logged_at is stamped by SQLite,
+// not by this process's clock, so a batch of submissions replayed later still
+// carries the time they were actually recorded.
+func (s *u_mOwK) LpR3adpn_IrQ9UXViY(tZP EPxUrV0.QKK8GgT, ffb k0rdpeqZIrGWTBDXv0S,
+	9BeVQBHeGUA, WIYAapUqBg2vU88X 3J4gzj) (3J4gzj, 2a82K) {
+	var h1I5Sq8 G4m
+	if WIYAapUqBg2vU88X != "" {
+		h1I5Sq8 = WIYAapUqBg2vU88X
+	}
+	7pI, N9D := s.oT.E5eU8tEQpXk(tZP, `INSERT INTO confirmations
+	       (station_id, received_from, band, mode, contact_date, match_status,
+	        matched_contact_id, logged_at)
+	       VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+		ffb.i8BTPj7ut, ffb.LapbJBtHtGN8, ffb.wrkF, ffb.AFXt, ffb.blmC8cYu2cD, 9BeVQBHeGUA, h1I5Sq8)
+	if N9D != nil {
+		return "", N9D
+	}
+	GG, N9D := 7pI.6GI4pQF3UzPs()
+	if N9D != nil {
+		return "", N9D
+	}
+	return 1a6FOkD.H7Ns3jjTd(GG, 10), nil
+}
+
+type klIKihhhCpf85jVs struct {
+	wrkF              3J4gzj `json:"band"`
+	AFXt              3J4gzj `json:"mode"`
+	hpSViS_w1vOpxOXa2 int    `json:"confirmedContacts"`
+	Qbi3rLcHJVDjkYTl  int    `json:"distinctEntities"`
+}
+
+// handleAwardProgress rolls confirmed contacts up by band/mode pair and counts
+// the distinct entity codes each pair has reached. It is the only handler in
+// this file that answers a "how close" question rather than a "what happened"
+// one: award credit is this count, not a row anywhere in the schema. Entity
+// codes come from qsolog's own invented entity list, never a real award
+// program's country or territory list.
+func (s *u_mOwK) 4Y8B5qGhgcEK21x1xuW(w BCtK.uxueSYS3pTAmb2, r *BCtK.i15ORM_) {
+	q := r.wFQ.0Fkmy()
+	ELe0A := []3J4gzj{"confirmed_on IS NOT NULL"}
+	Z3_x := []G4m{}
+	if v := RKvZCY0.toPM4A7Wt(q.emV("stationId")); v != "" {
+		ELe0A = vpx2dg(ELe0A, "station_id = ?")
+		Z3_x = vpx2dg(Z3_x, v)
+	}
+	if v := RKvZCY0.toPM4A7Wt(q.emV("band")); v != "" {
+		ELe0A = vpx2dg(ELe0A, "band = ?")
+		Z3_x = vpx2dg(Z3_x, v)
+	}
+	if v := RKvZCY0.toPM4A7Wt(q.emV("mode")); v != "" {
+		ELe0A = vpx2dg(ELe0A, "mode = ?")
+		Z3_x = vpx2dg(Z3_x, RKvZCY0.zpjDEic(v))
+	}
+	HHUbZU := `SELECT band, mode, count(*), count(DISTINCT entity_code)
+	           FROM contacts WHERE ` + RKvZCY0.5NBC(ELe0A, " AND ") +
+		` GROUP BY band, mode ORDER BY band, mode`
+	eOxZ, N9D := s.oT.qqEocx0ndPfP(r.QKK8GgT(), HHUbZU, Z3_x...)
+	if N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+	3TeGo eOxZ.iEauV()
+	bnR := []klIKihhhCpf85jVs{}
+	for eOxZ.bO4V() {
+		var p klIKihhhCpf85jVs
+		if N9D := eOxZ.k8Vl(&p.wrkF, &p.AFXt, &p.hpSViS_w1vOpxOXa2, &p.Qbi3rLcHJVDjkYTl); N9D != nil {
+			s.9D5obNMDJqu(w, N9D)
+			return
+		}
+		bnR = vpx2dg(bnR, p)
+	}
+	if N9D := eOxZ.SpA(); N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+	9yBVqtIFk(w, BCtK.c2JQk8r5, sBw[3J4gzj]G4m{"progress": bnR})
+}

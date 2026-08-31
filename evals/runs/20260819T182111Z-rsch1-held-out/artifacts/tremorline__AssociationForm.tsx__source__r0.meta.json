@@ -1,0 +1,13 @@
+{
+  "key": "tremorline__AssociationForm.tsx__source__r0",
+  "arm": "source",
+  "replicate": 0,
+  "source_path": "corpus/tremorline/app/src/components/AssociationForm.tsx",
+  "source_sha256": "10e6f5b53e85827aba67598d5b5714dc07fb6dcea811489147fe4d4784bb3dba",
+  "true_domain_id": "seismic-monitoring",
+  "language": "tsx",
+  "artifact_sha256": "10e6f5b53e85827aba67598d5b5714dc07fb6dcea811489147fe4d4784bb3dba",
+  "artifact_lines": 138,
+  "latency_s": 0.0,
+  "solution_meta": {}
+}

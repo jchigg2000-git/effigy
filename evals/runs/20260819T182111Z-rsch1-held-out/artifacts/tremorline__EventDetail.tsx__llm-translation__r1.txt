@@ -1,0 +1,99 @@
+// Read-only view of a single wildlife observation event. Renders whatever getObservation
+// returned, including the species sightings and migration route associations an analysis
+// run produced. Optional fields that are absent render as an em dash rather
+// than being hidden, so the layout stays stable from one event to the next.
+import type { ObservationDetail as ObservationDetailData } from "../api/tracker";
+
+interface ObservationDetailProps {
+  observation: ObservationDetailData;
+  onAssociateRoute: () => void;
+}
+
+export function ObservationDetail({ observation, onAssociateRoute }: ObservationDetailProps) {
+  const sightings = observation.sightings ?? [];
+  const routes = observation.routes ?? [];
+  return (
+    <section className="observation-detail">
+      <div className="observation-detail-head">
+        <div>
+          <h2>{observation.observationId}</h2>
+          <p>{observation.timestamp}</p>
+        </div>
+        <button type="button" className="btn btn-primary" onClick={onAssociateRoute}>
+          Associate migration routes
+        </button>
+      </div>
+
+      <dl className="detail-grid">
+        <dt>Observation id</dt>
+        <dd>{observation.observationId}</dd>
+        <dt>Timestamp</dt>
+        <dd>{observation.timestamp}</dd>
+        <dt>Location</dt>
+        <dd>{`${observation.latitude.toFixed(4)}, ${observation.longitude.toFixed(4)}`}</dd>
+        <dt>Elevation (m)</dt>
+        <dd>{observation.elevationM.toFixed(1)}</dd>
+        <dt>Sighting count</dt>
+        <dd>{observation.sightingCount}</dd>
+      </dl>
+
+      <h3>
+        Species sightings <span className="sighting-count">{sightings.length}</span>
+      </h3>
+      <p className="section-note">
+        One entry per observed species. The observation's own species field above is the
+        primary identification, not a re-derived preferred solution.
+      </p>
+      {sightings.length === 0 ? (
+        <p className="empty-note">No species sightings are recorded against this observation.</p>
+      ) : (
+        <>
+          <div className="sighting-list-head">
+            <span>Species</span>
+            <span>Count</span>
+            <span>Confidence</span>
+          </div>
+          <ul className="sighting-list">
+            {sightings.map((sight) => (
+              <li key={sight.sightingId}>
+                <span>{sight.speciesName}</span>
+                <span>{sight.count}</span>
+                <span>{sight.confidence !== undefined ? sight.confidence.toFixed(2) : "—"}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
+      <h3>
+        Migration route associations <span className="route-count">{routes.length}</span>
+      </h3>
+      <p className="section-note">
+        Every route bound to this observation by an analysis run, across every
+        station that reported one, oldest sighting first.
+      </p>
+      {routes.length === 0 ? (
+        <p className="empty-note">No migration routes are associated with this observation.</p>
+      ) : (
+        <>
+          <div className="route-list-head">
+            <span>Route</span>
+            <span>Start Point</span>
+            <span>End Point</span>
+            <span>Distance (km)</span>
+          </div>
+          <ul className="route-list">
+            {routes.map((route) => (
+              <li key={route.routeId}>
+                <span>{route.routeName}</span>
+                <span>{route.startPoint}</span>
+                <span>{route.endPoint}</span>
+                <span>{route.distanceKm.toFixed(2)}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </section>
+  );
+}

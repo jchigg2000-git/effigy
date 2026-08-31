@@ -1,0 +1,21 @@
+{
+  "key": "qsolog__ConfirmationForm.tsx__fpe__r0",
+  "arm": "fpe",
+  "replicate": 0,
+  "source_path": "corpus/qsolog/app/src/components/ConfirmationForm.tsx",
+  "source_sha256": "e76263f23c4972e192429aaacba0d3db02f6667428ccb029068bbcf28cd634e5",
+  "true_domain_id": "ham-radio-logbook",
+  "language": "tsx",
+  "artifact_sha256": "106c0c7b220b2800b0ddb5e5d2ccb19a342bfeb27635f7a05af596ea6814d472",
+  "artifact_lines": 149,
+  "latency_s": 0.0,
+  "solution_meta": {
+    "cipher_backend": "pyffx",
+    "identifiers_replaced": 229,
+    "identifiers_skipped": 75,
+    "unique_tokens_replaced": 78,
+    "key_id": "insecure-demo",
+    "pseudonym_collisions": 0,
+    "key_warning": "PUBLIC source-baked demo key; output is trivially reversible"
+  }
+}

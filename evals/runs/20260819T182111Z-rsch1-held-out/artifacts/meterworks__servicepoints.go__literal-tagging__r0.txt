@@ -1,0 +1,88 @@
+package api
+
+import (
+	"<PATH:0>"
+	"<MSG:0>"
+	"<PATH:1>"
+	"<MSG:1>"
+	"<MSG:2>"
+
+	"<PATH:2>"
+
+	"<PATH:3>"
+)
+
+func (s *Server) handleGetServicePoint(w http.ResponseWriter, r *http.Request) {
+	spID := strings.TrimSpace(chi.URLParam(r, "<MSG:3>"))
+	var sp model.ServicePoint
+	var mt model.Meter
+	err := s.db.QueryRowContext(r.Context(), `<SQL:0>`, spID).Scan(&sp.ServicePointID, &sp.RouteCode,
+		&sp.AccountRef, &mt.MeterID, &mt.SerialNumber, &mt.SizeCode)
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, http.StatusNotFound, "<MSG:4>", "<MSG:5>")
+		return
+	}
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	sp.Meter = &mt
+	writeJSON(w, http.StatusOK, sp)
+}
+
+// handleServicePointReads returns the read history at one service point,
+// most recent first. Unlike the route listing, a service point that does
+// not exist is a 404: it is a first-class row, not an inferred grouping.
+func (s *Server) handleServicePointReads(w http.ResponseWriter, r *http.Request) {
+	spID := strings.TrimSpace(chi.URLParam(r, "<MSG:3>"))
+	q := r.URL.Query()
+	limit := 50
+	if n, err := strconv.Atoi(strings.TrimSpace(q.Get("<MSG:6>"))); err == nil && n > 0 && n <= 500 {
+		limit = n
+	}
+	offset := 0
+	if n, err := strconv.Atoi(strings.TrimSpace(q.Get("<MSG:7>"))); err == nil && n > 0 {
+		offset = n
+	}
+
+	var known string
+	err := s.db.QueryRowContext(r.Context(),
+		`<SQL:1>`, spID).Scan(&known)
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, http.StatusNotFound, "<MSG:4>", "<MSG:5>")
+		return
+	}
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+
+	rows, err := s.db.QueryContext(r.Context(), `<SQL:2>`, spID, limit, offset)
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	defer rows.Close()
+	out := []readSummary{}
+	for rows.Next() {
+		var it readSummary
+		it.ServicePointID = spID
+		if err := rows.Scan(&it.ReadID, &it.MeterID, &it.ReadType, &it.ReadValue,
+			&it.ReadDate, &it.ToleranceFlag); err != nil {
+			s.serverError(w, err)
+			return
+		}
+		out = append(out, it)
+	}
+	if err := rows.Err(); err != nil {
+		s.serverError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"<MSG:8>": spID,
+		"<MSG:9>":          len(out),
+		"<MSG:6>":          limit,
+		"<MSG:7>":         offset,
+		"<MSG:10>":          out,
+	})
+}

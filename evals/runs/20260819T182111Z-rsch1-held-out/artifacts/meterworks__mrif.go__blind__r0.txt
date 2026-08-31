@@ -1,0 +1,12 @@
+STRUCTURAL PROFILE
+language: go
+lines: 234
+bytes: 6820
+functions: 5
+handlers: 0
+structs: 3
+interfaces: 0
+imports: 6
+exports: 4
+string literals: 27
+max brace depth: 4

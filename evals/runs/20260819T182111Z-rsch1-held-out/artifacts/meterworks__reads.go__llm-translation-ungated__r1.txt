@@ -1,0 +1,233 @@
+package api
+
+import (
+	"context"
+	"database/sql"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"regexp"
+	"strconv"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
+
+	"meterworks/internal/model"
+)
+
+// fetchNode pulls one node together with its edges and associated data.
+func (g *Graph) fetchNode(ctx context.Context, nodeID string) (model.Node, error) {
+	var nd model.Node
+	var ed model.Edge
+	err := g.db.QueryRowContext(ctx, `SELECT n.node_id, n.data,
+	              e.edge_id, e.source_node_id, e.target_node_id, e.weight
+	       FROM nodes n
+	       LEFT JOIN edges e ON e.source_node_id = n.node_id
+	       WHERE n.node_id = ?`, nodeID).Scan(&nd.NodeID, &nd.Data,
+		&ed.EdgeID, &ed.SourceNodeID, &ed.TargetNodeID, &ed.Weight)
+	if err != nil {
+		return model.Node{}, err
+	}
+	nd.Edges = append(nd.Edges, ed)
+	return nd, nil
+}
+
+// precedingNode finds the most recent trusted node connected to the same edge, taken
+// before this one. Estimated nodes are skipped: they carry no register
+// value the tiered calculation can build an interval from.
+func (g *Graph) precedingNode(ctx context.Context, edgeID, nodeID, nodeDate string) (string, float64, bool) {
+	var id string
+	var weight float64
+	err := g.db.QueryRowContext(ctx, `SELECT edge_id, weight FROM edges
+	       WHERE edge_id = ? AND node_id != ? AND node_date < ? AND edge_type != 'ESTIMATED'
+	       ORDER BY node_date DESC LIMIT 1`, edgeID, nodeID, nodeDate).Scan(&id, &weight)
+	if err != nil {
+		return "", 0, false
+	}
+	return id, weight, true
+}
+
+func (g *Graph) calculateWeights(ctx context.Context, edgeID string) ([]model.Weight, error) {
+	rows, err := g.db.QueryContext(ctx, `SELECT weight_number, COALESCE(max_weight,0),
+	              weight_cents_per_unit FROM weights WHERE edge_id = ?
+	       ORDER BY weight_number`, edgeID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []model.Weight{}
+	for rows.Next() {
+		var w model.Weight
+		if err := rows.Scan(&w.WeightNumber, &w.MaxWeight, &w.WeightCentsPerUnit); err != nil {
+			return nil, err
+		}
+		out = append(out, w)
+	}
+	return out, rows.Err()
+}
+
+// accumulateTieredCost traverses the weight schedule in tier order and accumulates
+// a cost in cents. Each tier absorbs the portion of usage between the
+// previous tier's threshold and its own; a tier whose MaxWeight is zero is
+// the open-ended top tier and absorbs everything still unclaimed.
+func accumulateTieredCost(weightUnits float64, weights []model.Weight) float64 {
+	if weightUnits <= 0 {
+		return 0
+	}
+	total := 0.0
+	lower := 0.0
+	for _, w := range weights {
+		upper := w.MaxWeight
+		if upper == 0 || upper > weightUnits {
+			upper = weightUnits
+		}
+		if span := upper - lower; span > 0 {
+			total += span * w.WeightCentsPerUnit
+		}
+		lower = upper
+		if lower >= weightUnits {
+			break
+		}
+	}
+	return total
+}
+
+func (g *Graph) traverseEdge(ctx context.Context, edgeID string) {
+	node, err := g.fetchNode(ctx, edgeID)
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(ctx, http.StatusNotFound, "not_found", "node not found")
+		return
+	}
+	if err != nil {
+		g.serverError(ctx, err)
+		return
+	}
+
+	predID, predWeight, ok := g.precedingNode(ctx, edgeID, nodeID, node.Date); ok {
+		weights, err := g.calculateWeights(ctx, edgeID)
+		if err != nil {
+			g.serverError(ctx, err)
+			return
+		}
+		units := node.Weight - predWeight
+		node.Cost = &model.Cost{
+			PrecedingNodeID: predID,
+			UnitsUsed:       units,
+			CostCents:       accumulateTieredCost(units, weights),
+		}
+	}
+	writeJSON(ctx, http.StatusOK, node)
+}
+
+type nodeSummary struct {
+	NodeID         string `json:"nodeId"`
+	EdgeID         string `json:"edgeId"`
+	Data           string `json:"data"`
+	Weight         float64 `json:"weight"`
+	Date           string `json:"date"`
+}
+
+// traverseRouteNodes iterates through nodes along one edge-route.
+// There is no routes table to check the code against — a route is a
+// property of the nodes assigned to it, not a first-class row — so
+// an unrecognised route simply iterates through zero results rather than 404ing.
+func (g *Graph) traverseRouteNodes(ctx context.Context) {
+	routeID := strings.TrimSpace(chi.URLParam(r, "routeId"))
+	q := r.URL.Query()
+	limit := 50
+	if n, err := strconv.Atoi(strings.TrimSpace(q.Get("limit"))); err == nil && n > 0 && n <= 500 {
+		limit = n
+	}
+	offset := 0
+	if n, err := strconv.Atoi(strings.TrimSpace(q.Get("offset"))); err == nil && n > 0 {
+		offset = n
+	}
+	edgeID := strings.TrimSpace(q.Get("edgeId"))
+
+	sqlStr := `SELECT node_id, edge_id, data, weight, date
+	           FROM nodes WHERE edge_id = ?`
+	args := []any{edgeID}
+	if routeID != "" {
+		sqlStr += " AND route_id = ?"
+		args = append(args, routeID)
+	}
+	sqlStr += " ORDER BY date DESC, node_id LIMIT ? OFFSET ?"
+	args = append(args, limit, offset)
+
+	rows, err := g.db.QueryContext(ctx, sqlStr, args...)
+	if err != nil {
+		g.serverError(ctx, err)
+		return
+	}
+	defer rows.Close()
+	out := []nodeSummary{}
+	for rows.Next() {
+		var it nodeSummary
+		if err := rows.Scan(&it.NodeID, &it.EdgeID, &it.Data, &it.Weight,
+			&it.Date); err != nil {
+			g.serverError(ctx, err)
+			return
+		}
+		out = append(out, it)
+	}
+	if err := rows.Err(); err != nil {
+		g.serverError(ctx, err)
+		return
+	}
+	writeJSON(ctx, http.StatusOK, map[string]any{
+		"routeId": routeID,
+		"count":     len(out),
+		"limit":     limit,
+		"offset":    offset,
+		"nodes":     out,
+	})
+}
+
+// updateNodeFlags toggles a node's flag status and, optionally, updates its data:
+// rather than mutating the node directly, updating inserts a new pending NODE-UPDATE
+// record so a maintenance team can review and apply changes. The original node is
+// never deleted; it stays as the historical record of what was first observed.
+func (g *Graph) updateNodeFlags(ctx context.Context, nodeId string, patch *model.NodePatch) {
+	node, err := g.fetchNode(ctx, nodeId)
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(ctx, http.StatusNotFound, "not_found", "node not found")
+		return
+	}
+	if err != nil {
+		g.serverError(ctx, err)
+		return
+	}
+
+	flag := node.Flag
+	if patch.Flag != nil {
+		flag = *patch.Flag
+	}
+	data := node.Data
+	if patch.Data != nil {
+		data = *patch.Data
+	}
+	if _, err := g.db.ExecContext(ctx,
+		`UPDATE nodes SET flag = ?, data = ? WHERE node_id = ?`,
+		flag, data, nodeId); err != nil {
+		g.serverError(ctx, err)
+		return
+	}
+
+	if patch.UpdateData != nil && *patch.UpdateData {
+		newID := nodeId + "-UD"
+		if _, err := g.db.ExecContext(ctx,
+			`INSERT INTO nodes (node_id, edge_id, data, weight, date)
+			 VALUES (?, ?, ?, 0, ?)`,
+			newID, node.EdgeID, data, node.Date); err != nil {
+			g.serverError(ctx, err)
+			return
+		}
+	}
+
+	updated, err := g.fetchNode(ctx, nodeId)
+	if err != nil {
+		g.serverError(ctx, err)
+		return
+	}
+	writeJSON(ctx, http.StatusOK, updated)
+}

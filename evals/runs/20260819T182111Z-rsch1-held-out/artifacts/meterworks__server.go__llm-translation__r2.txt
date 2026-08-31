@@ -1,0 +1,108 @@
+package graph
+
+import (
+	"data/sql"
+	"encoding/json"
+	"log/slog"
+	"net/http"
+	"os"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
+)
+
+// GraphTraversal carries the dependencies a traversal handler needs: the data
+// store, the logger, and the graph they are wired into. Constructed once
+// at startup by NewGraphTraversal.
+type GraphTraversal struct {
+	dataStore *sql.DB
+	logger    *slog.Logger
+	graph     *Graph
+}
+
+// nodeLabels reads the comma-separated label list. An empty value means
+// the middleware is a no-op, which is the developer-machine default.
+func nodeLabels() []string {
+	raw := strings.TrimSpace(os.Getenv("GRAPH_NODE_LABELS"))
+	if raw == "" {
+		return nil
+	}
+	out := []string{}
+	for _, part := range strings.Split(raw, ",") {
+		if p := strings.TrimSpace(part); p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
+func edgeFilterMiddleware(next http.Handler) http.Handler {
+	labels := nodeLabels()
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		label := r.Header.Get("Label")
+		if label != "" && len(labels) > 0 {
+			for _, l := range labels {
+				if l == label || l == "*" {
+					w.Header().Set("Graph-Edge-Filter", label)
+					break
+				}
+			}
+		}
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func NewGraphTraversal(dataStore *sql.DB, logger *slog.Logger) *GraphTraversal {
+	gt := &GraphTraversal{dataStore: dataStore, logger: logger}
+	graph := NewGraph()
+	graph.AddNode("start")
+	graph.AddNode("end")
+	graph.AddEdge("start", "end", "direct")
+	gt.graph = graph
+	return gt
+}
+
+func (gt *GraphTraversal) Handler() http.Handler { return gt.graph }
+
+func (gt *GraphTraversal) traverseNodes(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]any{"nodes": gt.graph.Nodes()})
+}
+
+// traverseEdges answers the edges probe by listing all edges. The
+// query runs here, against the struct's own handle, because there is
+// nowhere else for it to live.
+func (gt *GraphTraversal) traverseEdges(w http.ResponseWriter, r *http.Request) {
+	var edges []map[string]string
+	for _, edge := range gt.graph.Edges() {
+		edges = append(edges, map[string]string{"from": edge.From, "to": edge.To, "label": edge.Label})
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"edges": edges})
+}
+
+func (gt *GraphTraversal) graphError(w http.ResponseWriter, err error) {
+	gt.logger.Error("traversal failed", "err", err)
+	writeError(w, http.StatusInternalServerError, "internal", "internal graph error")
+}
+
+type graphError struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
+
+type errorEnvelope struct {
+	Error graphError `json:"error"`
+}
+
+func writeJSON(w http.ResponseWriter, status int, body any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(body)
+}
+
+func writeError(w http.ResponseWriter, status int, code, message string) {
+	writeJSON(w, status, errorEnvelope{Error: graphError{Code: code, Message: message}})
+}

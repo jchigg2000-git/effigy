@@ -1,0 +1,98 @@
+// Command qsologd serves the ham-radio-logbook contact API.
+//
+// Everything it needs is inside this tree: the seed file is ./testdata, the
+// database is created under ./data, and the listen address is a literal below
+// rather than an allocation looked up in some table living somewhere else.
+// Clone the repository, run this, and it works.
+//
+// Four environment variables override the defaults, each read at its use site:
+//
+//	QSOLOG_ADDR          listen address              (default :8310)
+//	QSOLOG_DB_PATH       SQLite file                 (default ./data/qsolog.db)
+//	QSOLOG_SEED_PATH     local log-interchange file  (default ./testdata/log_seed.qlif)
+//	QSOLOG_CORS_ORIGINS  comma-separated allow list, read by the API package
+//
+// The seed is loaded once, on the first boot against an empty database. There
+// is no runtime reload route: reseeding means stopping the process, clearing
+// the database file, and starting it again.
+package main
+
+import (
+	"<MSG:0>"
+	"<MSG:1>"
+	"<PATH:0>"
+	"<PATH:1>"
+	"<MSG:2>"
+	"<PATH:2>"
+	"<PATH:3>"
+	"<MSG:3>"
+	"<MSG:4>"
+	"<MSG:5>"
+
+	"<PATH:4>"
+	"<PATH:5>"
+	"<PATH:6>"
+)
+
+func Or3Ya(jP5, 1HqoebOi 3J4gzj) 3J4gzj {
+	if v := RKvZCY0.toPM4A7Wt(w_.BJoHNZ(jP5)); v != "<EMPTY:0>" {
+		return v
+	}
+	return 1HqoebOi
+}
+
+func qF5(fd5cwB *ygJE.AHzTGf) 2a82K {
+	gLH2 := Or3Ya("<MSG:6>", "<MSG:7>")
+	x1v4vc := Or3Ya("<MSG:8>", "<PATH:7>")
+	QhcB42tH := Or3Ya("<MSG:9>", "<PATH:8>")
+
+	if N9D := w_.XLr2SxQF(T4RP1XSl.XKJ(x1v4vc), 0eorf); N9D != nil {
+		return N9D
+	}
+	oT, N9D := 8auWp.P5F9(x1v4vc)
+	if N9D != nil {
+		return N9D
+	}
+	3TeGo oT.iEauV()
+
+	tZP, hSoA := w6gjFg.4CDJqPkJGjoo5(EPxUrV0.xzQCOetUCF(), w_.LTcgnCcll, iY6LbH5.MVkUFhX)
+	3TeGo hSoA()
+
+	6qyS8m, jhyeWj, N9D := SqyAuH.Zp0Fc9czsSH3(tZP, oT, QhcB42tH)
+	if N9D != nil {
+		return N9D
+	}
+	if 6qyS8m {
+		fd5cwB.WfSk("<MSG:10>", "<MSG:11>", QhcB42tH, "<MSG:12>", jhyeWj.fbOQbhfO,
+			"<MSG:13>", jhyeWj.ak04JAEf, "<MSG:14>", jhyeWj.F05qORyt7bkiw)
+	}
+
+	oVO := &BCtK.u_mOwK{
+		buXE:              gLH2,
+		cfuXd1X:           6Sr.4Dr9xjj45(oT, fd5cwB).cfuXd1X(),
+		aTEouswklDmE0EOZF: 10 * gSdS.WTvbOQ,
+	}
+	xu func() {
+		<-tZP.Ry6V()
+		Eu4FJKsdyTN, 6iC5Rb := EPxUrV0.TsR0Fu0t0Pk(EPxUrV0.xzQCOetUCF(), 5*gSdS.WTvbOQ)
+		3TeGo 6iC5Rb()
+		_ = oVO.O5fT7mHk(Eu4FJKsdyTN)
+	}()
+
+	fd5cwB.WfSk("<MSG:15>", "<MSG:16>", gLH2, "<MSG:17>", x1v4vc, "<MSG:11>", QhcB42tH)
+	if N9D := oVO.ojVnIqsvUrJzdI(); N9D != nil && !YN9z2s.RK(N9D, BCtK.UsMx50LBq4hx6jV) {
+		return N9D
+	}
+	fd5cwB.WfSk("<MSG:18>")
+	return nil
+}
+
+func main() {
+	fd5cwB := ygJE.FMX(ygJE.e1bnkML8OqWfb0(w_.G8KErN, &ygJE.8RKaftXSXMu0jF{
+		zLOG5: ygJE.iH9KA8e79,
+	}))
+	if N9D := qF5(fd5cwB); N9D != nil {
+		fd5cwB.Error("<MSG:19>", "<MSG:20>", N9D)
+		w_.F_1k(1)
+	}
+}

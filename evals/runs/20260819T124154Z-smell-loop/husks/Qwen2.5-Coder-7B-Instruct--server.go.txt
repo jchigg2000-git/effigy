@@ -1,0 +1,113 @@
+package recipes
+
+import (
+	"database/sql"
+	"log/slog"
+	"net/http"
+	"os"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
+)
+
+// RecipeApp is the whole application: it owns the database handle, the logger, the
+// two pieces of runtime configuration, and the assembled router. Every handler is
+// a method on it, so every handler can reach every concern.
+type RecipeApp struct {
+	db         *sql.DB
+	logger     *slog.Logger
+	seedPath   string
+	adminToken string
+	router     http.Handler
+}
+
+// corsAllowList reads the comma-separated origin list. An empty value means the
+// middleware is a no-op, which is the developer-machine default.
+func corsAllowList() []string {
+	raw := strings.TrimSpace(os.Getenv("RECIPE_CORS_ORIGINS"))
+	if raw == "" {
+		return nil
+	}
+	out := []string{}
+	for _, part := range strings.Split(raw, ",") {
+		if p := strings.TrimSpace(part); p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
+func corsMiddleware(next http.Handler) http.Handler {
+	allow := corsAllowList()
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		origin := r.Header.Get("Origin")
+		if origin != "" && len(allow) > 0 {
+			for _, a := range allow {
+				if a == origin || a == "*" {
+					w.Header().Set("Access-Control-Allow-Origin", origin)
+					w.Header().Set("Vary", "Origin")
+					w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS")
+					w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, X-Admin-Token")
+					w.Header().Set("Access-Control-Expose-Headers", "X-Request-Id")
+					w.Header().Set("Access-Control-Max-Age", "300")
+					break
+				}
+			}
+		}
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func NewRecipeApp(db *sql.DB, logger *slog.Logger, seedPath, adminToken string) *RecipeApp {
+	app := &RecipeApp{db: db, logger: logger, seedPath: seedPath, adminToken: adminToken}
+	r := chi.NewRouter()
+	r.Use(corsMiddleware)
+	r.Get("/healthz", app.handleHealth)
+	r.Get("/readyz", app.handleReady)
+	r.Route("/recipes", func(rr chi.Router) {
+		rr.Get("/search", app.handleSearchRecipes)
+		rr.Route("/{recipeId}", func(ir chi.Router) {
+			ir.Get("/", app.handleGetRecipe)
+			ir.Patch("/", app.handlePatchRecipe)
+			ir.Get("/export/pdf", app.handleExportPDF)
+		})
+	})
+	r.Route("/users", func(ur chi.Router) {
+		ur.Get("/{userId}", app.handleGetUser)
+		ur.Get("/{userId}/favorites", app.handleUserFavorites)
+	})
+	r.Post("/admin/import", app.handleAdminImport)
+	app.router = r
+	return app
+}
+
+func (app *RecipeApp) Handler() http.Handler { return app.router }
+
+func (app *RecipeApp) handleHealth(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]any{"status": "ok", "service": "recipe_app"})
+}
+
+// handleReady answers the readiness probe by counting favorite recipes. The query
+// runs here, against the struct's own handle, because there is nowhere else for
+// it to live: the storage package hands out a raw handle and nothing more.
+func (app *RecipeApp) handleReady(w http.ResponseWriter, r *http.Request) {
+	var n int
+	if err := app.db.QueryRowContext(r.Context(), `SELECT count(*) FROM favorites`).Scan(&n); err != nil {
+		writeError(w, http.StatusServiceUnavailable, "db_error", err.Error())
+		return
+	}
+	if n == 0 {
+		writeError(w, http.StatusServiceUnavailable, "not_seeded", "no recipes favorited")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"status": "ok", "favorites": n})
+}
+
+func (app *RecipeApp) serverError(w http.ResponseWriter, err error) {
+	app.logger.Error("request failed", "err", err)
+	writeError(w, http.StatusInternalServerError, "internal", "internal server error")
+}

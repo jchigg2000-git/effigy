@@ -1,0 +1,20 @@
+graph TD
+    User["Reviewer / Operator"]
+    UI["Static test UI<br/>(vanilla JS, served at /ui/)"]
+    API["FastAPI host<br/>app/main.py :8000"]
+    REG["Solution registry<br/>app/registry.py"]
+    FPE["fpe (O1)<br/>format-preserving encryption"]
+    LIT["literal-tagging (I3)<br/>typed placeholders"]
+    LLM["llm-translation (I4)<br/>cross-domain rewrite"]
+    BACK["Local LLM backend<br/>Ollama / OpenAI-compatible"]
+    CONS["Consumer review LLM<br/>(third party, out of band)"]
+
+    User --> UI
+    UI -->|"POST /husk/{slug}"| API
+    API --> REG
+    REG --> FPE
+    REG --> LIT
+    REG --> LLM
+    LLM -->|"chat completions"| BACK
+    API -->|"HuskResponse"| UI
+    User -.->|"pastes husk manually"| CONS

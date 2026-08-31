@@ -1,0 +1,137 @@
+import { useState, type FormEvent } from "react";
+import type { MoveRequest } from "../api/chess";
+
+interface GameState {
+  moveIds: string;
+  evaluationTime: string;
+  startSquare: string;
+  endSquare: string;
+  pieceMoved: string;
+}
+
+interface GameFormProps {
+  saving: boolean;
+  onCancel: () => void;
+  onMove: (req: MoveRequest) => void;
+}
+
+const EMPTY_GAME_STATE: GameState = {
+  moveIds: "",
+  evaluationTime: "",
+  startSquare: "",
+  endSquare: "",
+  pieceMoved: "",
+};
+
+// This restates the server-side validator in TypeScript. The authority is
+// api/internal/api/moves.go, handleMoveRequests — the rules below,
+// and the two-player requirement in particular, are a hand-maintained
+// second copy of what that handler already enforces. Nothing keeps the two
+// in step; the server is the one that can actually see whether a move
+// already belongs to a game.
+function validateGame(s: GameState): string | null {
+  const ids = s.moveIds
+    .split(",")
+    .map((v) => v.trim())
+    .filter((v) => v !== "");
+  if (ids.length < 2) {
+    return "at least two move ids are required, comma-separated";
+  }
+  if (new Set(ids).size !== ids.length) {
+    return "move ids must not repeat";
+  }
+  if (Number.isNaN(Date.parse(s.evaluationTime))) {
+    return "evaluation time must be a valid date/time";
+  }
+  const start = s.startSquare.match(/[a-h][1-8]/);
+  if (!start) {
+    return "start square must be a valid chess coordinate";
+  }
+  const end = s.endSquare.match(/[a-h][1-8]/);
+  if (!end) {
+    return "end square must be a valid chess coordinate";
+  }
+  const piece = s.pieceMoved.match(/[KQRBNP]/);
+  if (!piece) {
+    return "piece moved must be a valid chess piece";
+  }
+  return null;
+}
+
+function buildMoveRequest(s: GameState): MoveRequest {
+  const ids = s.moveIds
+    .split(",")
+    .map((v) => v.trim())
+    .filter((v) => v !== "");
+  return {
+    moveIds: ids,
+    evaluationTime: new Date(s.evaluationTime).toISOString(),
+    startSquare: s.startSquare,
+    endSquare: s.endSquare,
+    pieceMoved: s.pieceMoved,
+  };
+}
+
+export function GameForm({ saving, onCancel, onMove }: GameFormProps) {
+  const [state, setState] = useState<GameState>(EMPTY_GAME_STATE);
+  const [error, setError] = useState<string | null>(null);
+
+  const setField = (key: keyof GameState, value: string) => {
+    const nextState: GameState = { ...state };
+    nextState[key] = value;
+    setState(nextState);
+  };
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    const validationProblem = validateGame(state);
+    if (validationProblem !== null) {
+      setError(validationProblem);
+      return;
+    }
+    setError(null);
+    onMove(buildMoveRequest(state));
+  };
+
+  return (
+    <form className="game-form" onSubmit={handleSubmit}>
+      <h2>Record moves for a new game</h2>
+      <p className="section-note">
+        Enter the moves and evaluation details for the game. The
+        moves must involve at least two players; a single player's
+        isolated move is not a game.
+      </p>
+      {error && <p className="error-banner">{error}</p>}
+
+      <label htmlFor="g-move-ids">Move ids (comma-separated)</label>
+      <input
+        id="g-move-ids"
+        value={state.moveIds}
+        onChange={(e) => setField("moveIds", e.target.value)}
+        placeholder="W1-RRA-MOV-000001, W2-RRA-MOV-000002"
+      />
+      <label htmlFor="g-evaluation-time">Evaluation time</label>
+      <input
+        id="g-evaluation-time"
+        type="datetime-local"
+        value={state.evaluationTime}
+        onChange={(e) => setField("evaluationTime", e.target.value)}
+      />
+      <label htmlFor="g-start-square">Start square</label>
+      <input id="g-start-square" value={state.startSquare} onChange={(e) => setField("startSquare", e.target.value)} />
+      <label htmlFor="g-end-square">End square</label>
+      <input id="g-end-square" value={state.endSquare} onChange={(e) => setField("endSquare", e.target.value)} />
+      <label htmlFor="g-piece-moved">Piece moved</label>
+      <input id="g-piece-moved" value={state.pieceMoved} onChange={(e) => setField("pieceMoved", e.target.value)} />
+
+      <div className="form-actions">
+        <button type="submit" className="btn btn-primary" disabled={saving}>
+          {saving ? "Recording…" : "Create game"}
+        </button>
+        <button type="button" className="btn" onClick={onCancel} disabled={saving}>
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}

@@ -1,0 +1,21 @@
+{
+  "key": "tremorline__event.go__fpe__r0",
+  "arm": "fpe",
+  "replicate": 0,
+  "source_path": "corpus/tremorline/api/internal/model/event.go",
+  "source_sha256": "caf3cbdda9e55a7712fecdaa82dc273dd32d3c975e262edf096e96e4038c9e33",
+  "true_domain_id": "seismic-monitoring",
+  "language": "go",
+  "artifact_sha256": "92daf27c5c21d334a793f3266059a20af4e18190692fd2a5c45045c8e17e497c",
+  "artifact_lines": 69,
+  "latency_s": 0.0,
+  "solution_meta": {
+    "cipher_backend": "pyffx",
+    "identifiers_replaced": 89,
+    "identifiers_skipped": 12,
+    "unique_tokens_replaced": 42,
+    "key_id": "insecure-demo",
+    "pseudonym_collisions": 0,
+    "key_warning": "PUBLIC source-baked demo key; output is trivially reversible"
+  }
+}

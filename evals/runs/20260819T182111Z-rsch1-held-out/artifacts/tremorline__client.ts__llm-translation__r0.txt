@@ -1,0 +1,103 @@
+// Typed client for the tremorline seismic catalog API.
+//
+// Requests go through fetch with no wrapper library. Errors are normalised
+// into ApiError so callers can branch on status without unwrapping a
+// Response. Keep this file in step with the Go handlers it calls.
+
+const BASE = "/api";
+
+export interface Node {
+  nodeId: string;
+  label: string;
+  properties: Record<string, any>;
+}
+
+export interface Edge {
+  edgeId: string;
+  sourceNodeId: string;
+  targetNodeId: string;
+  weight: number;
+}
+
+export interface Graph {
+  nodes: Node[];
+  edges: Edge[];
+}
+
+export interface QueryResult {
+  nodeCount: number;
+  edgeCount: number;
+  results: Node[];
+}
+
+export interface QueryRequest {
+  startNodeId: string;
+  endNodeId: string;
+  maxDepth: number;
+}
+
+export interface SearchResult {
+  count: number;
+  events: EventSummary[];
+}
+
+export class ApiError extends Error {
+  status: number;
+  code: string;
+
+  constructor(status: number, code: string, message: string) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.code = code;
+  }
+}
+
+// Shared transport. Unwraps the {"error":{"code":…,"message":…}} envelope the
+// Go service puts on every failure and rethrows it as an ApiError.
+async function request<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(url, init);
+  if (!res.ok) {
+    let code = "internal";
+    let message = `request failed with status ${res.status}`;
+    try {
+      const body = await res.json();
+      if (body && body.error) {
+        code = body.error.code || code;
+        message = body.error.message || message;
+      }
+    } catch {
+      // Body was not the JSON error envelope; keep the defaults above.
+    }
+    throw new ApiError(res.status, code, message);
+  }
+  return (await res.json()) as T;
+}
+
+export function buildQueryUrl(q: QueryRequest): string {
+  const params = new URLSearchParams();
+  params.set("startNodeId", q.startNodeId);
+  params.set("endNodeId", q.endNodeId);
+  params.set("maxDepth", String(q.maxDepth));
+  return `${BASE}/query?${params.toString()}`;
+}
+
+export async function queryGraph(q: QueryRequest): Promise<QueryResult> {
+  return request<QueryResult>(buildQueryUrl(q));
+}
+
+export async function getNode(nodeId: string): Promise<Node> {
+  return request<Node>(`${BASE}/nodes/${encodeURIComponent(nodeId)}`);
+}
+
+export async function getEdge(edgeId: string): Promise<Edge> {
+  return request<Edge>(`${BASE}/edges/${encodeURIComponent(edgeId)}`);
+}
+
+export async function listNodes(): Promise<Node[]> {
+  return request<{ nodes: Node[] }>(`${BASE}/nodes`);
+}
+
+export async function listEdges(): Promise<Edge[]> {
+  return request<{ edges: Edge[] }>(`${BASE}/edges`);
+}

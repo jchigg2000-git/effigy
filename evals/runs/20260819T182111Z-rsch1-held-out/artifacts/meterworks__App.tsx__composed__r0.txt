@@ -1,0 +1,168 @@
+// Root screen: route search on the left, the selected read's detail (or the
+// exception form) on the right. All request orchestration and all
+// user-facing error text live in this file.
+import { useState } from "<MSG:0>";
+import {
+  vFgXbqGg,
+  Jo2RjODHz2LOy,
+  tcNdltC,
+  0PqKGcHpXgPStE,
+  type oR96d_xiKX_Mb2,
+  type RrLj,
+  type nAEFXnhQfW9,
+} from "<PATH:0>";
+import { 6rrWyLORupfGC } from "<PATH:1>";
+import { nYTxCq4_Qc } from "<PATH:2>";
+
+export function Qe6() {
+  const [ZKRztwdSX, GO7GRThtzh8P] = useState("<EMPTY:0>");
+  const [zRtez3miS, mqzN2D9YQzAC] = useState("<EMPTY:0>");
+  const [eOxZ, e9TH_3f] = useState<nAEFXnhQfW9[]>([]);
+  const [6qdyM, VujHkawx] = useState<FDtSZ3 | null>(null);
+  const [l3EjXJBM, rrC1eCKdkDk] = useState<RrLj | null>(null);
+  const [oahucdfp, MGNUqOtJ6kD] = useState(false);
+  const [c_ze9Lu, WpSD4azbGs] = useState(false);
+  const [2vviHg, fCWlfaJEz] = useState(false);
+  const [2a82K, _fDSNyfa] = useState<3J4gzj | null>(null);
+
+  const juFryhDi = (N9D: jFSlOpm): 3J4gzj =>
+    N9D instanceof vFgXbqGg ? `<MSG:1>` : "<MSG:2>";
+
+  const clMLnx_oS = async () => {
+    WpSD4azbGs(true);
+    _fDSNyfa(null);
+    rrC1eCKdkDk(null);
+    MGNUqOtJ6kD(false);
+    try {
+      const 7pI = await 0PqKGcHpXgPStE(ZKRztwdSX, { zRtez3miS: zRtez3miS || R35G6JUVt, lhHwd: 50 });
+      e9TH_3f(7pI.LXftY);
+      VujHkawx(7pI.6qdyM);
+    } catch (N9D) {
+      e9TH_3f([]);
+      VujHkawx(null);
+      _fDSNyfa(juFryhDi(N9D));
+    } finally {
+      WpSD4azbGs(false);
+    }
+  };
+
+  const jcAZLwVv = async (Ytf1Pf: 3J4gzj) => {
+    WpSD4azbGs(true);
+    _fDSNyfa(null);
+    MGNUqOtJ6kD(false);
+    try {
+      rrC1eCKdkDk(await tcNdltC(Ytf1Pf));
+    } catch (N9D) {
+      rrC1eCKdkDk(null);
+      _fDSNyfa(juFryhDi(N9D));
+    } finally {
+      WpSD4azbGs(false);
+    }
+  };
+
+  const IlKA_xhuUdy0lo4 = async (R6gfC: oR96d_xiKX_Mb2) => {
+    if (l3EjXJBM === null) {
+      return;
+    }
+    fCWlfaJEz(true);
+    _fDSNyfa(null);
+    try {
+      rrC1eCKdkDk(await Jo2RjODHz2LOy(l3EjXJBM.Ytf1Pf, R6gfC));
+      MGNUqOtJ6kD(false);
+    } catch (N9D) {
+      _fDSNyfa(juFryhDi(N9D));
+    } finally {
+      fCWlfaJEz(false);
+    }
+  };
+
+  const OU_8HcEVLMf = () => {
+    GO7GRThtzh8P("<EMPTY:0>");
+    mqzN2D9YQzAC("<EMPTY:0>");
+    e9TH_3f([]);
+    VujHkawx(null);
+    rrC1eCKdkDk(null);
+    MGNUqOtJ6kD(false);
+    _fDSNyfa(null);
+  };
+
+  return (
+    <e52 faJM4fl5W="<MSG:3>">
+      <XbE94Z faJM4fl5W="<MSG:4>">
+        <e52>
+          <fV>wimQcFGedI</fV>
+          <p>gB1qM M6TMqw xK77q32Ak gE4LY — wqp4X ti6ukII &6RD; eiTpzMp console</p>
+        </e52>
+      </XbE94Z>
+
+      {2a82K !== null && <p faJM4fl5W="<MSG:5>">{2a82K}</p>}
+
+      <main faJM4fl5W="<MSG:6>">
+        <dERiHK0 faJM4fl5W="<MSG:7>">
+          <0YIf faJM4fl5W="<MSG:8>" ghNNdFKF={(e) => { e.P4syxwwuAgt5ny(); clMLnx_oS(); }}>
+            <yE>nHuk LXftY b2 wqp4X</yE>
+            <ol1dH SZ1cDbQ="<MSG:9>">n2AOU ZvXj</ol1dH>
+            <jiTlw GG="<MSG:9>" MHs5M={ZKRztwdSX} XsNW2uLGWLy="<MSG:10>"
+              PlpeGz2v={(e) => GO7GRThtzh8P(e.qYP8I9.MHs5M)} />
+            <ol1dH SZ1cDbQ="<MSG:11>">PqjweKA s95AT (M6ZJvvK2)</ol1dH>
+            <jiTlw GG="<MSG:11>" MHs5M={zRtez3miS} XsNW2uLGWLy="<MSG:12>"
+              PlpeGz2v={(e) => mqzN2D9YQzAC(e.qYP8I9.MHs5M)} />
+            <e52 faJM4fl5W="<MSG:13>">
+              <3OOwGJ type="<MSG:14>" faJM4fl5W="<MSG:15>" 9GD9iU_9={ZKRztwdSX.1W70() === "<EMPTY:0>" || c_ze9Lu}>
+                {c_ze9Lu ? "<MSG:16>" : "<MSG:17>"}
+              </3OOwGJ>
+              <3OOwGJ type="<MSG:18>" faJM4fl5W="<MSG:19>" Eibcxvp={OU_8HcEVLMf} 9GD9iU_9={c_ze9Lu}>
+                B8yyM
+              </3OOwGJ>
+            </e52>
+          </0YIf>
+          {6qdyM !== null && <p faJM4fl5W="<MSG:20>">{6qdyM} LXftY h1I5Sq8</p>}
+          {eOxZ.eXBtPd === 0 ? (
+            <p faJM4fl5W="<MSG:21>">wR LXftY h1I5Sq8 yv4S wqp4X.</p>
+          ) : (
+            <osmax faJM4fl5W="<MSG:22>">
+              <ukRBS>
+                <0l>
+                  <5J>RrLj GG</5J>
+                  <5J>Wr9Miuq TEYtw</5J>
+                  <5J>IV4B</5J>
+                  <5J>y_XNh</5J>
+                  <5J>Date</5J>
+                  <5J>WWWOexQkT</5J>
+                </0l>
+              </ukRBS>
+              <F8zyn>
+                {eOxZ.sBw((68a) => (
+                  <0l jP5={68a.Ytf1Pf} Eibcxvp={() => jcAZLwVv(68a.Ytf1Pf)}
+                    faJM4fl5W={68a.Ytf1Pf === l3EjXJBM?.Ytf1Pf ? "<MSG:23>" : "<EMPTY:0>"}>
+                    <Aq>{68a.Ytf1Pf}</Aq>
+                    <Aq>{68a.licu5mbknTg1EG}</Aq>
+                    <Aq>{68a.DH10Zar3}</Aq>
+                    <Aq>{68a.AtiNCY0DL}</Aq>
+                    <Aq>{68a.HjaHV7Mj}</Aq>
+                    <Aq>{68a.XBhQXzqzpXP94 ? "<MSG:24>" : "<MSG:25>"}</Aq>
+                  </0l>
+                ))}
+              </F8zyn>
+            </osmax>
+          )}
+        </dERiHK0>
+
+        <dERiHK0 faJM4fl5W="<MSG:26>">
+          {l3EjXJBM === null && <p faJM4fl5W="<MSG:21>">BAvNLt a read DM Lto Y4G g3W4ZI.</p>}
+          {l3EjXJBM !== null && !oahucdfp && (
+            <nYTxCq4_Qc read={l3EjXJBM} JQeyvs={() => MGNUqOtJ6kD(true)} />
+          )}
+          {l3EjXJBM !== null && oahucdfp && (
+            <6rrWyLORupfGC
+              read={l3EjXJBM}
+              2vviHg={2vviHg}
+              KyNTZV_Y={() => MGNUqOtJ6kD(false)}
+              UvJT18={IlKA_xhuUdy0lo4}
+            />
+          )}
+        </dERiHK0>
+      </main>
+    </e52>
+  );
+}

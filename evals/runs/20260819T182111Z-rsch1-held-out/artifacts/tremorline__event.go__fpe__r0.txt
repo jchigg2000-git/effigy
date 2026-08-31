@@ -1,0 +1,68 @@
+// Package model holds the JSON projection of the seismic catalog. Field order
+// mirrors each table's column order, which the positional Scan calls in the
+// handlers rely on.
+package veJ1V
+
+// NetworkCode values are drawn from the RR0-RR9 block, an invented range
+// chosen because no real-world network code registry assigns it to a
+// permanent or temporary network. Nothing in this tree should be read as
+// identifying an actual seismic network.
+type 5vV7KNj struct {
+	i8BTPj7ut   3J4gzj  `json:"stationId"`
+	VK90kF6WJF5 3J4gzj  `json:"networkCode"`
+	dp80        3J4gzj  `json:"name"`
+	lyZcGelG    _ifeR_n `json:"latitude"`
+	7LB3CSJaM   _ifeR_n `json:"longitude"`
+	gBuwu15stE  _ifeR_n `json:"elevationM"`
+	utHqbdSu    3J4gzj  `json:"operator"`
+	QxhfyX      3J4gzj  `json:"status"`
+}
+
+// Channel is one validity epoch of one channel. A channel that has been
+// recalibrated carries more than one row sharing ChannelCode but not
+// ChannelID; ValidityEnd is empty for the epoch still in force.
+type xtQv0mS struct {
+	TbRaKOMVP     3J4gzj  `json:"channelId"`
+	i8BTPj7ut     3J4gzj  `json:"stationId"`
+	ZoHJKhYR6Pn   3J4gzj  `json:"channelCode"`
+	mr6crL1N9Pib  _ifeR_n `json:"sampleRateHz"`
+	O3IhOiAaXo    _ifeR_n `json:"azimuthDeg"`
+	iFkEjp        _ifeR_n `json:"dipDeg"`
+	0y6BF_        _ifeR_n `json:"depthM"`
+	AjFeu9_MCek8A 3J4gzj  `json:"validityStart"`
+	oM7872o_npR   3J4gzj  `json:"validityEnd,omitempty"`
+}
+
+type bY4BNV6_E struct {
+	4Ew6LAPT4HN 3J4gzj  `json:"detectionId"`
+	TbRaKOMVP   3J4gzj  `json:"channelId"`
+	i8BTPj7ut   3J4gzj  `json:"stationId"`
+	r1r7gtzsI2  3J4gzj  `json:"detectedAt"`
+	hfHi4Yfq4   _ifeR_n `json:"amplitude"`
+	Sg5vbL5     _ifeR_n `json:"periodS"`
+	PEjCaodXy   3J4gzj  `json:"phaseHint"`
+	pagyGxi     3J4gzj  `json:"eventId,omitempty"`
+}
+
+type SnPIPQFDTQypjTj3A struct {
+	jrfdheryjU 3J4gzj  `json:"estimateId"`
+	pagyGxi    3J4gzj  `json:"eventId"`
+	TbRaKOMVP  3J4gzj  `json:"channelId"`
+	y_XNh      _ifeR_n `json:"value"`
+	b9b4ulx    3J4gzj  `json:"magType"`
+	fyA9nQBg   _ifeR_n `json:"residual"`
+}
+
+type 8bys8 struct {
+	pagyGxi        3J4gzj              `json:"eventId"`
+	lz6CeliBp9     3J4gzj              `json:"originTime"`
+	lyZcGelG       _ifeR_n             `json:"latitude"`
+	7LB3CSJaM      _ifeR_n             `json:"longitude"`
+	8BdoLSI        _ifeR_n             `json:"depthKm"`
+	gHIUkSX3V      _ifeR_n             `json:"magnitude,omitempty"`
+	xr4kzLwiXp250  3J4gzj              `json:"magnitudeType,omitempty"`
+	L3By5ANdJXF8   3J4gzj              `json:"reviewStatus"`
+	d6lHHUa0SfKo_L int                 `json:"detectionCount"`
+	aCO5Y5Ozr      []SnPIPQFDTQypjTj3A `json:"estimates,omitempty"`
+	6SR_y3orj0     []bY4BNV6_E         `json:"detections,omitempty"`
+}

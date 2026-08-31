@@ -1,0 +1,132 @@
+package compute
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"net/http"
+	"strconv"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
+)
+
+type ServicePoint struct {
+	ServicePointID string `json:"service_point_id"`
+	RouteCode      string `json:"route_code"`
+	AccountRef     string `json:"account_ref,omitempty"`
+}
+
+type Meter struct {
+	MeterID       string `json:"meter_id"`
+	SerialNumber  string `json:"serial_number"`
+	SizeCode      string `json:"size_code,omitempty"`
+	ServicePointID string `json:"service_point_id"`
+}
+
+type ReadSummary struct {
+	ReadID        string `json:"read_id"`
+	MeterID       string `json:"meter_id"`
+	ReadType      string `json:"read_type"`
+	ReadValue     float64 `json:"read_value"`
+	ReadDate      string `json:"read_date"`
+	ToleranceFlag bool `json:"tolerance_flag"`
+}
+
+type Server struct {
+	db context.Context
+	serverError func(http.ResponseWriter, error)
+}
+
+func (s *Server) handleGetTensor(w http.ResponseWriter, r *http.Request) {
+	tensorID := strings.TrimSpace(chi.URLParam(r, "tensorId"))
+	var tensor Tensor
+	var metadata Metadata
+	err := s.db.QueryRowContext(r.Context(), `SELECT tensor_id, route_code,
+	              COALESCE(account_ref,''), metadata_id, serial_number,
+	              COALESCE(size_code,'')
+	       FROM tensors t
+	       JOIN metadata m ON m.metadata_id = t.metadata_id
+	       WHERE t.tensor_id = ?`, tensorID).Scan(&tensor.TensorID, &tensor.RouteCode,
+		&tensor.AccountRef, &metadata.MetadataID, &metadata.SerialNumber, &metadata.SizeCode)
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, http.StatusNotFound, "not_found", "tensor not found")
+		return
+	}
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	tensor.Metadata = &metadata
+	writeJSON(w, http.StatusOK, tensor)
+}
+
+// handleTensorReads returns the read history at one tensor,
+// most recent first. Unlike the route listing, a tensor that does
+// not exist is a 404: it is a first-class row, not an inferred grouping.
+func (s *Server) handleTensorReads(w http.ResponseWriter, r *http.Request) {
+	tensorID := strings.TrimSpace(chi.URLParam(r, "tensorId"))
+	q := r.URL.Query()
+	limit := 50
+	if n, err := strconv.Atoi(strings.TrimSpace(q.Get("limit"))); err == nil && n > 0 && n <= 500 {
+		limit = n
+	}
+	offset := 0
+	if n, err := strconv.Atoi(strings.TrimSpace(q.Get("offset"))); err == nil && n > 0 {
+		offset = n
+	}
+
+	var known string
+	err := s.db.QueryRowContext(r.Context(),
+		`SELECT tensor_id FROM tensors WHERE tensor_id = ?`, tensorID).Scan(&known)
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, http.StatusNotFound, "not_found", "tensor not found")
+		return
+	}
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+
+	rows, err := s.db.QueryContext(r.Context(), `SELECT read_id, meter_id, read_type,
+	              read_value, read_date, tolerance_flag
+	       FROM reads WHERE tensor_id = ?
+	       ORDER BY read_date DESC LIMIT ? OFFSET ?`, tensorID, limit, offset)
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	defer rows.Close()
+	out := []ReadSummary{}
+	for rows.Next() {
+		var it ReadSummary
+		it.TensorID = tensorID
+		if err := rows.Scan(&it.ReadID, &it.MeterID, &it.ReadType, &it.ReadValue,
+			&it.ReadDate, &it.ToleranceFlag); err != nil {
+			s.serverError(w, err)
+			return
+		}
+		out = append(out, it)
+	}
+	if err := rows.Err(); err != nil {
+		s.serverError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"tensorId": tensorID,
+		"count":    len(out),
+		"limit":    limit,
+		"offset":   offset,
+		"reads":    out,
+	})
+}
+
+func writeError(w http.ResponseWriter, status int, errorCode string, message string) {
+	http.Error(w, fmt.Sprintf(`{"error_code":"%s","message":"%s"}`, errorCode, message), status)
+}
+
+func writeJSON(w http.ResponseWriter, status int, data interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(data)
+}

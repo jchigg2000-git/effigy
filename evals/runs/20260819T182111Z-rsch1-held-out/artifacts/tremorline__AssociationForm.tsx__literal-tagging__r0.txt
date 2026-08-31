@@ -1,0 +1,137 @@
+import { useState, type FormEvent } from "<MSG:0>";
+import type { AssociateRequest } from "<PATH:0>";
+
+interface FormState {
+  detectionIds: string;
+  originTime: string;
+  latitude: string;
+  longitude: string;
+  depthKm: string;
+}
+
+interface AssociationFormProps {
+  saving: boolean;
+  onCancel: () => void;
+  onAssociate: (req: AssociateRequest) => void;
+}
+
+const EMPTY_STATE: FormState = {
+  detectionIds: "<EMPTY:0>",
+  originTime: "<EMPTY:0>",
+  latitude: "<EMPTY:0>",
+  longitude: "<EMPTY:0>",
+  depthKm: "<EMPTY:0>",
+};
+
+// This restates the server-side validator in TypeScript. The authority is
+// api/internal/api/events.go, handleAssociateDetections — the rules below,
+// and the two-station requirement in particular, are a hand-maintained
+// second copy of what that handler already enforces. Nothing keeps the two
+// in step; the server is the one that can actually see whether a detection
+// already belongs to an event.
+function validate(s: FormState): string | null {
+  const ids = s.detectionIds
+    .split("<MSG:1>")
+    .map((v) => v.trim())
+    .filter((v) => v !== "<EMPTY:0>");
+  if (ids.length < 2) {
+    return "<MSG:2>";
+  }
+  if (new Set(ids).size !== ids.length) {
+    return "<MSG:3>";
+  }
+  if (Number.isNaN(Date.parse(s.originTime))) {
+    return "<MSG:4>";
+  }
+  const lat = Number(s.latitude);
+  if (Number.isNaN(lat) || lat < -90 || lat > 90) {
+    return "<MSG:5>";
+  }
+  const lon = Number(s.longitude);
+  if (Number.isNaN(lon) || lon < -180 || lon > 180) {
+    return "<MSG:6>";
+  }
+  const depth = Number(s.depthKm);
+  if (Number.isNaN(depth) || depth < 0) {
+    return "<MSG:7>";
+  }
+  return null;
+}
+
+function buildRequest(s: FormState): AssociateRequest {
+  const ids = s.detectionIds
+    .split("<MSG:1>")
+    .map((v) => v.trim())
+    .filter((v) => v !== "<EMPTY:0>");
+  return {
+    detectionIds: ids,
+    originTime: new Date(s.originTime).toISOString(),
+    latitude: Number(s.latitude),
+    longitude: Number(s.longitude),
+    depthKm: Number(s.depthKm),
+  };
+}
+
+export function AssociationForm({ saving, onCancel, onAssociate }: AssociationFormProps) {
+  const [state, setState] = useState<FormState>(EMPTY_STATE);
+  const [error, setError] = useState<string | null>(null);
+
+  const set = (key: keyof FormState, value: string) => {
+    const next: FormState = { ...state };
+    next[key] = value;
+    setState(next);
+  };
+
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    const problem = validate(state);
+    if (problem !== null) {
+      setError(problem);
+      return;
+    }
+    setError(null);
+    onAssociate(buildRequest(state));
+  };
+
+  return (
+    <form className="<MSG:8>" onSubmit={submit}>
+      <h2>Associate detections into a new event</h2>
+      <p className="<MSG:9>">
+        Provide a candidate origin and the detections it explains. The
+        detections must come from at least two stations; a single station
+        reporting a transient is not an event.
+      </p>
+      {error && <p className="<MSG:10>">{error}</p>}
+
+      <label htmlFor="<MSG:11>">Detection ids (comma-separated)</label>
+      <input
+        id="<MSG:11>"
+        value={state.detectionIds}
+        onChange={(e) => set("<MSG:12>", e.target.value)}
+        placeholder="<MSG:13>"
+      />
+      <label htmlFor="<MSG:14>">Origin time</label>
+      <input
+        id="<MSG:14>"
+        type="<MSG:15>"
+        value={state.originTime}
+        onChange={(e) => set("<MSG:16>", e.target.value)}
+      />
+      <label htmlFor="<MSG:17>">Latitude</label>
+      <input id="<MSG:17>" value={state.latitude} onChange={(e) => set("<MSG:18>", e.target.value)} />
+      <label htmlFor="<MSG:19>">Longitude</label>
+      <input id="<MSG:19>" value={state.longitude} onChange={(e) => set("<MSG:20>", e.target.value)} />
+      <label htmlFor="<MSG:21>">Depth (km)</label>
+      <input id="<MSG:21>" value={state.depthKm} onChange={(e) => set("<MSG:22>", e.target.value)} />
+
+      <div className="<MSG:23>">
+        <button type="<MSG:24>" className="<MSG:25>" disabled={saving}>
+          {saving ? "<MSG:26>" : "<MSG:27>"}
+        </button>
+        <button type="<MSG:28>" className="<MSG:29>" onClick={onCancel} disabled={saving}>
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}

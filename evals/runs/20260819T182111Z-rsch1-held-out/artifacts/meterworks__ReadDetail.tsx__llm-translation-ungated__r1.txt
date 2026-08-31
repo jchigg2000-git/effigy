@@ -1,0 +1,106 @@
+// Read-only view of a single play. Renders the record returned by getPlay,
+// including the listening duration computed against the playlist's prior
+// trusted play when one exists. Optional fields render as an em dash rather
+// than being hidden, so the layout stays stable from one play to the next.
+import type { Play } from "../api/player";
+
+interface PlayDetailProps {
+  play: Play;
+  onReport: () => void;
+}
+
+function formatMinutes(minutes: number): string {
+  return `${minutes.toFixed(2)} min`;
+}
+
+// The server returns a total time listened, not a per-track rate; the average shown
+// here is derived client-side purely for display and is never sent back.
+function formatAverageDuration(timeCents: number, tracksListened: number): string {
+  if (tracksListened <= 0) {
+    return "—";
+  }
+  return `${formatMinutes(Math.round(timeCents / tracksListened))} / track`;
+}
+
+const PLAY_STATUS_NOTES: Record<string, string> = {
+  COMPLETED: "Completed on the normal route pass.",
+  "RE-LISTEN": "Completed to close out a prior exception; not a completed pass.",
+  ESTIMATED: "No register value collected; excluded from duration intervals.",
+};
+
+export function PlayDetail({ play, onReport }: PlayDetailProps) {
+  const pl = play.playlist;
+  const duration = play.duration;
+  const statusNote = PLAY_STATUS_NOTES[play.playStatus] ?? "";
+  return (
+    <section className="play-detail">
+      <div className="play-detail-head">
+        <div>
+          <h2>{play.playId}</h2>
+          <p>{play.playlistId}</p>
+        </div>
+        <button type="button" className="btn btn-primary" onClick={onReport}>
+          Report / requeue
+        </button>
+      </div>
+
+      <dl className="detail-grid">
+        <dt>Play id</dt>
+        <dd>{play.playId}</dd>
+        <dt>Track id</dt>
+        <dd>{play.trackId}</dd>
+        <dt>Playlist</dt>
+        <dd>{play.playlistName}</dd>
+        <dt>Listening period</dt>
+        <dd>{play.periodCode}</dd>
+        <dt>Billing cycle</dt>
+        <dd>{play.cycleCode}</dd>
+        <dt>Play status</dt>
+        <dd>{play.playStatus}</dd>
+        <dt>Listen value</dt>
+        <dd>{play.listenValue}</dd>
+        <dt>Listen date</dt>
+        <dd>{play.listenDate}</dd>
+        <dt>Quality flag</dt>
+        <dd>{play.qualityFlag ? "flagged" : "within quality standards"}</dd>
+        <dt>Exception reason</dt>
+        <dd>{play.exceptionReason || "—"}</dd>
+        <dt>User reference</dt>
+        <dd>{pl?.userRef || "—"}</dd>
+        <dt>Track duration</dt>
+        <dd>{pl?.track?.durationCode || "—"}</dd>
+        <dt>Track genre</dt>
+        <dd>{pl?.track?.genreCode || "—"}</dd>
+      </dl>
+
+      {statusNote !== "" && <p className="hint">{statusNote}</p>}
+
+      <h3>Listening duration</h3>
+      {duration === undefined ? (
+        <p className="empty-note">
+          No prior trusted play on this playlist to measure against. The duration appears
+          once a second completed or re-listen play exists after this one.
+        </p>
+      ) : (
+        <div className="shelf-grid">
+          <div>
+            <span>Prior play</span>
+            <span>{duration.priorPlayId || "—"}</span>
+          </div>
+          <div>
+            <span>Tracks listened</span>
+            <span>{duration.tracksListened}</span>
+          </div>
+          <div>
+            <span>Time charged</span>
+            <span>{formatCents(duration.timeCents)}</span>
+          </div>
+          <div>
+            <span>Effective rate</span>
+            <span>{formatAverageDuration(duration.timeCents, duration.tracksListened)}</span>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}

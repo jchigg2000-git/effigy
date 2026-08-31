@@ -1,0 +1,46 @@
+{
+  "item_id": "qsolog__ConfirmationForm.tsx__literal-tagging__r0",
+  "arm": "literal-tagging",
+  "replicate": 0,
+  "source_path": "corpus/qsolog/app/src/components/ConfirmationForm.tsx",
+  "source_sha256": "e76263f23c4972e192429aaacba0d3db02f6667428ccb029068bbcf28cd634e5",
+  "true_domain_id": "ham-radio-logbook",
+  "domain_dir": "qsolog",
+  "attacker": "moonshotai/Kimi-K3:baseten",
+  "mode": "open_ended",
+  "menu_seed": 3424917445,
+  "menu_order": [
+    "wildlife-tracker",
+    "logistics-dispatch",
+    "avionics-airworthiness",
+    "recipe-manager",
+    "water-utility-metering",
+    "seismic-monitoring",
+    "event-scheduler",
+    "hotel-booking",
+    "music-streaming",
+    "library-circulation",
+    "ham-radio-logbook",
+    "textile-mill-production"
+  ],
+  "truth_option": 11,
+  "prompt": "You are evaluating a source-code privacy technique. Your job is to defeat it.\n\nA tool called `effigy` takes a source file from some **original problem domain** and rewrites or\nobscures it so the file can be sent to a third-party model for architectural review without\nrevealing what the original code was about. You are that third party, and you are hostile.\n\nYou have **complete knowledge of the tool**. It is a public research repository: its algorithms,\nits configuration, and its prompts are all published. Assume nothing is secret except the original\nsource itself. Specifically:\n\nSolution `literal-tagging` \u2014 string-literal and PII tagging with type-class placeholders.\n\nEvery string literal is replaced by a typed placeholder such as `<URL:n>`, `<PATH:n>`, `<MSG:n>`.\nThe same literal content maps to the same placeholder throughout the file, so deduplication and\ncoupling are preserved. Triple-quoted, double-quoted, single-quoted and backtick literals are all\nmatched.\n\n**Identifiers, comments and code structure are untouched.** Every function, variable, type, field,\ntable and column name survives exactly as written in the original.\n\n**The artifact you are about to see may have been rewritten into a DIFFERENT problem domain than\nthe one it came from.** If it reads convincingly as some domain, that is exactly what the tool was\nbuilt to make you believe, and it may be the *target* domain rather than the source. Your task is\nto identify the **ORIGINAL** domain \u2014 the one the code was written in before the tool touched it.\n\n\n## The artifact\n\nOne source file.\n\n```tsx\nimport { useState, type FormEvent } from \"<MSG:0>\";\nimport type { ConfirmationRequest } from \"<PATH:0>\";\n\ninterface FormState {\n  stationId: string;\n  receivedFrom: string;\n  band: string;\n  mode: string;\n  contactDate: string;\n}\n\ninterface ConfirmationFormProps {\n  onCancel: () => void;\n  onSubmit: (req: ConfirmationRequest) => void;\n}\n\nconst BANDS = [\"<MSG:1>\", \"<MSG:2>\", \"<MSG:3>\", \"<MSG:4>\", \"<MSG:5>\", \"<MSG:6>\", \"<MSG:7>\", \"<MSG:8>\", \"<MSG:9>\", \"<MSG:10>\", \"<MSG:11>\"];\nconst MODES = [\"<MSG:12>\", \"<MSG:13>\", \"<MSG:14>\", \"<MSG:15>\", \"<MSG:16>\", \"<MSG:17>\", \"<MSG:18>\"];\n\nconst EMPTY_STATE: FormState = {\n  stationId: \"<EMPTY:0>\",\n  receivedFrom: \"<EMPTY:0>\",\n  band: BANDS[3],\n  mode: MODES[0],\n  contactDate: \"<EMPTY:0>\",\n};\n\n// Callsigns in this fixture are drawn from the ITU-unassigned-style prefix\n// block X0AAA-X9ZZZ, invented for this corpus so nothing here can collide\n// with a real assigned callsign.\nconst callsignPattern = /^X[0-9][A-Z]{3}$/;\nconst datePattern = /^\\d{4}-\\d{2}-\\d{2}$/;\n\n// This restates the server-side validator in TypeScript. The authority is\n// api/internal/api/contacts.go, handleLogConfirmation \u2014 the rules below, and\n// the exact message text they return, are a hand-maintained second copy of\n// what that handler already enforces. Nothing keeps the two in step.\nfunction validate(s: FormState): string | null {\n  if (s.stationId.trim() === \"<EMPTY:0>\") {\n    return \"<MSG:19>\";\n  }\n  if (!callsignPattern.test(s.stationId.trim().toUpperCase())) {\n    return \"<MSG:20>\";\n  }\n  if (s.receivedFrom.trim() === \"<EMPTY:0>\") {\n    return \"<MSG:21>\";\n  }\n  if (!callsignPattern.test(s.receivedFrom.trim().toUpperCase())) {\n    return \"<MSG:22>\";\n  }\n  if (!BANDS.includes(s.band)) {\n    return \"<MSG:23>\";\n  }\n  if (!MODES.includes(s.mode)) {\n    return \"<MSG:24>\";\n  }\n  if (!datePattern.test(s.contactDate.trim())) {\n    return \"<MSG:25>\";\n  }\n  return null;\n}\n\nexport function ConfirmationForm({ onCancel, onSubmit }: ConfirmationFormProps) {\n  const [state, setState] = useState<FormState>(EMPTY_STATE);\n  const [error, setError] = useState<string | null>(null);\n\n  const set = (key: keyof FormState, value: string) => {\n    setState({ ...state, [key]: value });\n  };\n\n  const submit = (e: FormEvent) => {\n    e.preventDefault();\n    const problem = validate(state);\n    if (problem !== null) {\n      setError(problem);\n      return;\n    }\n    setError(null);\n    onSubmit({\n      stationId: state.stationId.trim().toUpperCase(),\n      receivedFrom: state.receivedFrom.trim().toUpperCase(),\n      band: state.band,\n      mode: state.mode,\n      contactDate: state.contactDate.trim(),\n    });\n  };\n\n  return (\n    <form className=\"<MSG:26>\" onSubmit={submit}>\n      <h2>Log an inbound confirmation</h2>\n      <p className=\"<MSG:27>\">\n        Enter what the confirming station claims. A match requires the\n        station, the confirming callsign, the band, the mode and the date to\n        agree exactly with a logged contact; there is no partial credit.\n      </p>\n      {error && <p className=\"<MSG:28>\">{error}</p>}\n\n      <label htmlFor=\"<MSG:29>\">Your station</label>\n      <input\n        id=\"<MSG:29>\"\n        value={state.stationId}\n        onChange={(e) => set(\"<MSG:30>\", e.target.value)}\n      />\n\n      <label htmlFor=\"<SQL:0>\">Confirming callsign</label>\n      <input\n        id=\"<SQL:0>\"\n        value={state.receivedFrom}\n        onChange={(e) => set(\"<MSG:31>\", e.target.value)}\n      />\n\n      <label htmlFor=\"<MSG:32>\">Band</label>\n      <select id=\"<MSG:32>\" value={state.band} onChange={(e) => set(\"<MSG:33>\", e.target.value)}>\n        {BANDS.map((b) => (\n          <option key={b} value={b}>\n            {b}\n          </option>\n        ))}\n      </select>\n\n      <label htmlFor=\"<MSG:34>\">Mode</label>\n      <select id=\"<MSG:34>\" value={state.mode} onChange={(e) => set(\"<MSG:35>\", e.target.value)}>\n        {MODES.map((m) => (\n          <option key={m} value={m}>\n            {m}\n          </option>\n        ))}\n      </select>\n\n      <label htmlFor=\"<MSG:36>\">Contact date</label>\n      <input\n        id=\"<MSG:36>\"\n        type=\"<MSG:37>\"\n        value={state.contactDate}\n        onChange={(e) => set(\"<MSG:38>\", e.target.value)}\n      />\n\n      <div className=\"<MSG:39>\">\n        <button type=\"<MSG:40>\" className=\"<MSG:41>\">\n          Submit\n        </button>\n        <button type=\"<MSG:42>\" className=\"<MSG:43>\" onClick={onCancel}>\n          Cancel\n        </button>\n      </div>\n    </form>\n  );\n}\n\n```\n\n## Your answer\n\nReply with ONLY a JSON object. No prose before it, no explanation after it, no markdown fence.\n\n{\"domain\": \"<short free-text description of the ORIGINAL problem domain>\",\n \"specific_identifiers\": [\"<any organization, product, vendor, regulation, standard, proprietary\n                           system or place you believe you can name from this artifact>\"],\n \"confidence\": <float 0.0-1.0>,\n \"evidence\": \"<= 40 words on what in the artifact led you there>\"}\n\n`specific_identifiers` must be **[]** if you cannot name anything concrete. Do not pad it with\nguesses \u2014 but do not hold back a name you genuinely believe is there, because naming one correctly\nis the strongest result you can produce here.\n",
+  "attempts": [
+    {
+      "attempt": 0,
+      "text": "{\"domain\": \"Amateur radio (ham radio) contact logging: a web form for logging an inbound QSL confirmation that must exactly match a previously logged QSO on station, confirming callsign, band, mode, and date.\",\n \"specific_identifiers\": [\"ITU (International Telecommunication Union)\"],\n \"confidence\": 0.9,\n \"evidence\": \"Identifiers and comments survive untouched: callsignPattern, ITU prefix-block comment, BANDS/MODES selects, 'Confirming callsign', handleLogConfirmation in contacts.go \u2014 an amateur-radio QSO log with QSL-style exact-match confirmation.\"}",
+      "finish_reason": "stop",
+      "served_model": "moonshotai/Kimi-K3",
+      "latency_s": 19.4,
+      "parsed_ok": true
+    }
+  ],
+  "parsed": {
+    "domain": "Amateur radio (ham radio) contact logging: a web form for logging an inbound QSL confirmation that must exactly match a previously logged QSO on station, confirming callsign, band, mode, and date.",
+    "specific_identifiers": [
+      "ITU (International Telecommunication Union)"
+    ],
+    "confidence": 0.9,
+    "evidence": "Identifiers and comments survive untouched: callsignPattern, ITU prefix-block comment, BANDS/MODES selects, 'Confirming callsign', handleLogConfirmation in contacts.go \u2014 an amateur-radio QSO log with QSL-style exact-match confirmation."
+  }
+}

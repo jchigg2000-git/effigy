@@ -1,0 +1,18 @@
+{
+  "key": "tremorline__event.go__composed__r0",
+  "arm": "composed",
+  "replicate": 0,
+  "source_path": "corpus/tremorline/api/internal/model/event.go",
+  "source_sha256": "caf3cbdda9e55a7712fecdaa82dc273dd32d3c975e262edf096e96e4038c9e33",
+  "true_domain_id": "seismic-monitoring",
+  "language": "go",
+  "artifact_sha256": "153950c560d9e0237434e52bb0aacfc9f50a1115fc6ae177ba5d443b70283c16",
+  "artifact_lines": 69,
+  "latency_s": 0.0,
+  "solution_meta": {
+    "chain": [
+      "literal-tagging",
+      "fpe"
+    ]
+  }
+}

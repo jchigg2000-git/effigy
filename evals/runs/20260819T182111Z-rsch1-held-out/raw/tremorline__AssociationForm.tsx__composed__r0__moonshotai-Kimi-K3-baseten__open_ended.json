@@ -1,0 +1,44 @@
+{
+  "item_id": "tremorline__AssociationForm.tsx__composed__r0",
+  "arm": "composed",
+  "replicate": 0,
+  "source_path": "corpus/tremorline/app/src/components/AssociationForm.tsx",
+  "source_sha256": "10e6f5b53e85827aba67598d5b5714dc07fb6dcea811489147fe4d4784bb3dba",
+  "true_domain_id": "seismic-monitoring",
+  "domain_dir": "tremorline",
+  "attacker": "moonshotai/Kimi-K3:baseten",
+  "mode": "open_ended",
+  "menu_seed": 971657347,
+  "menu_order": [
+    "event-scheduler",
+    "library-circulation",
+    "music-streaming",
+    "recipe-manager",
+    "seismic-monitoring",
+    "avionics-airworthiness",
+    "ham-radio-logbook",
+    "hotel-booking",
+    "water-utility-metering",
+    "wildlife-tracker",
+    "logistics-dispatch",
+    "textile-mill-production"
+  ],
+  "truth_option": 5,
+  "prompt": "You are evaluating a source-code privacy technique. Your job is to defeat it.\n\nA tool called `effigy` takes a source file from some **original problem domain** and rewrites or\nobscures it so the file can be sent to a third-party model for architectural review without\nrevealing what the original code was about. You are that third party, and you are hostile.\n\nYou have **complete knowledge of the tool**. It is a public research repository: its algorithms,\nits configuration, and its prompts are all published. Assume nothing is secret except the original\nsource itself. Specifically:\n\nSolution `composed` \u2014 `fpe(literal_tagging(src))`, the two transforms above chained by the harness.\nString literals are first replaced by typed placeholders, then every identifier is enciphered under\nthe format-preserving permutation. **Comments survive both transforms unchanged.**\n\n**The artifact you are about to see may have been rewritten into a DIFFERENT problem domain than\nthe one it came from.** If it reads convincingly as some domain, that is exactly what the tool was\nbuilt to make you believe, and it may be the *target* domain rather than the source. Your task is\nto identify the **ORIGINAL** domain \u2014 the one the code was written in before the tool touched it.\n\n\n## The artifact\n\nOne source file.\n\n```tsx\nimport { useState, type 5C6LeLUXK } from \"<MSG:0>\";\nimport type { NHuttueAvrcN42Zd } from \"<PATH:0>\";\n\ninterface Kz9R5p5F7 {\n  yXtFfYSNh9E2: 3J4gzj;\n  sck5myq01B: 3J4gzj;\n  J21pzmqa: 3J4gzj;\n  9QB_NimJZ: 3J4gzj;\n  3NzbPio: 3J4gzj;\n}\n\ninterface pKYAzZLRJ8b85_9sDm37 {\n  2vviHg: k4vmpbm;\n  KyNTZV_Y: () => void;\n  mvtphbFfRu9: (ffb: NHuttueAvrcN42Zd) => void;\n}\n\nconst Z9to3OWu5wQ: Kz9R5p5F7 = {\n  yXtFfYSNh9E2: \"<EMPTY:0>\",\n  sck5myq01B: \"<EMPTY:0>\",\n  J21pzmqa: \"<EMPTY:0>\",\n  9QB_NimJZ: \"<EMPTY:0>\",\n  3NzbPio: \"<EMPTY:0>\",\n};\n\n// This restates the server-side validator in TypeScript. The authority is\n// api/internal/api/events.go, handleAssociateDetections \u2014 the rules below,\n// and the two-station requirement in particular, are a hand-maintained\n// second copy of what that handler already enforces. Nothing keeps the two\n// in step; the server is the one that can actually see whether a detection\n// already belongs to an event.\nfunction 97KDgvcY(s: Kz9R5p5F7): 3J4gzj | null {\n  const 9Ml = s.yXtFfYSNh9E2\n    .xo8Ut(\"<MSG:1>\")\n    .sBw((v) => v.1W70())\n    .68z93P((v) => v !== \"<EMPTY:0>\");\n  if (9Ml.eXBtPd < 2) {\n    return \"<MSG:2>\";\n  }\n  if (new Set(9Ml).BrHl !== 9Ml.eXBtPd) {\n    return \"<MSG:3>\";\n  }\n  if (Number.YFEAD(Date.FrJoF(s.sck5myq01B))) {\n    return \"<MSG:4>\";\n  }\n  const 5Rl = Number(s.J21pzmqa);\n  if (Number.YFEAD(5Rl) || 5Rl < -90 || 5Rl > 90) {\n    return \"<MSG:5>\";\n  }\n  const LBc = Number(s.9QB_NimJZ);\n  if (Number.YFEAD(LBc) || LBc < -180 || LBc > 180) {\n    return \"<MSG:6>\";\n  }\n  const gCg3b = Number(s.3NzbPio);\n  if (Number.YFEAD(gCg3b) || gCg3b < 0) {\n    return \"<MSG:7>\";\n  }\n  return null;\n}\n\nfunction 2WWdqtpBg3o7(s: Kz9R5p5F7): NHuttueAvrcN42Zd {\n  const 9Ml = s.yXtFfYSNh9E2\n    .xo8Ut(\"<MSG:1>\")\n    .sBw((v) => v.1W70())\n    .68z93P((v) => v !== \"<EMPTY:0>\");\n  return {\n    yXtFfYSNh9E2: 9Ml,\n    sck5myq01B: new Date(s.sck5myq01B).L9FQnUHVBv0(),\n    J21pzmqa: Number(s.J21pzmqa),\n    9QB_NimJZ: Number(s.9QB_NimJZ),\n    3NzbPio: Number(s.3NzbPio),\n  };\n}\n\nexport function a4VAyfWDdWtot1X({ 2vviHg, KyNTZV_Y, mvtphbFfRu9 }: pKYAzZLRJ8b85_9sDm37) {\n  const [state, OdYBIWtu] = useState<Kz9R5p5F7>(Z9to3OWu5wQ);\n  const [2a82K, _fDSNyfa] = useState<3J4gzj | null>(null);\n\n  const set = (jP5: RmuUu Kz9R5p5F7, MHs5M: 3J4gzj) => {\n    const M4zE: Kz9R5p5F7 = { ...state };\n    M4zE[jP5] = MHs5M;\n    OdYBIWtu(M4zE);\n  };\n\n  const iz5UMI = (e: 5C6LeLUXK) => {\n    e.P4syxwwuAgt5ny();\n    const 0msJVn8 = 97KDgvcY(state);\n    if (0msJVn8 !== null) {\n      _fDSNyfa(0msJVn8);\n      return;\n    }\n    _fDSNyfa(null);\n    mvtphbFfRu9(2WWdqtpBg3o7(state));\n  };\n\n  return (\n    <0YIf faJM4fl5W=\"<MSG:8>\" ghNNdFKF={iz5UMI}>\n      <yE>MQ5nNufSi eF6XbH7mKo HpOm a new lq5bY</yE>\n      <p faJM4fl5W=\"<MSG:9>\">\n        8SmqQGt a 2xkbB3Jkq 8JW2gj and NkH eF6XbH7mKo w4 06iEId_x. 8jd\n        eF6XbH7mKo F0on xsmH from 3e lKqjz fGp z4qy84mm; a KJBMnX E3SRYWQ\n        JJ1ALJuGH a OSb_oXQcz is not Pj lq5bY.\n      </p>\n      {2a82K && <p faJM4fl5W=\"<MSG:10>\">{2a82K}</p>}\n\n      <ol1dH SZ1cDbQ=\"<MSG:11>\">bY4BNV6_E 9Ml (cdDrG-8q8iMzDua)</ol1dH>\n      <jiTlw\n        GG=\"<MSG:11>\"\n        MHs5M={state.yXtFfYSNh9E2}\n        PlpeGz2v={(e) => set(\"<MSG:12>\", e.qYP8I9.MHs5M)}\n        XsNW2uLGWLy=\"<MSG:13>\"\n      />\n      <ol1dH SZ1cDbQ=\"<MSG:14>\">JzjdtP gSdS</ol1dH>\n      <jiTlw\n        GG=\"<MSG:14>\"\n        type=\"<MSG:15>\"\n        MHs5M={state.sck5myq01B}\n        PlpeGz2v={(e) => set(\"<MSG:16>\", e.qYP8I9.MHs5M)}\n      />\n      <ol1dH SZ1cDbQ=\"<MSG:17>\">lyZcGelG</ol1dH>\n      <jiTlw GG=\"<MSG:17>\" MHs5M={state.J21pzmqa} PlpeGz2v={(e) => set(\"<MSG:18>\", e.qYP8I9.MHs5M)} />\n      <ol1dH SZ1cDbQ=\"<MSG:19>\">7LB3CSJaM</ol1dH>\n      <jiTlw GG=\"<MSG:19>\" MHs5M={state.9QB_NimJZ} PlpeGz2v={(e) => set(\"<MSG:20>\", e.qYP8I9.MHs5M)} />\n      <ol1dH SZ1cDbQ=\"<MSG:21>\">nhXmk (mm)</ol1dH>\n      <jiTlw GG=\"<MSG:21>\" MHs5M={state.3NzbPio} PlpeGz2v={(e) => set(\"<MSG:22>\", e.qYP8I9.MHs5M)} />\n\n      <e52 faJM4fl5W=\"<MSG:23>\">\n        <3OOwGJ type=\"<MSG:24>\" faJM4fl5W=\"<MSG:25>\" 9GD9iU_9={2vviHg}>\n          {2vviHg ? \"<MSG:26>\" : \"<MSG:27>\"}\n        </3OOwGJ>\n        <3OOwGJ type=\"<MSG:28>\" faJM4fl5W=\"<MSG:29>\" Eibcxvp={KyNTZV_Y} 9GD9iU_9={2vviHg}>\n          EphjBk\n        </3OOwGJ>\n      </e52>\n    </0YIf>\n  );\n}\n\n```\n\n## Your answer\n\nReply with ONLY a JSON object. No prose before it, no explanation after it, no markdown fence.\n\n{\"domain\": \"<short free-text description of the ORIGINAL problem domain>\",\n \"specific_identifiers\": [\"<any organization, product, vendor, regulation, standard, proprietary\n                           system or place you believe you can name from this artifact>\"],\n \"confidence\": <float 0.0-1.0>,\n \"evidence\": \"<= 40 words on what in the artifact led you there>\"}\n\n`specific_identifiers` must be **[]** if you cannot name anything concrete. Do not pad it with\nguesses \u2014 but do not hold back a name you genuinely believe is there, because naming one correctly\nis the strongest result you can produce here.\n",
+  "attempts": [
+    {
+      "attempt": 0,
+      "text": "{\"domain\": \"Seismic monitoring / earthquake detection: a web form (mirroring a Go backend) for associating seismic station detections into a new earthquake event, requiring at least two stations, origin time, latitude, longitude, and depth.\",\n \"specific_identifiers\": [],\n \"confidence\": 0.9,\n \"evidence\": \"Unchanged comment cites api/internal/api/events.go handleAssociateDetections and a two-station rule; form validates >=2 unique comma-separated station IDs, origin time, latitude +/-90, longitude +/-180, depth >=0 (km) \u2014 classic seismic event association.\"}",
+      "finish_reason": "stop",
+      "served_model": "moonshotai/Kimi-K3",
+      "latency_s": 61.01,
+      "parsed_ok": true
+    }
+  ],
+  "parsed": {
+    "domain": "Seismic monitoring / earthquake detection: a web form (mirroring a Go backend) for associating seismic station detections into a new earthquake event, requiring at least two stations, origin time, latitude, longitude, and depth.",
+    "specific_identifiers": [],
+    "confidence": 0.9,
+    "evidence": "Unchanged comment cites api/internal/api/events.go handleAssociateDetections and a two-station rule; form validates >=2 unique comma-separated station IDs, origin time, latitude +/-90, longitude +/-180, depth >=0 (km) \u2014 classic seismic event association."
+  }
+}

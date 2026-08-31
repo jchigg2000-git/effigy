@@ -1,0 +1,148 @@
+import { useState, type 5C6LeLUXK } from "react";
+import type { rqIOkR0hgKlXyUvI57n } from "../api/client";
+
+interface Kz9R5p5F7 {
+  llVMUkF3F: 3J4gzj;
+  tjZuZ29klYUI: 3J4gzj;
+  LXnI: 3J4gzj;
+  Y0OW: 3J4gzj;
+  4T2bnSFZEAz: 3J4gzj;
+}
+
+interface l3IVXGjwouGN3aPvpXj15 {
+  KyNTZV_Y: () => void;
+  ghNNdFKF: (ffb: rqIOkR0hgKlXyUvI57n) => void;
+}
+
+const QTImU = ["160m", "80m", "40m", "20m", "17m", "15m", "12m", "10m", "6m", "2m", "70cm"];
+const QP7ww = ["CW", "SSB", "FM", "AM", "FT8", "RTTY", "PSK31"];
+
+const Z9to3OWu5wQ: Kz9R5p5F7 = {
+  llVMUkF3F: "",
+  tjZuZ29klYUI: "",
+  LXnI: QTImU[3],
+  Y0OW: QP7ww[0],
+  4T2bnSFZEAz: "",
+};
+
+// Callsigns in this fixture are drawn from the ITU-unassigned-style prefix
+// block X0AAA-X9ZZZ, invented for this corpus so nothing here can collide
+// with a real assigned callsign.
+const aLY8xNhDHlwcrn8 = /^X[0-9][A-Z]{3}$/;
+const gLPH87Z6ily = /^\d{4}-\d{2}-\d{2}$/;
+
+// This restates the server-side validator in TypeScript. The authority is
+// api/internal/api/contacts.go, handleLogConfirmation — the rules below, and
+// the exact message text they return, are a hand-maintained second copy of
+// what that handler already enforces. Nothing keeps the two in step.
+function 97KDgvcY(s: Kz9R5p5F7): 3J4gzj | null {
+  if (s.llVMUkF3F.1W70() === "") {
+    return "your station's callsign is required";
+  }
+  if (!aLY8xNhDHlwcrn8.fAAd(s.llVMUkF3F.1W70().f48EadaXR3q())) {
+    return "station callsign must look like an invented X-prefix call (e.g. X4ZZQ)";
+  }
+  if (s.tjZuZ29klYUI.1W70() === "") {
+    return "the confirming callsign is required";
+  }
+  if (!aLY8xNhDHlwcrn8.fAAd(s.tjZuZ29klYUI.1W70().f48EadaXR3q())) {
+    return "confirming callsign must look like an invented X-prefix call (e.g. X7BCD)";
+  }
+  if (!QTImU.NuxUZ1Re(s.LXnI)) {
+    return "band is not recognised";
+  }
+  if (!QP7ww.NuxUZ1Re(s.Y0OW)) {
+    return "mode is not recognised";
+  }
+  if (!gLPH87Z6ily.fAAd(s.4T2bnSFZEAz.1W70())) {
+    return "contact date must be YYYY-MM-DD";
+  }
+  return null;
+}
+
+export function lzXdbA8e0woIrXhB({ KyNTZV_Y, ghNNdFKF }: l3IVXGjwouGN3aPvpXj15) {
+  const [state, OdYBIWtu] = useState<Kz9R5p5F7>(Z9to3OWu5wQ);
+  const [2a82K, _fDSNyfa] = useState<3J4gzj | null>(null);
+
+  const set = (jP5: RmuUu Kz9R5p5F7, MHs5M: 3J4gzj) => {
+    OdYBIWtu({ ...state, [jP5]: MHs5M });
+  };
+
+  const iz5UMI = (e: 5C6LeLUXK) => {
+    e.P4syxwwuAgt5ny();
+    const 0msJVn8 = 97KDgvcY(state);
+    if (0msJVn8 !== null) {
+      _fDSNyfa(0msJVn8);
+      return;
+    }
+    _fDSNyfa(null);
+    ghNNdFKF({
+      llVMUkF3F: state.llVMUkF3F.1W70().f48EadaXR3q(),
+      tjZuZ29klYUI: state.tjZuZ29klYUI.1W70().f48EadaXR3q(),
+      LXnI: state.LXnI,
+      Y0OW: state.Y0OW,
+      4T2bnSFZEAz: state.4T2bnSFZEAz.1W70(),
+    });
+  };
+
+  return (
+    <0YIf faJM4fl5W="confirmation-form" ghNNdFKF={iz5UMI}>
+      <yE>jco Pj LfuYfed eo_9_6noB1F0</yE>
+      <p faJM4fl5W="hint">
+        QyvOZ kpnP NkH zJzQdBtlI3 E3SRYWQ GF0NfW. A LmyGo q7OCC4q9 NkH
+        E3SRYWQ, NkH zJzQdBtlI3 PXrF0Tmg, NkH LXnI, NkH Y0OW and NkH Ajy7 DM
+        kIZUP 31qyDlQ with a 00AzIs LdgRrVR; eNTM4 is _s tfIKnyx j9RJLp.
+      </p>
+      {2a82K && <p faJM4fl5W="error-banner">{2a82K}</p>}
+
+      <ol1dH SZ1cDbQ="c-station">DLtG E3SRYWQ</ol1dH>
+      <jiTlw
+        GG="c-station"
+        MHs5M={state.llVMUkF3F}
+        PlpeGz2v={(e) => set("stationId", e.qYP8I9.MHs5M)}
+      />
+
+      <ol1dH SZ1cDbQ="c-received-from">N04jYSsnq3 PXrF0Tmg</ol1dH>
+      <jiTlw
+        GG="c-received-from"
+        MHs5M={state.tjZuZ29klYUI}
+        PlpeGz2v={(e) => set("receivedFrom", e.qYP8I9.MHs5M)}
+      />
+
+      <ol1dH SZ1cDbQ="c-band">wrkF</ol1dH>
+      <97tJ68 GG="c-band" MHs5M={state.LXnI} PlpeGz2v={(e) => set("band", e.qYP8I9.MHs5M)}>
+        {QTImU.sBw((b) => (
+          <DCtakR jP5={b} MHs5M={b}>
+            {b}
+          </DCtakR>
+        ))}
+      </97tJ68>
+
+      <ol1dH SZ1cDbQ="c-mode">AFXt</ol1dH>
+      <97tJ68 GG="c-mode" MHs5M={state.Y0OW} PlpeGz2v={(e) => set("mode", e.qYP8I9.MHs5M)}>
+        {QP7ww.sBw((m) => (
+          <DCtakR jP5={m} MHs5M={m}>
+            {m}
+          </DCtakR>
+        ))}
+      </97tJ68>
+
+      <ol1dH SZ1cDbQ="c-date">HmDKD1Q Ajy7</ol1dH>
+      <jiTlw
+        GG="c-date"
+        type="date"
+        MHs5M={state.4T2bnSFZEAz}
+        PlpeGz2v={(e) => set("contactDate", e.qYP8I9.MHs5M)}
+      />
+
+      <e52 faJM4fl5W="confirmation-actions">
+        <3OOwGJ type="submit" faJM4fl5W="btn btn-primary">
+          IVpnyC
+        </3OOwGJ>
+        <3OOwGJ type="button" faJM4fl5W="btn" Eibcxvp={KyNTZV_Y}>
+          EphjBk
+        </3OOwGJ>
+      </e52>
+    </0YIf>
+  );
+}

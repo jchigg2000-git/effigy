@@ -1,0 +1,137 @@
+import { useState, type FormEvent } from "react";
+import type { Ident_0001 } from "str_0001";
+
+interface Ident_0002 {
+  ident_0003: string;
+  ident_0004: string;
+  ident_0005: string;
+  ident_0006: string;
+  ident_0007: string;
+}
+
+interface Ident_0008 {
+  ident_0009: boolean;
+  ident_0010: () => void;
+  ident_0011: (ident_0012: Ident_0001) => void;
+}
+
+const Ident_0013: Ident_0002 = {
+  ident_0003: "str_0002",
+  ident_0004: "str_0002",
+  ident_0005: "str_0002",
+  ident_0006: "str_0002",
+  ident_0007: "str_0002",
+};
+
+// -
+// -
+// -
+// -
+// -
+// -
+function ident_0014(ident_0015: Ident_0002): string | null {
+  const ident_0016 = ident_0015.ident_0003
+    .ident_0017("str_0003")
+    .ident_0018((ident_0019) => ident_0019.ident_0020())
+    .ident_0021((ident_0019) => ident_0019 !== "str_0002");
+  if (ident_0016.ident_0022 < 2) {
+    return "str_0004";
+  }
+  if (new Set(ident_0016).ident_0023 !== ident_0016.ident_0022) {
+    return "str_0005";
+  }
+  if (Number.isNaN(Date.ident_0024(ident_0015.ident_0004))) {
+    return "str_0006";
+  }
+  const ident_0025 = Number(ident_0015.ident_0005);
+  if (Number.isNaN(ident_0025) || ident_0025 < -3 || ident_0025 > 3) {
+    return "str_0007";
+  }
+  const ident_0026 = Number(ident_0015.ident_0006);
+  if (Number.isNaN(ident_0026) || ident_0026 < -4 || ident_0026 > 4) {
+    return "str_0008";
+  }
+  const ident_0027 = Number(ident_0015.ident_0007);
+  if (Number.isNaN(ident_0027) || ident_0027 < 0) {
+    return "str_0009";
+  }
+  return null;
+}
+
+function ident_0028(ident_0015: Ident_0002): Ident_0001 {
+  const ident_0016 = ident_0015.ident_0003
+    .ident_0017("str_0003")
+    .ident_0018((ident_0019) => ident_0019.ident_0020())
+    .ident_0021((ident_0019) => ident_0019 !== "str_0002");
+  return {
+    ident_0003: ident_0016,
+    ident_0004: new Date(ident_0015.ident_0004).ident_0029(),
+    ident_0005: Number(ident_0015.ident_0005),
+    ident_0006: Number(ident_0015.ident_0006),
+    ident_0007: Number(ident_0015.ident_0007),
+  };
+}
+
+export function Ident_0030({ ident_0009, ident_0010, ident_0011 }: Ident_0008) {
+  const [ident_0031, ident_0032] = useState<Ident_0002>(Ident_0013);
+  const [ident_0033, ident_0034] = useState<string | null>(null);
+
+  const ident_0035 = (ident_0036: keyof Ident_0002, ident_0037: string) => {
+    const ident_0038: Ident_0002 = { ...ident_0031 };
+    ident_0038[ident_0036] = ident_0037;
+    ident_0032(ident_0038);
+  };
+
+  const ident_0039 = (ident_0040: FormEvent) => {
+    ident_0040.ident_0041();
+    const ident_0042 = ident_0014(ident_0031);
+    if (ident_0042 !== null) {
+      ident_0034(ident_0042);
+      return;
+    }
+    ident_0034(null);
+    ident_0011(ident_0028(ident_0031));
+  };
+
+  return (
+    <form className="str_0010" onSubmit={ident_0039}>
+      <h2>str_0011</h2>
+      <p className="str_0012">
+        str_0013
+
+
+</p>
+      {ident_0033 && <p className="str_0014">{ident_0033}</p>}
+
+      <label htmlFor="str_0015">str_0016</label>
+      <input
+        id="str_0015"
+        value={ident_0031.ident_0003}
+        onChange={(ident_0040) => ident_0035("str_0017", ident_0040.ident_0043.ident_0037)}
+        placeholder="str_0018"
+      />
+      <label htmlFor="str_0019">str_0020</label>
+      <input
+        id="str_0019"
+        type="str_0021"
+        value={ident_0031.ident_0004}
+        onChange={(ident_0040) => ident_0035("str_0022", ident_0040.ident_0043.ident_0037)}
+      />
+      <label htmlFor="str_0023">str_0024</label>
+      <input id="str_0023" value={ident_0031.ident_0005} onChange={(ident_0040) => ident_0035("str_0025", ident_0040.ident_0043.ident_0037)} />
+      <label htmlFor="str_0026">str_0027</label>
+      <input id="str_0026" value={ident_0031.ident_0006} onChange={(ident_0040) => ident_0035("str_0028", ident_0040.ident_0043.ident_0037)} />
+      <label htmlFor="str_0029">str_0030</label>
+      <input id="str_0029" value={ident_0031.ident_0007} onChange={(ident_0040) => ident_0035("str_0031", ident_0040.ident_0043.ident_0037)} />
+
+      <div className="str_0032">
+        <button type="str_0033" className="str_0034" disabled={ident_0009}>
+          {ident_0009 ? "str_0035" : "str_0036"}
+        </button>
+        <button type="str_0037" className="str_0038" onClick={ident_0010} disabled={ident_0009}>
+          str_0039
+</button>
+      </div>
+    </form>
+  );
+}

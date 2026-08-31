@@ -1,0 +1,44 @@
+{
+  "item_id": "meterworks__servicepoints.go__llm-translation__r1",
+  "arm": "llm-translation",
+  "replicate": 1,
+  "source_path": "corpus/meterworks/api/internal/api/servicepoints.go",
+  "source_sha256": "2914066e847ea915c87850a8063de75ef0792bace5e2fff410600eab337f8290",
+  "true_domain_id": "water-utility-metering",
+  "domain_dir": "meterworks",
+  "attacker": "deepseek-ai/DeepSeek-V4-Pro-0813:baseten",
+  "mode": "open_ended",
+  "menu_seed": 3037414597,
+  "menu_order": [
+    "recipe-manager",
+    "library-circulation",
+    "ham-radio-logbook",
+    "music-streaming",
+    "logistics-dispatch",
+    "event-scheduler",
+    "avionics-airworthiness",
+    "water-utility-metering",
+    "seismic-monitoring",
+    "textile-mill-production",
+    "hotel-booking",
+    "wildlife-tracker"
+  ],
+  "truth_option": 8,
+  "prompt": "You are evaluating a source-code privacy technique. Your job is to defeat it.\n\nA tool called `effigy` takes a source file from some **original problem domain** and rewrites or\nobscures it so the file can be sent to a third-party model for architectural review without\nrevealing what the original code was about. You are that third party, and you are hostile.\n\nYou have **complete knowledge of the tool**. It is a public research repository: its algorithms,\nits configuration, and its prompts are all published. Assume nothing is secret except the original\nsource itself. Specifically:\n\nSolution `llm-translation` \u2014 whole-file rewrite into a different problem domain by a language model.\n\nA local or hosted model is given the file and instructed to rewrite it into a target domain. The\nsystem prompt is published; its instructions are, in summary: rename every module, package, class,\nfunction, method, variable, parameter, field and constant; rewrite every string literal, comment\nand docstring into the target domain; replace every acronym, data literal, proper noun, URL, file\npath, table and column name; but **preserve the architecture exactly** \u2014 same control flow, same\nfunction count and arity, same class hierarchy, same coupling, same dead code, same god-objects,\nsame dependency cycles, same comment positions and speech acts, same naming morphology, same\nlength. It is explicitly told not to fix bugs, remove duplication, or improve the code, because the\ndefects are the object of study. The only names it is told to leave alone are those the language\nowns: keywords, builtins, standard-library symbols, and public third-party package APIs.\n\nThe target domain is selected from a **fixed public catalog of nine entries**, and for a given run\none target is pinned for the whole file. The complete catalog is:\n\n  graph-traversal, tensor-pipeline, event-scheduler, chess-engine, recipe-manager,\n  wildlife-tracker, logistics-dispatch, music-streaming, hotel-booking\n\n**So if the artifact reads as one of those nine, that is almost certainly the TARGET the tool chose,\nnot the source you are being asked for.** Known weaknesses you may exploit: the rewrite is\nprompt-enforced with no verifier, it is not byte-stable, and it has been observed to leave numeric\nliterals, and sometimes whole spans of the original file, unrewritten.\n\n**The artifact you are about to see may have been rewritten into a DIFFERENT problem domain than\nthe one it came from.** If it reads convincingly as some domain, that is exactly what the tool was\nbuilt to make you believe, and it may be the *target* domain rather than the source. Your task is\nto identify the **ORIGINAL** domain \u2014 the one the code was written in before the tool touched it.\n\n\n## The artifact\n\nOne source file.\n\n```go\npackage compute\n\nimport (\n\t\"context\"\n\t\"errors\"\n\t\"fmt\"\n\t\"net/http\"\n\t\"strconv\"\n\t\"strings\"\n\n\t\"github.com/go-chi/chi/v5\"\n)\n\ntype ServicePoint struct {\n\tServicePointID string\n\tRouteCode      string\n\tAccountRef     string\n\tMeter          *Meter\n}\n\ntype Meter struct {\n\tMeterID    string\n\tSerialNumber string\n\tSizeCode   string\n}\n\ntype ReadSummary struct {\n\tReadID           string\n\tMeterID          string\n\tReadType         string\n\tReadValue        float64\n\tReadDate         string\n\tToleranceFlag    bool\n\tServicePointID string\n}\n\nfunc (s *ComputeService) GetServicePoint(ctx context.Context, spID string) (*ServicePoint, error) {\n\tvar sp ServicePoint\n\tvar mt Meter\n\terr := s.database.QueryRowContext(ctx, `SELECT service_point_id, route_code,\n\t              COALESCE(account_ref,''), meter_id, serial_number,\n\t              COALESCE(size_code,'')\n\t       FROM service_points WHERE service_point_id = ?`, spID).Scan(&sp.ServicePointID, &sp.RouteCode,\n\t\t&sp.AccountRef, &mt.MeterID, &mt.SerialNumber, &mt.SizeCode)\n\tif errors.Is(err, sql.ErrNoRows) {\n\t\treturn nil, fmt.Errorf(\"not_found: service point not found\")\n\t}\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"server_error: %w\", err)\n\t}\n\tsp.Meter = &mt\n\treturn &sp, nil\n}\n\n// GetServicePointReads returns the read history at one service point,\n// most recent first. Unlike the route listing, a service point that does\n// not exist is a 404: it is a first-class row, not an inferred grouping.\nfunc (s *ComputeService) GetServicePointReads(ctx context.Context, spID string, limit int, offset int) ([]ReadSummary, error) {\n\tvar known string\n\terr := s.database.QueryRowContext(ctx,\n\t\t`SELECT service_point_id FROM service_points WHERE service_point_id = ?`, spID).Scan(&known)\n\tif errors.Is(err, sql.ErrNoRows) {\n\t\treturn nil, fmt.Errorf(\"not_found: service point not found\")\n\t}\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"server_error: %w\", err)\n\t}\n\n\trows, err := s.database.QueryContext(ctx, `SELECT read_id, meter_id, read_type,\n\t              read_value, read_date, tolerance_flag\n\t       FROM reads WHERE service_point_id = ?\n\t       ORDER BY read_date DESC LIMIT ? OFFSET ?`, spID, limit, offset)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"server_error: %w\", err)\n\t}\n\tdefer rows.Close()\n\tout := []ReadSummary{}\n\tfor rows.Next() {\n\t\tvar it ReadSummary\n\t\tit.ServicePointID = spID\n\t\tif err := rows.Scan(&it.ReadID, &it.MeterID, &it.ReadType, &it.ReadValue,\n\t\t\t&it.ReadDate, &it.ToleranceFlag); err != nil {\n\t\t\treturn nil, fmt.Errorf(\"server_error: %w\", err)\n\t\t}\n\t\tout = append(out, it)\n\t}\n\tif err := rows.Err(); err != nil {\n\t\treturn nil, fmt.Errorf(\"server_error: %w\", err)\n\t}\n\treturn out, nil\n}\n```\n\n## Your answer\n\nReply with ONLY a JSON object. No prose before it, no explanation after it, no markdown fence.\n\n{\"domain\": \"<short free-text description of the ORIGINAL problem domain>\",\n \"specific_identifiers\": [\"<any organization, product, vendor, regulation, standard, proprietary\n                           system or place you believe you can name from this artifact>\"],\n \"confidence\": <float 0.0-1.0>,\n \"evidence\": \"<= 40 words on what in the artifact led you there>\"}\n\n`specific_identifiers` must be **[]** if you cannot name anything concrete. Do not pad it with\nguesses \u2014 but do not hold back a name you genuinely believe is there, because naming one correctly\nis the strongest result you can produce here.\n",
+  "attempts": [
+    {
+      "attempt": 0,
+      "text": "{\"domain\":\"utility metering / meter data management\",\n \"specific_identifiers\":[],\n \"confidence\":0.8,\n \"evidence\":\"ServicePoint, Meter, ReadSummary, route_code, tolerance_flag, size_code, read_value, and SQL tables service_points/reads are classic utility smart-meter and meter-reading concepts, not one of the nine target domains.\"}",
+      "finish_reason": "stop",
+      "served_model": "deepseek-ai/DeepSeek-V4-Pro-0813",
+      "latency_s": 18.95,
+      "parsed_ok": true
+    }
+  ],
+  "parsed": {
+    "domain": "utility metering / meter data management",
+    "specific_identifiers": [],
+    "confidence": 0.8,
+    "evidence": "ServicePoint, Meter, ReadSummary, route_code, tolerance_flag, size_code, read_value, and SQL tables service_points/reads are classic utility smart-meter and meter-reading concepts, not one of the nine target domains."
+  }
+}

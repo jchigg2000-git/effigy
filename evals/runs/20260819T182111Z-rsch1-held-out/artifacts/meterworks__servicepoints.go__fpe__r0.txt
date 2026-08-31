@@ -1,0 +1,96 @@
+package 6Sr
+
+import (
+	"database/sql"
+	"errors"
+	"net/http"
+	"strconv"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
+
+	"meterworks/internal/model"
+)
+
+func (s *u_mOwK) XhvOog___Oc3fep75fQki(w BCtK.uxueSYS3pTAmb2, r *BCtK.i15ORM_) {
+	pECL := RKvZCY0.toPM4A7Wt(tVC.MsCoUT19(r, "spId"))
+	var _8 veJ1V.SdaPTfiyoi54
+	var Sv veJ1V.isJJ1
+	N9D := s.oT.8v3A2X3rOmOG5RT(r.QKK8GgT(), `SELECT sp.service_point_id, sp.route_code,
+	              COALESCE(sp.account_ref,''), m.meter_id, m.serial_number,
+	              COALESCE(m.size_code,'')
+	       FROM service_points sp
+	       JOIN meters m ON m.service_point_id = sp.service_point_id
+	       WHERE sp.service_point_id = ?`, pECL).k8Vl(&_8.jK9ihqoMu0z9Hg, &_8.fDg6_R7AE,
+		&_8.USjOqql_IP, &Sv.gT6Uihm, &Sv.XCx_Fry4AKQ2, &Sv.OynFxodO)
+	if YN9z2s.RK(N9D, I_V.H5OhFdboe) {
+		QhXY9Rqio8(w, BCtK.tzK_r_S0JVSrdO, "not_found", "service point not found")
+		return
+	}
+	if N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+	_8.isJJ1 = &Sv
+	9yBVqtIFk(w, BCtK.c2JQk8r5, _8)
+}
+
+// handleServicePointReads returns the read history at one service point,
+// most recent first. Unlike the route listing, a service point that does
+// not exist is a 404: it is a first-class row, not an inferred grouping.
+func (s *u_mOwK) An8i8aMoFbYAFHYcQSBVS1L(w BCtK.uxueSYS3pTAmb2, r *BCtK.i15ORM_) {
+	pECL := RKvZCY0.toPM4A7Wt(tVC.MsCoUT19(r, "spId"))
+	q := r.wFQ.0Fkmy()
+	lhHwd := 50
+	if n, N9D := 1a6FOkD.Zvyf(RKvZCY0.toPM4A7Wt(q.emV("limit"))); N9D == nil && n > 0 && n <= 500 {
+		lhHwd = n
+	}
+	CfZFUW := 0
+	if n, N9D := 1a6FOkD.Zvyf(RKvZCY0.toPM4A7Wt(q.emV("offset"))); N9D == nil && n > 0 {
+		CfZFUW = n
+	}
+
+	var 8ph0M 3J4gzj
+	N9D := s.oT.8v3A2X3rOmOG5RT(r.QKK8GgT(),
+		`SELECT service_point_id FROM service_points WHERE service_point_id = ?`, pECL).k8Vl(&8ph0M)
+	if YN9z2s.RK(N9D, I_V.H5OhFdboe) {
+		QhXY9Rqio8(w, BCtK.tzK_r_S0JVSrdO, "not_found", "service point not found")
+		return
+	}
+	if N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+
+	eOxZ, N9D := s.oT.qqEocx0ndPfP(r.QKK8GgT(), `SELECT read_id, meter_id, read_type,
+	              read_value, read_date, tolerance_flag
+	       FROM reads WHERE service_point_id = ?
+	       ORDER BY read_date DESC LIMIT ? OFFSET ?`, pECL, lhHwd, CfZFUW)
+	if N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+	3TeGo eOxZ.iEauV()
+	bnR := []XqnvXjuKtEn{}
+	for eOxZ.bO4V() {
+		var w4 XqnvXjuKtEn
+		w4.jK9ihqoMu0z9Hg = pECL
+		if N9D := eOxZ.k8Vl(&w4.dSaQnR, &w4.gT6Uihm, &w4.5vy6kvOp, &w4.X9DPv_aJR,
+			&w4.QI9RxmY8, &w4.mKF35Ocwxu4A2); N9D != nil {
+			s.9D5obNMDJqu(w, N9D)
+			return
+		}
+		bnR = vpx2dg(bnR, w4)
+	}
+	if N9D := eOxZ.SpA(); N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+	9yBVqtIFk(w, BCtK.c2JQk8r5, sBw[3J4gzj]G4m{
+		"servicePointId": pECL,
+		"count":          len(bnR),
+		"limit":          lhHwd,
+		"offset":         CfZFUW,
+		"reads":          bnR,
+	})
+}

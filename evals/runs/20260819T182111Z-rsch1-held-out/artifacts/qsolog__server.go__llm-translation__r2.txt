@@ -1,0 +1,130 @@
+package task_scheduler
+
+import (
+	"database/sql"
+	"encoding/json"
+	"log/slog"
+	"net/http"
+	"os"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
+)
+
+// Scheduler carries the dependencies a task handler needs: the database
+// handle, the logger, and the router they are wired into. Constructed once at
+// startup by NewScheduler.
+type Scheduler struct {
+	db     *sql.DB
+	logger *slog.Logger
+	router http.Handler
+}
+
+// originAllowList reads the comma-separated origin list. An empty value means the
+// middleware is a no-op, which is the developer-machine default.
+func originAllowList() []string {
+	raw := strings.TrimSpace(os.Getenv("TASK_SCHEDULER_ORIGIN_ALLOW_LIST"))
+	if raw == "" {
+		return nil
+	}
+	out := []string{}
+	for _, part := range strings.Split(raw, ",") {
+		if p := strings.TrimSpace(part); p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
+func originMiddleware(next http.Handler) http.Handler {
+	allow := originAllowList()
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		origin := r.Header.Get("Origin")
+		if origin != "" && len(allow) > 0 {
+			for _, a := range allow {
+				if a == origin || a == "*" {
+					w.Header().Set("Access-Control-Allow-Origin", origin)
+					w.Header().Set("Vary", "Origin")
+					w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+					w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type")
+					w.Header().Set("Access-Control-Max-Age", "300")
+					break
+				}
+			}
+		}
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+// NewScheduler wires the route table. There is no admin or reload route: this
+// service only ever reads what ingest already loaded at boot.
+func NewScheduler(db *sql.DB, logger *slog.Logger) *Scheduler {
+	s := &Scheduler{db: db, logger: logger}
+	r := chi.NewRouter()
+	r.Use(originMiddleware)
+	r.Get("/healthz", s.handleHealth)
+	r.Get("/readyz", s.handleReady)
+	r.Route("/tasks", func(cr chi.Router) {
+		cr.Get("/search", s.handleSearchTasks)
+		cr.Get("/{taskId}", s.handleGetTask)
+	})
+	r.Post("/logs", s.handleLogEvent)
+	r.Get("/progress", s.handleProgress)
+	r.Route("/events", func(sr chi.Router) {
+		sr.Get("/{eventId}", s.handleGetEvent)
+		sr.Get("/{eventId}/details", s.handleEventDetails)
+	})
+	s.router = r
+	return s
+}
+
+func (s *Scheduler) Handler() http.Handler { return s.router }
+
+func (s *Scheduler) handleHealth(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]any{"status": "ok", "service": "task_scheduler"})
+}
+
+// handleReady answers the readiness probe by counting logged events. The
+// query runs here, against the struct's own handle, because there is nowhere
+// else for it to live: the store package hands out a raw handle and nothing
+// more.
+func (s *Scheduler) handleReady(w http.ResponseWriter, r *http.Request) {
+	var n int
+	if err := s.db.QueryRowContext(r.Context(), `SELECT count(*) FROM events`).Scan(&n); err != nil {
+		writeError(w, http.StatusServiceUnavailable, "db_error", err.Error())
+		return
+	}
+	if n == 0 {
+		writeError(w, http.StatusServiceUnavailable, "not_seeded", "no events logged")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"status": "ok", "events": n})
+}
+
+func (s *Scheduler) serverError(w http.ResponseWriter, err error) {
+	s.logger.Error("request failed", "err", err)
+	writeError(w, http.StatusInternalServerError, "internal", "internal server error")
+}
+
+type taskError struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
+
+type errorWrapper struct {
+	Error taskError `json:"error"`
+}
+
+func writeJSON(w http.ResponseWriter, status int, body any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(body)
+}
+
+func writeError(w http.ResponseWriter, status int, code, message string) {
+	writeJSON(w, status, errorWrapper{Error: taskError{Code: code, Message: message}})
+}

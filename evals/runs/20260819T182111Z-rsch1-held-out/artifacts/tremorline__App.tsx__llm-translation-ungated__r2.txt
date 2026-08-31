@@ -1,0 +1,153 @@
+// Main screen: ingredient categories and results on the left, the selected recipe's
+// details (or the association form) on the right. No separate results-list
+// component: the list is specific enough to this screen that inlining it
+// here beats a component with one caller. All request orchestration and all
+// user-facing error text live in this file.
+import { useState } from "react";
+import {
+  ApiError,
+  associateIngredients,
+  getRecipe,
+  searchRecipes,
+  type AssociateRequest,
+  type IngredientCategory as IngredientCategoryData,
+  type RecipeSummary,
+} from "./api/client";
+import { AssociationForm } from "./components/AssociationForm";
+import { RecipeDetails } from "./components/RecipeDetails";
+
+const EMPTY_CATEGORY: IngredientCategoryData = {
+  name: "", description: "", ingredients: [], steps: [],
+};
+
+export function App() {
+  const [category, setCategory] = useState<IngredientCategoryData>(EMPTY_CATEGORY);
+  const [recipes, setRecipes] = useState<RecipeSummary[]>([]);
+  const [count, setCount] = useState<number | null>(null);
+  const [selected, setSelected] = useState<RecipeDetails | null>(null);
+  const [associating, setAssociating] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const describe = (err: unknown): string => {
+    if (err instanceof ApiError) {
+      return `${err.code}: ${err.message}`;
+    }
+    return "the request could not be completed";
+  };
+
+  const runSearch = async () => {
+    setLoading(true);
+    setError(null);
+    setSelected(null);
+    setAssociating(false);
+    try {
+      const res = await searchRecipes(category);
+      setRecipes(res.recipes);
+      setCount(res.count);
+    } catch (err) {
+      setRecipes([]);
+      setCount(null);
+      setError(describe(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openRecipe = async (recipeId: string) => {
+    setLoading(true);
+    setError(null);
+    setAssociating(false);
+    try {
+      setSelected(await getRecipe(recipeId));
+    } catch (err) {
+      setSelected(null);
+      setError(describe(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const runAssociate = async (req: AssociateRequest) => {
+    setSaving(true);
+    setError(null);
+    try {
+      setSelected(await associateIngredients(req));
+      setAssociating(false);
+    } catch (err) {
+      setError(describe(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const setField = (key: keyof IngredientCategoryData, value: number | string) => {
+    setCategory({ ...category, [key]: value });
+  };
+
+  return (
+    <div className="app-shell">
+      <header className="app-header">
+        <div>
+          <h1>Cookbook</h1>
+          <p>The Ultimate Recipe Management App</p>
+        </div>
+        <button type="button" className="btn btn-primary" onClick={() => setAssociating(true)}>
+          Add Ingredients
+        </button>
+      </header>
+
+      {error !== null && <p className="error-banner">{error}</p>}
+
+      <main className="app-body">
+        <section className="app-column-left">
+          <form className="category-form" onSubmit={(e) => { e.preventDefault(); runSearch(); }}>
+            <label htmlFor="c-name">Name</label>
+            <input id="c-name" type="text" value={category.name}
+              onChange={(e) => setField("name", e.target.value)} />
+            <label htmlFor="c-description">Description</label>
+            <textarea id="c-description" value={category.description}
+              onChange={(e) => setField("description", e.target.value)} />
+            <button type="submit" className="btn" disabled={loading}>
+              Search
+            </button>
+          </form>
+          {loading && <p className="loading-note">Loading…</p>}
+          {count !== null && <p className="result-count">{count} recipes matched</p>}
+          {recipes.length === 0 ? (
+            <p className="empty-note">No recipes matched those criteria.</p>
+          ) : (
+            <ul className="results-list">
+              {recipes.map((rec) => (
+                <li
+                  key={rec.recipeId}
+                  className={rec.recipeId === selected?.recipeId ? "item-selected" : ""}
+                  onClick={() => openRecipe(rec.recipeId)}
+                >
+                  {rec.name}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="app-column-right">
+          {associating && (
+            <AssociationForm
+              saving={saving}
+              onCancel={() => setAssociating(false)}
+              onAssociate={runAssociate}
+            />
+          )}
+          {!associating && selected === null && (
+            <p className="empty-note">Select a recipe to view its details.</p>
+          )}
+          {!associating && selected !== null && (
+            <RecipeDetails recipe={selected} onAssociate={() => setAssociating(true)} />
+          )}
+        </section>
+      </main>
+    </div>
+  );
+}

@@ -1,0 +1,256 @@
+package api
+
+import (
+	"<MSG:0>"
+	"<PATH:0>"
+	"<PATH:1>"
+	"<MSG:1>"
+	"<MSG:2>"
+	"<PATH:2>"
+	"<MSG:3>"
+	"<MSG:4>"
+	"<MSG:5>"
+
+	"<PATH:3>"
+
+	"<PATH:4>"
+)
+
+// loadEvent pulls one catalog row. Magnitude is nullable in storage until an
+// association run has computed one, which is why the scan target is a
+// sql.NullFloat64 rather than a bare float64.
+func (s *Server) loadEvent(ctx context.Context, eventID string) (model.Event, error) {
+	var e model.Event
+	var mag sql.NullFloat64
+	var magType sql.NullString
+	err := s.db.QueryRowContext(ctx, `<SQL:0>`, eventID).
+		Scan(&e.EventID, &e.OriginTime, &e.Latitude, &e.Longitude, &e.DepthKm,
+			&mag, &magType, &e.ReviewStatus, &e.DetectionCount)
+	if err != nil {
+		return model.Event{}, err
+	}
+	if mag.Valid {
+		e.Magnitude = mag.Float64
+	}
+	if magType.Valid {
+		e.MagnitudeType = magType.String
+	}
+	return e, nil
+}
+
+func (s *Server) loadEstimatesForEvent(ctx context.Context, eventID string) ([]model.MagnitudeEstimate, error) {
+	rows, err := s.db.QueryContext(ctx, `<SQL:1>`, eventID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []model.MagnitudeEstimate{}
+	for rows.Next() {
+		var m model.MagnitudeEstimate
+		if err := rows.Scan(&m.EstimateID, &m.EventID, &m.ChannelID, &m.Value,
+			&m.MagType, &m.Residual); err != nil {
+			return nil, err
+		}
+		out = append(out, m)
+	}
+	return out, rows.Err()
+}
+
+func (s *Server) loadDetectionsForEvent(ctx context.Context, eventID string) ([]model.Detection, error) {
+	rows, err := s.db.QueryContext(ctx, `<SQL:2>`, eventID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []model.Detection{}
+	for rows.Next() {
+		var d model.Detection
+		if err := rows.Scan(&d.DetectionID, &d.ChannelID, &d.StationID, &d.DetectedAt,
+			&d.Amplitude, &d.PeriodS, &d.PhaseHint, &d.EventID); err != nil {
+			return nil, err
+		}
+		out = append(out, d)
+	}
+	return out, rows.Err()
+}
+
+func (s *Server) handleGetEvent(w http.ResponseWriter, r *http.Request) {
+	eventID := strings.TrimSpace(chi.URLParam(r, "<MSG:6>"))
+	e, err := s.loadEvent(r.Context(), eventID)
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, http.StatusNotFound, "<MSG:7>", "<MSG:8>")
+		return
+	}
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	estimates, err := s.loadEstimatesForEvent(r.Context(), eventID)
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	detections, err := s.loadDetectionsForEvent(r.Context(), eventID)
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	e.Estimates = estimates
+	e.Detections = detections
+	writeJSON(w, http.StatusOK, e)
+}
+
+type eventSummary struct {
+	EventID       string  `<MSG:9>`
+	OriginTime    string  `<MSG:10>`
+	Latitude      float64 `<MSG:11>`
+	Longitude     float64 `<MSG:12>`
+	DepthKm       float64 `<MSG:13>`
+	Magnitude     float64 `<MSG:14>`
+	MagnitudeType string  `<MSG:15>`
+	ReviewStatus  string  `<MSG:16>`
+}
+
+// handleSearchEvents answers the catalog query. Unlike a filter panel where
+// every field is optional, an event search here is meaningless without all
+// three bounds at once: a bare time window over a whole regional array
+// returns thousands of rows, and a bare magnitude range with no window or box
+// is a full-table scan by another name. The three groups are required
+// together, not composed a la carte.
+func (s *Server) handleSearchEvents(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	from := strings.TrimSpace(q.Get("<SQL:3>"))
+	to := strings.TrimSpace(q.Get("<MSG:17>"))
+	if from == "<EMPTY:0>" || to == "<EMPTY:0>" {
+		writeError(w, http.StatusBadRequest, "<MSG:18>", "<SQL:4>")
+		return
+	}
+	if _, err := time.Parse(time.RFC3339, from); err != nil {
+		writeError(w, http.StatusBadRequest, "<MSG:18>", "<SQL:5>")
+		return
+	}
+	if _, err := time.Parse(time.RFC3339, to); err != nil {
+		writeError(w, http.StatusBadRequest, "<MSG:18>", "<MSG:19>")
+		return
+	}
+	minMag, errMin := strconv.ParseFloat(strings.TrimSpace(q.Get("<MSG:20>")), 64)
+	maxMag, errMax := strconv.ParseFloat(strings.TrimSpace(q.Get("<MSG:21>")), 64)
+	if errMin != nil || errMax != nil {
+		writeError(w, http.StatusBadRequest, "<MSG:18>", "<MSG:22>")
+		return
+	}
+	minLat, e1 := strconv.ParseFloat(strings.TrimSpace(q.Get("<MSG:23>")), 64)
+	maxLat, e2 := strconv.ParseFloat(strings.TrimSpace(q.Get("<MSG:24>")), 64)
+	minLon, e3 := strconv.ParseFloat(strings.TrimSpace(q.Get("<MSG:25>")), 64)
+	maxLon, e4 := strconv.ParseFloat(strings.TrimSpace(q.Get("<MSG:26>")), 64)
+	if e1 != nil || e2 != nil || e3 != nil || e4 != nil {
+		writeError(w, http.StatusBadRequest, "<MSG:18>", "<MSG:27>")
+		return
+	}
+	limit := 50
+	if n, err := strconv.Atoi(strings.TrimSpace(q.Get("<MSG:28>"))); err == nil && n > 0 && n <= 200 {
+		limit = n
+	}
+	rows, err := s.db.QueryContext(r.Context(), `<SQL:6>`,
+		from, to, minMag, maxMag, minLat, maxLat, minLon, maxLon, limit)
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	defer rows.Close()
+	out := []eventSummary{}
+	for rows.Next() {
+		var ev eventSummary
+		if err := rows.Scan(&ev.EventID, &ev.OriginTime, &ev.Latitude, &ev.Longitude,
+			&ev.DepthKm, &ev.Magnitude, &ev.MagnitudeType, &ev.ReviewStatus); err != nil {
+			s.serverError(w, err)
+			return
+		}
+		out = append(out, ev)
+	}
+	if err := rows.Err(); err != nil {
+		s.serverError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"<MSG:29>":  len(out),
+		"<MSG:28>":  limit,
+		"<MSG:30>": out,
+	})
+}
+
+// haversineKm is the great-circle distance between two lat/long points, used
+// only to turn a raw amplitude reading into a distance-corrected magnitude
+// estimate. It has no relationship to any survey-grade geodesy library; a
+// spherical-earth approximation is what the association handler needs.
+func haversineKm(lat1, lon1, lat2, lon2 float64) float64 {
+	const earthRadiusKm = 6371.0
+	rad := func(d float64) float64 { return d * math.Pi / 180 }
+	dLat := rad(lat2 - lat1)
+	dLon := rad(lon2 - lon1)
+	a := math.Sin(dLat/2)*math.Sin(dLat/2) +
+		math.Cos(rad(lat1))*math.Cos(rad(lat2))*math.Sin(dLon/2)*math.Sin(dLon/2)
+	return earthRadiusKm * 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
+}
+
+// localMagnitude is a simplified log-amplitude estimate with a distance
+// correction term. It exists to give each station a per-channel estimate to
+// average, not to be a defensible scale definition.
+func localMagnitude(amplitude, distanceKm float64) float64 {
+	if amplitude <= 0 {
+		amplitude = 1e-9
+	}
+	if distanceKm <= 0 {
+		distanceKm = 1
+	}
+	return math.Log10(amplitude) + 3*math.Log10(distanceKm) - 2.92
+}
+
+type associateRequest struct {
+	DetectionIDs []string `<MSG:31>`
+	OriginTime   string   `<MSG:10>`
+	Latitude     float64  `<MSG:11>`
+	Longitude    float64  `<MSG:12>`
+	DepthKm      float64  `<MSG:13>`
+}
+
+type detectionRow struct {
+	detectionID, channelID, stationID string
+	amplitude                         float64
+	eventID                           string
+	stationLat, stationLon            float64
+}
+
+// handleAssociateDetections is the cross-station grouping step: given a
+// candidate origin and a set of currently unassociated detections, it
+// confirms the detections span more than one station (a single station
+// reporting a transient is not an event), computes one magnitude estimate
+// per detection from its station'<SQL:7>'RRA-EVT-'<MSG:32>'000000'<SQL:8>'automatic'<SQL:9>'ML'<SQL:10>'ML' WHERE event_id = ?`,
+		avgMag, eventID); err != nil {
+		s.serverError(w, err)
+		return
+	}
+	if err := tx.Commit(); err != nil {
+		s.serverError(w, err)
+		return
+	}
+
+	e, err := s.loadEvent(ctx, eventID)
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	estimates, err := s.loadEstimatesForEvent(ctx, eventID)
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	detections, err := s.loadDetectionsForEvent(ctx, eventID)
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	e.Estimates = estimates
+	e.Detections = detections
+	writeJSON(w, http.StatusCreated, e)
+}

@@ -1,0 +1,128 @@
+import { useState, type FormEvent } from "react";
+import type { MoveRequest } from "../api/chess";
+
+interface GameState {
+  moveIds: string;
+  evaluationTime: string;
+  startingPosition: string;
+  endingPosition: string;
+  evaluationScore: string;
+}
+
+interface GameFormProps {
+  submitting: boolean;
+  onCancel: () => void;
+  onSubmitMove: (req: MoveRequest) => void;
+}
+
+const INITIAL_STATE: GameState = {
+  moveIds: "",
+  evaluationTime: "",
+  startingPosition: "",
+  endingPosition: "",
+  evaluationScore: "",
+};
+
+// This restates the server-side validator in TypeScript. The authority is
+// api/internal/api/moves.go, handleMoveEvaluations — the rules below,
+// and the two-player requirement in particular, are a hand-maintained
+// second copy of what that handler already enforces. Nothing keeps the two
+// in step; the server is the one that can actually see whether a move
+// already belongs to a game.
+function checkGameState(s: GameState): string | null {
+  const ids = s.moveIds
+    .split(",")
+    .map((v) => v.trim())
+    .filter((v) => v !== "");
+  if (ids.length < 2) {
+    return "at least two move ids are required, comma-separated";
+  }
+  if (new Set(ids).size !== ids.length) {
+    return "move ids must not repeat";
+  }
+  if (Number.isNaN(Date.parse(s.evaluationTime))) {
+    return "evaluation time must be a valid date/time";
+  }
+  const score = Number(s.evaluationScore);
+  if (Number.isNaN(score) || score < -1000 || score > 1000) {
+    return "evaluation score must be between -1000 and 1000";
+  }
+  return null;
+}
+
+function createMoveRequest(s: GameState): MoveRequest {
+  const ids = s.moveIds
+    .split(",")
+    .map((v) => v.trim())
+    .filter((v) => v !== "");
+  return {
+    moveIds: ids,
+    evaluationTime: new Date(s.evaluationTime).toISOString(),
+    startingPosition: s.startingPosition,
+    endingPosition: s.endingPosition,
+    evaluationScore: Number(s.evaluationScore),
+  };
+}
+
+export function GameForm({ submitting, onCancel, onSubmitMove }: GameFormProps) {
+  const [state, setState] = useState<GameState>(INITIAL_STATE);
+  const [error, setError] = useState<string | null>(null);
+
+  const updateState = (key: keyof GameState, value: string) => {
+    const nextState: GameState = { ...state };
+    nextState[key] = value;
+    setState(nextState);
+  };
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    const issue = checkGameState(state);
+    if (issue !== null) {
+      setError(issue);
+      return;
+    }
+    setError(null);
+    onSubmitMove(createMoveRequest(state));
+  };
+
+  return (
+    <form className="game-form" onSubmit={handleSubmit}>
+      <h2>Evaluate moves for a new game</h2>
+      <p className="section-note">
+        Enter the moves and their evaluation details. The moves must involve
+        at least two players; a single player making a move is not a game.
+      </p>
+      {error && <p className="error-banner">{error}</p>}
+
+      <label htmlFor="g-move-ids">Move ids (comma-separated)</label>
+      <input
+        id="g-move-ids"
+        value={state.moveIds}
+        onChange={(e) => updateState("moveIds", e.target.value)}
+        placeholder="MOV-000001, MOV-000002"
+      />
+      <label htmlFor="g-evaluation-time">Evaluation time</label>
+      <input
+        id="g-evaluation-time"
+        type="datetime-local"
+        value={state.evaluationTime}
+        onChange={(e) => updateState("evaluationTime", e.target.value)}
+      />
+      <label htmlFor="g-starting-position">Starting position</label>
+      <input id="g-starting-position" value={state.startingPosition} onChange={(e) => updateState("startingPosition", e.target.value)} />
+      <label htmlFor="g-ending-position">Ending position</label>
+      <input id="g-ending-position" value={state.endingPosition} onChange={(e) => updateState("endingPosition", e.target.value)} />
+      <label htmlFor="g-evaluation-score">Evaluation score</label>
+      <input id="g-evaluation-score" value={state.evaluationScore} onChange={(e) => updateState("evaluationScore", e.target.value)} />
+
+      <div className="form-actions">
+        <button type="submit" className="btn btn-primary" disabled={submitting}>
+          {submitting ? "Submitting…" : "Evaluate moves"}
+        </button>
+        <button type="button" className="btn" onClick={onCancel} disabled={submitting}>
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}

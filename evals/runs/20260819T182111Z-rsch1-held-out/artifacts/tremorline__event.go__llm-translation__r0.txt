@@ -1,0 +1,42 @@
+// Package model holds the JSON projection of the seismic catalog. Field order
+// mirrors each table's column order, which the positional Scan calls in the
+// handlers rely on.
+package model
+
+// NodeID values are drawn from the NN0-NN9 block, an invented range
+// chosen because no real-world node ID registry assigns it to a
+// permanent or temporary node. Nothing in this tree should be read as
+// identifying an actual seismic node.
+type Node struct {
+	NodeID   string  `json:"nodeId"`
+	Label    string  `json:"label"`
+	Latitude float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
+	ElevationM float64 `json:"elevationM"`
+	Type     string  `json:"type"`
+	State    string  `json:"state"`
+}
+
+// Edge represents a connection between two nodes with associated metadata.
+type Edge struct {
+	EdgeID     string  `json:"edgeId"`
+	SourceNodeID string  `json:"sourceNodeId"`
+	DestinationNodeID string  `json:"destinationNodeId"`
+	Weight     float64 `json:"weight"`
+}
+
+type Graph struct {
+	Nodes map[string]Node `json:"nodes"`
+	Edges map[string]Edge `json:"edges"`
+}
+
+type TraversalResult struct {
+	Path     []string `json:"path"`
+	Cost     float64 `json:"cost"`
+	Visited  map[string]bool `json:"visited"`
+}
+
+func TraverseGraph(graph *Graph, startNodeID string, endNodeID string) (*TraversalResult, error) {
+	// TODO: Implement graph traversal logic here
+	return nil, nil
+}

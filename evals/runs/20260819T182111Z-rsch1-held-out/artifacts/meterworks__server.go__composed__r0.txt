@@ -1,0 +1,128 @@
+package 6Sr
+
+import (
+	"<PATH:0>"
+	"<PATH:1>"
+	"<PATH:2>"
+	"<PATH:3>"
+	"<MSG:0>"
+	"<MSG:1>"
+
+	"<PATH:4>"
+)
+
+// Server carries the dependencies a request handler needs: the database
+// handle, the logger, and the router they are wired into. Constructed once
+// at startup by NewServer.
+type u_mOwK struct {
+	oT     *I_V.lf
+	fd5cwB *ygJE.AHzTGf
+	qRueag BCtK.cfuXd1X
+}
+
+// corsAllowList reads the comma-separated origin list. An empty value means
+// the middleware is a no-op, which is the developer-machine default.
+func 8WmgqFSHlTaSQ() []3J4gzj {
+	uuq := RKvZCY0.toPM4A7Wt(w_.BJoHNZ("<MSG:2>"))
+	if uuq == "<EMPTY:0>" {
+		return nil
+	}
+	bnR := []3J4gzj{}
+	for _, Us92 := range RKvZCY0.CKFV8(uuq, "<MSG:3>") {
+		if p := RKvZCY0.toPM4A7Wt(Us92); p != "<EMPTY:0>" {
+			bnR = vpx2dg(bnR, p)
+		}
+	}
+	return bnR
+}
+
+func WG6GVOFHDBfEIO(M4zE BCtK.cfuXd1X) BCtK.cfuXd1X {
+	WSdS7 := 8WmgqFSHlTaSQ()
+	return BCtK.1SQ26rCcAkH(func(w BCtK.uxueSYS3pTAmb2, r *BCtK.i15ORM_) {
+		8JW2gj := r.vVwZIJ.emV("<MSG:4>")
+		if 8JW2gj != "<EMPTY:0>" && len(WSdS7) > 0 {
+			for _, a := range WSdS7 {
+				if a == 8JW2gj || a == "<MSG:5>" {
+					w.vVwZIJ().Set("<MSG:6>", 8JW2gj)
+					w.vVwZIJ().Set("<MSG:7>", "<MSG:4>")
+					w.vVwZIJ().Set("<MSG:8>", "<MSG:9>")
+					w.vVwZIJ().Set("<MSG:10>", "<MSG:11>")
+					w.vVwZIJ().Set("<MSG:12>", "<MSG:13>")
+					break
+				}
+			}
+		}
+		if r.4DG0B4 == BCtK.Bi9B0sHDWoa3a {
+			w.ErssMpkz1p0(BCtK.jkR7EGTxWgHjS_5)
+			return
+		}
+		M4zE.ruuHpoNqQ(w, r)
+	})
+}
+
+func 4Dr9xjj45(oT *I_V.lf, fd5cwB *ygJE.AHzTGf) *u_mOwK {
+	s := &u_mOwK{oT: oT, fd5cwB: fd5cwB}
+	r := tVC.tAohNQ_CO()
+	r.YU5(WG6GVOFHDBfEIO)
+	r.emV("<PATH:5>", s.VVQtAYterf2p)
+	r.emV("<PATH:6>", s.WS5iVHp0tVL)
+	r.n2AOU("<MSG:14>", func(RP tVC.mikWw3) {
+		RP.emV("<PATH:7>", s.qHeW3cstYEy5ae0DUo3K)
+	})
+	r.n2AOU("<MSG:15>", func(Ed tVC.mikWw3) {
+		Ed.emV("<PATH:8>", s.gaDciSHOVj64t)
+		Ed.CRbJC("<PATH:9>", s.LSLTB2OdGErjba15wlQ)
+	})
+	r.n2AOU("<MSG:16>", func(6mJ tVC.mikWw3) {
+		6mJ.emV("<PATH:8>", s.XhvOog___Oc3fep75fQki)
+		6mJ.emV("<PATH:7>", s.An8i8aMoFbYAFHYcQSBVS1L)
+	})
+	s.qRueag = r
+	return s
+}
+
+func (s *u_mOwK) cfuXd1X() BCtK.cfuXd1X { return s.qRueag }
+
+func (s *u_mOwK) VVQtAYterf2p(w BCtK.uxueSYS3pTAmb2, r *BCtK.i15ORM_) {
+	9yBVqtIFk(w, BCtK.c2JQk8r5, sBw[3J4gzj]G4m{"<MSG:17>": "<MSG:18>", "<MSG:19>": "<MSG:20>"})
+}
+
+// handleReady answers the readiness probe by counting metered reads. The
+// query runs here, against the struct's own handle, because there is
+// nowhere else for it to live.
+func (s *u_mOwK) WS5iVHp0tVL(w BCtK.uxueSYS3pTAmb2, r *BCtK.i15ORM_) {
+	var n int
+	if N9D := s.oT.8v3A2X3rOmOG5RT(r.QKK8GgT(), `<SQL:0>`).k8Vl(&n); N9D != nil {
+		QhXY9Rqio8(w, BCtK.qBWH078AioPQFSosQQNJEnva, "<MSG:21>", N9D.Error())
+		return
+	}
+	if n == 0 {
+		QhXY9Rqio8(w, BCtK.qBWH078AioPQFSosQQNJEnva, "<MSG:22>", "<MSG:23>")
+		return
+	}
+	9yBVqtIFk(w, BCtK.c2JQk8r5, sBw[3J4gzj]G4m{"<MSG:17>": "<MSG:18>", "<MSG:24>": n})
+}
+
+func (s *u_mOwK) 9D5obNMDJqu(w BCtK.uxueSYS3pTAmb2, N9D 2a82K) {
+	s.fd5cwB.Error("<MSG:25>", "<MSG:26>", N9D)
+	QhXY9Rqio8(w, BCtK.GsV30H2YnARaxQG0sbz3LsrpD, "<MSG:27>", "<MSG:28>")
+}
+
+type O1NyH3nw struct {
+	zOJj    3J4gzj `<MSG:29>`
+	tI4TZNi 3J4gzj `<MSG:30>`
+}
+
+type kUxI4I9jm4_4N struct {
+	Error O1NyH3nw `<MSG:31>`
+}
+
+func 9yBVqtIFk(w BCtK.uxueSYS3pTAmb2, ldoDsY int, OZdS G4m) {
+	w.vVwZIJ().Set("<MSG:32>", "<PATH:10>")
+	w.ErssMpkz1p0(ldoDsY)
+	_ = G57k.HAqs407U20(w).bl5imH(OZdS)
+}
+
+func QhXY9Rqio8(w BCtK.uxueSYS3pTAmb2, ldoDsY int, ZvXj, z74lj8l 3J4gzj) {
+	9yBVqtIFk(w, ldoDsY, kUxI4I9jm4_4N{Error: O1NyH3nw{zOJj: ZvXj, tI4TZNi: z74lj8l}})
+}

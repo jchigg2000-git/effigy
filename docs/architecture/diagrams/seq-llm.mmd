@@ -1,0 +1,33 @@
+sequenceDiagram
+    participant API as /husk/llm-translation
+    participant H as llm_translation.husk
+    participant P as _pick_target
+    participant C as OpenAI client
+    participant B as LLM backend (Ollama)
+
+    API->>H: husk(input, crumb_level, options)
+    Note over H: crumb_level ignored
+    H->>P: _pick_target(input, options)
+    alt options.target_domain
+        P-->>H: free-text domain
+    else options.target_id
+        P-->>H: catalog domain or ValueError
+    else default
+        P-->>H: sha256(input) mod catalog
+    end
+    H->>C: chat.completions.create(system+user)
+    C->>B: HTTP request
+    alt connection/timeout
+        B-->>C: error
+        C-->>H: APIConnectionError/Timeout
+        H-->>API: raise BackendUnavailable (502)
+    else finish_reason == length
+        B-->>C: truncated
+        C-->>H: choice
+        H-->>API: raise RuntimeError (500)
+    else ok
+        B-->>C: completion
+        C-->>H: choice
+        H->>H: _strip_code_fence
+        H-->>API: (output, meta)
+    end

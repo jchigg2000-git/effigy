@@ -1,0 +1,15 @@
+{
+  "key": "qsolog__stations.go__blind__r0",
+  "arm": "blind",
+  "replicate": 0,
+  "source_path": "corpus/qsolog/api/internal/api/stations.go",
+  "source_sha256": "0ee9d8e478d6dec639fd77236b8a141b2ea6b982fac5b83ddd05c37626f31dac",
+  "true_domain_id": "ham-radio-logbook",
+  "language": "go",
+  "artifact_sha256": "78fa64915e9263b53f57a3edc0f1250274434f031efb0807f9f29ec10a65ad61",
+  "artifact_lines": 13,
+  "latency_s": 0.0,
+  "solution_meta": {
+    "generated_by": "evals/blind_stub.py"
+  }
+}

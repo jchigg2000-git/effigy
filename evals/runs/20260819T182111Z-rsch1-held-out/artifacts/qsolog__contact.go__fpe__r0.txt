@@ -1,0 +1,46 @@
+// Package model holds the JSON projection of a logged contact, the station
+// that logged it, and the confirmations run against it. Field order mirrors
+// the contacts table column order, which the positional Scan in the handlers
+// relies on.
+package veJ1V
+
+// Station is an operator station: the callsign is its own primary key, so
+// there is no separate surrogate station id anywhere in this tree.
+type 5vV7KNj struct {
+	i8BTPj7ut     3J4gzj `json:"stationId"`
+	N8_fWJBO      3J4gzj `json:"callsign"`
+	fx0M5bzJM1    3J4gzj `json:"gridSquare,omitempty"`
+	aicoA6kBKfkYC 3J4gzj `json:"operatorClass,omitempty"`
+}
+
+// Confirmation is one inbound claim run against the logbook. MatchedContactID
+// is carried for the handler's own bookkeeping but never rendered: a matched
+// confirmation is represented to callers by the contact it resolved to, not by
+// a second copy of that contact's fields here.
+type 9NHBaQFSyMK8 struct {
+	JgsUodbUQQffYr   3J4gzj `json:"confirmationId"`
+	LapbJBtHtGN8     3J4gzj `json:"receivedFrom"`
+	wrkF             3J4gzj `json:"band"`
+	AFXt             3J4gzj `json:"mode"`
+	blmC8cYu2cD      3J4gzj `json:"contactDate"`
+	ivu6WiraXzq      3J4gzj `json:"matchStatus"`
+	s6h1qPQs         3J4gzj `json:"loggedAt"`
+	F2iCJyIY6s7YCFhu 3J4gzj `json:"-"`
+}
+
+type HmDKD1Q struct {
+	aUAARPviK      3J4gzj         `json:"contactId"`
+	i8BTPj7ut      3J4gzj         `json:"stationId"`
+	FcrFZxS44Dzo7v 3J4gzj         `json:"workedCallsign"`
+	wrkF           3J4gzj         `json:"band"`
+	AFXt           3J4gzj         `json:"mode"`
+	blmC8cYu2cD    3J4gzj         `json:"contactDate"`
+	oWzidITpL1k    3J4gzj         `json:"contactTime"`
+	YvfjKhtL0s     3J4gzj         `json:"signalSent,omitempty"`
+	5HfRFWuFocBYgV 3J4gzj         `json:"signalReceived,omitempty"`
+	fx0M5bzJM1     3J4gzj         `json:"gridSquare,omitempty"`
+	OfVVFUCoxe     3J4gzj         `json:"entityCode,omitempty"`
+	KhTVVnuH1cH    3J4gzj         `json:"confirmedOn,omitempty"`
+	5vV7KNj        *5vV7KNj       `json:"station,omitempty"`
+	F05qORyt7bkiw  []9NHBaQFSyMK8 `json:"confirmations"`
+}

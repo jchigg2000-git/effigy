@@ -1,0 +1,37 @@
+// Package taskmodel holds the JSON projection of a scheduled task. Field
+// order mirrors the reads table column order, which the positional Scan in
+// the handlers relies on.
+package taskmodel
+
+type Task struct {
+	TaskID         string `json:"taskId"`
+	ScheduleTime   string `json:"scheduleTime"`
+	Status         string `json:"status,omitempty"`
+}
+
+type EventLoop struct {
+	EventLoopID    string `json:"eventLoopId"`
+	HandlerCode    string `json:"handlerCode"`
+	MaxConcurrent  int    `json:"maxConcurrent"`
+}
+
+type ScheduleRule struct {
+	RuleNumber     int `json:"ruleNumber"`
+	TriggerEvent   string `json:"triggerEvent,omitempty"`
+	ActionTaskID   string `json:"actionTaskId"`
+}
+
+// Execution is derived at runtime from the execution context; it is never stored,
+// only computed and attached to the response.
+type Execution struct {
+	PriorExecutionID string `json:"priorExecutionId,omitempty"`
+	Result           string `json:"result"`
+	ErrorMessage     string `json:"errorMessage,omitempty"`
+}
+
+type Invocation struct {
+	InvocationID   string `json:"invocationId"`
+	TaskID         string `json:"taskId"`
+	ScheduleTime   string `json:"scheduleTime"`
+	ExecutionContext *Execution `json:"executionContext,omitempty"`
+}

@@ -1,0 +1,128 @@
+package ident_0001
+
+import (
+	"database/sql"
+	"encoding/json"
+	"log/slog"
+	"net/http"
+	"os"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
+)
+
+// -
+// -
+// -
+type Ident_0002 struct {
+	ident_0003 *sql.DB
+	ident_0004 *slog.Logger
+	ident_0005 http.Handler
+}
+
+// -
+// -
+func ident_0006() []string {
+	ident_0007 := strings.TrimSpace(os.Getenv("str_0001"))
+	if ident_0007 == "str_0002" {
+		return nil
+	}
+	ident_0008 := []string{}
+	for _, ident_0009 := range strings.Split(ident_0007, "str_0003") {
+		if ident_0010 := strings.TrimSpace(ident_0009); ident_0010 != "str_0002" {
+			ident_0008 = append(ident_0008, ident_0010)
+		}
+	}
+	return ident_0008
+}
+
+func ident_0011(ident_0012 http.Handler) http.Handler {
+	ident_0013 := ident_0006()
+	return http.HandlerFunc(func(ident_0014 http.ResponseWriter, ident_0015 *http.Request) {
+		ident_0016 := ident_0015.Ident_0017.Ident_0018("str_0004")
+		if ident_0016 != "str_0002" && len(ident_0013) > 0 {
+			for _, ident_0019 := range ident_0013 {
+				if ident_0019 == ident_0016 || ident_0019 == "str_0005" {
+					ident_0014.Ident_0017().Ident_0020("str_0006", ident_0016)
+					ident_0014.Ident_0017().Ident_0020("str_0007", "str_0004")
+					ident_0014.Ident_0017().Ident_0020("str_0008", "str_0009")
+					ident_0014.Ident_0017().Ident_0020("str_0010", "str_0011")
+					ident_0014.Ident_0017().Ident_0020("str_0012", "str_0013")
+					break
+				}
+			}
+		}
+		if ident_0015.Ident_0021 == http.MethodOptions {
+			ident_0014.Ident_0022(http.StatusNoContent)
+			return
+		}
+		ident_0012.Ident_0023(ident_0014, ident_0015)
+	})
+}
+
+func Ident_0024(ident_0003 *sql.DB, ident_0004 *slog.Logger) *Ident_0002 {
+	ident_0025 := &Ident_0002{ident_0003: ident_0003, ident_0004: ident_0004}
+	ident_0015 := ident_0026.Ident_0027()
+	ident_0015.Ident_0028(ident_0011)
+	ident_0015.Ident_0018("str_0014", ident_0025.ident_0029)
+	ident_0015.Ident_0018("str_0015", ident_0025.ident_0030)
+	ident_0015.Ident_0031("str_0016", func(ident_0032 ident_0026.Ident_0033) {
+		ident_0032.Ident_0018("str_0017", ident_0025.ident_0034)
+	})
+	ident_0015.Ident_0031("str_0018", func(ident_0035 ident_0026.Ident_0033) {
+		ident_0035.Ident_0018("str_0019", ident_0025.ident_0036)
+		ident_0035.Ident_0037("str_0020", ident_0025.ident_0038)
+	})
+	ident_0015.Ident_0031("str_0021", func(ident_0039 ident_0026.Ident_0033) {
+		ident_0039.Ident_0018("str_0019", ident_0025.ident_0040)
+		ident_0039.Ident_0018("str_0017", ident_0025.ident_0041)
+	})
+	ident_0025.ident_0005 = ident_0015
+	return ident_0025
+}
+
+func (ident_0025 *Ident_0002) Ident_0042() http.Handler { return ident_0025.ident_0005 }
+
+func (ident_0025 *Ident_0002) ident_0029(ident_0014 http.ResponseWriter, ident_0015 *http.Request) {
+	ident_0043(ident_0014, http.StatusOK, map[string]any{"str_0022": "str_0023", "str_0024": "str_0025"})
+}
+
+// -
+// -
+// -
+func (ident_0025 *Ident_0002) ident_0030(ident_0014 http.ResponseWriter, ident_0015 *http.Request) {
+	var ident_0044 int
+	if ident_0045 := ident_0025.ident_0003.Ident_0046(ident_0015.Ident_0047(), `str_0026`).Ident_0048(&ident_0044); ident_0045 != nil {
+		ident_0049(ident_0014, http.StatusServiceUnavailable, "str_0027", ident_0045.Ident_0050())
+		return
+	}
+	if ident_0044 == 0 {
+		ident_0049(ident_0014, http.StatusServiceUnavailable, "str_0028", "str_0029")
+		return
+	}
+	ident_0043(ident_0014, http.StatusOK, map[string]any{"str_0022": "str_0023", "str_0030": ident_0044})
+}
+
+func (ident_0025 *Ident_0002) ident_0051(ident_0014 http.ResponseWriter, ident_0045 error) {
+	ident_0025.ident_0004.Ident_0050("str_0031", "str_0032", ident_0045)
+	ident_0049(ident_0014, http.StatusInternalServerError, "str_0033", "str_0034")
+}
+
+type ident_0052 struct {
+	Ident_0053 string `str_0035`
+	Ident_0054 string `str_0036`
+}
+
+type ident_0055 struct {
+	Ident_0050 ident_0052 `str_0037`
+}
+
+func ident_0043(ident_0014 http.ResponseWriter, ident_0056 int, ident_0057 any) {
+	ident_0014.Ident_0017().Ident_0020("str_0038", "str_0039")
+	ident_0014.Ident_0022(ident_0056)
+	_ = json.NewEncoder(ident_0014).Ident_0058(ident_0057)
+}
+
+func ident_0049(ident_0014 http.ResponseWriter, ident_0056 int, ident_0059, ident_0060 string) {
+	ident_0043(ident_0014, ident_0056, ident_0055{Ident_0050: ident_0052{Ident_0053: ident_0059, Ident_0054: ident_0060}})
+}

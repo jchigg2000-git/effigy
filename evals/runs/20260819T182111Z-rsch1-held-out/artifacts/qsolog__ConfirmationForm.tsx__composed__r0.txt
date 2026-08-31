@@ -1,0 +1,148 @@
+import { useState, type 5C6LeLUXK } from "<MSG:0>";
+import type { rqIOkR0hgKlXyUvI57n } from "<PATH:0>";
+
+interface Kz9R5p5F7 {
+  llVMUkF3F: 3J4gzj;
+  tjZuZ29klYUI: 3J4gzj;
+  LXnI: 3J4gzj;
+  Y0OW: 3J4gzj;
+  4T2bnSFZEAz: 3J4gzj;
+}
+
+interface l3IVXGjwouGN3aPvpXj15 {
+  KyNTZV_Y: () => void;
+  ghNNdFKF: (ffb: rqIOkR0hgKlXyUvI57n) => void;
+}
+
+const QTImU = ["<MSG:1>", "<MSG:2>", "<MSG:3>", "<MSG:4>", "<MSG:5>", "<MSG:6>", "<MSG:7>", "<MSG:8>", "<MSG:9>", "<MSG:10>", "<MSG:11>"];
+const QP7ww = ["<MSG:12>", "<MSG:13>", "<MSG:14>", "<MSG:15>", "<MSG:16>", "<MSG:17>", "<MSG:18>"];
+
+const Z9to3OWu5wQ: Kz9R5p5F7 = {
+  llVMUkF3F: "<EMPTY:0>",
+  tjZuZ29klYUI: "<EMPTY:0>",
+  LXnI: QTImU[3],
+  Y0OW: QP7ww[0],
+  4T2bnSFZEAz: "<EMPTY:0>",
+};
+
+// Callsigns in this fixture are drawn from the ITU-unassigned-style prefix
+// block X0AAA-X9ZZZ, invented for this corpus so nothing here can collide
+// with a real assigned callsign.
+const aLY8xNhDHlwcrn8 = /^X[0-9][A-Z]{3}$/;
+const gLPH87Z6ily = /^\d{4}-\d{2}-\d{2}$/;
+
+// This restates the server-side validator in TypeScript. The authority is
+// api/internal/api/contacts.go, handleLogConfirmation — the rules below, and
+// the exact message text they return, are a hand-maintained second copy of
+// what that handler already enforces. Nothing keeps the two in step.
+function 97KDgvcY(s: Kz9R5p5F7): 3J4gzj | null {
+  if (s.llVMUkF3F.1W70() === "<EMPTY:0>") {
+    return "<MSG:19>";
+  }
+  if (!aLY8xNhDHlwcrn8.fAAd(s.llVMUkF3F.1W70().f48EadaXR3q())) {
+    return "<MSG:20>";
+  }
+  if (s.tjZuZ29klYUI.1W70() === "<EMPTY:0>") {
+    return "<MSG:21>";
+  }
+  if (!aLY8xNhDHlwcrn8.fAAd(s.tjZuZ29klYUI.1W70().f48EadaXR3q())) {
+    return "<MSG:22>";
+  }
+  if (!QTImU.NuxUZ1Re(s.LXnI)) {
+    return "<MSG:23>";
+  }
+  if (!QP7ww.NuxUZ1Re(s.Y0OW)) {
+    return "<MSG:24>";
+  }
+  if (!gLPH87Z6ily.fAAd(s.4T2bnSFZEAz.1W70())) {
+    return "<MSG:25>";
+  }
+  return null;
+}
+
+export function lzXdbA8e0woIrXhB({ KyNTZV_Y, ghNNdFKF }: l3IVXGjwouGN3aPvpXj15) {
+  const [state, OdYBIWtu] = useState<Kz9R5p5F7>(Z9to3OWu5wQ);
+  const [2a82K, _fDSNyfa] = useState<3J4gzj | null>(null);
+
+  const set = (jP5: RmuUu Kz9R5p5F7, MHs5M: 3J4gzj) => {
+    OdYBIWtu({ ...state, [jP5]: MHs5M });
+  };
+
+  const iz5UMI = (e: 5C6LeLUXK) => {
+    e.P4syxwwuAgt5ny();
+    const 0msJVn8 = 97KDgvcY(state);
+    if (0msJVn8 !== null) {
+      _fDSNyfa(0msJVn8);
+      return;
+    }
+    _fDSNyfa(null);
+    ghNNdFKF({
+      llVMUkF3F: state.llVMUkF3F.1W70().f48EadaXR3q(),
+      tjZuZ29klYUI: state.tjZuZ29klYUI.1W70().f48EadaXR3q(),
+      LXnI: state.LXnI,
+      Y0OW: state.Y0OW,
+      4T2bnSFZEAz: state.4T2bnSFZEAz.1W70(),
+    });
+  };
+
+  return (
+    <0YIf faJM4fl5W="<MSG:26>" ghNNdFKF={iz5UMI}>
+      <yE>jco Pj LfuYfed eo_9_6noB1F0</yE>
+      <p faJM4fl5W="<MSG:27>">
+        QyvOZ kpnP NkH zJzQdBtlI3 E3SRYWQ GF0NfW. A LmyGo q7OCC4q9 NkH
+        E3SRYWQ, NkH zJzQdBtlI3 PXrF0Tmg, NkH LXnI, NkH Y0OW and NkH Ajy7 DM
+        kIZUP 31qyDlQ with a 00AzIs LdgRrVR; eNTM4 is _s tfIKnyx j9RJLp.
+      </p>
+      {2a82K && <p faJM4fl5W="<MSG:28>">{2a82K}</p>}
+
+      <ol1dH SZ1cDbQ="<MSG:29>">DLtG E3SRYWQ</ol1dH>
+      <jiTlw
+        GG="<MSG:29>"
+        MHs5M={state.llVMUkF3F}
+        PlpeGz2v={(e) => set("<MSG:30>", e.qYP8I9.MHs5M)}
+      />
+
+      <ol1dH SZ1cDbQ="<SQL:0>">N04jYSsnq3 PXrF0Tmg</ol1dH>
+      <jiTlw
+        GG="<SQL:0>"
+        MHs5M={state.tjZuZ29klYUI}
+        PlpeGz2v={(e) => set("<MSG:31>", e.qYP8I9.MHs5M)}
+      />
+
+      <ol1dH SZ1cDbQ="<MSG:32>">wrkF</ol1dH>
+      <97tJ68 GG="<MSG:32>" MHs5M={state.LXnI} PlpeGz2v={(e) => set("<MSG:33>", e.qYP8I9.MHs5M)}>
+        {QTImU.sBw((b) => (
+          <DCtakR jP5={b} MHs5M={b}>
+            {b}
+          </DCtakR>
+        ))}
+      </97tJ68>
+
+      <ol1dH SZ1cDbQ="<MSG:34>">AFXt</ol1dH>
+      <97tJ68 GG="<MSG:34>" MHs5M={state.Y0OW} PlpeGz2v={(e) => set("<MSG:35>", e.qYP8I9.MHs5M)}>
+        {QP7ww.sBw((m) => (
+          <DCtakR jP5={m} MHs5M={m}>
+            {m}
+          </DCtakR>
+        ))}
+      </97tJ68>
+
+      <ol1dH SZ1cDbQ="<MSG:36>">HmDKD1Q Ajy7</ol1dH>
+      <jiTlw
+        GG="<MSG:36>"
+        type="<MSG:37>"
+        MHs5M={state.4T2bnSFZEAz}
+        PlpeGz2v={(e) => set("<MSG:38>", e.qYP8I9.MHs5M)}
+      />
+
+      <e52 faJM4fl5W="<MSG:39>">
+        <3OOwGJ type="<MSG:40>" faJM4fl5W="<MSG:41>">
+          IVpnyC
+        </3OOwGJ>
+        <3OOwGJ type="<MSG:42>" faJM4fl5W="<MSG:43>" Eibcxvp={KyNTZV_Y}>
+          EphjBk
+        </3OOwGJ>
+      </e52>
+    </0YIf>
+  );
+}

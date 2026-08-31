@@ -1,0 +1,45 @@
+{
+  "key": "tremorline__AssociationForm.tsx__llm-translation-ungated__r2",
+  "arm": "llm-translation-ungated",
+  "replicate": 2,
+  "source_path": "corpus/tremorline/app/src/components/AssociationForm.tsx",
+  "source_sha256": "10e6f5b53e85827aba67598d5b5714dc07fb6dcea811489147fe4d4784bb3dba",
+  "true_domain_id": "seismic-monitoring",
+  "language": "tsx",
+  "artifact_sha256": "8f591f3a85245b60a8f8f9161f122bc44c23cbce9f192cce0c45d8562d2e5d95",
+  "artifact_lines": 136,
+  "latency_s": 9.7,
+  "solution_meta": {
+    "model": "Qwen/Qwen2.5-Coder-7B-Instruct",
+    "base_url": "https://router.huggingface.co/v1",
+    "target_domain": "a chess engine with positions, moves, and evaluations",
+    "target_id": "chess-engine",
+    "temperature": 0.2,
+    "postcondition": {
+      "src_code_lines": 120,
+      "husk_code_lines": 119,
+      "similarity_ratio": 0.668,
+      "ident_retention": 0.612,
+      "code_verbatim": 0.429,
+      "longest_identical_run": 8,
+      "longest_identical_run_share": 0.067,
+      "copied_spans": 1,
+      "copied_span_lines": 8,
+      "copied_span_share": 0.067,
+      "thresholds": {
+        "run_lines": 999999,
+        "run_share": 9.0,
+        "copied_share": 9.0,
+        "retention": 9.0,
+        "ratio": 9.0,
+        "min_code_lines": 12
+      },
+      "verdict": "ok"
+    },
+    "usage": {
+      "prompt_tokens": 2292,
+      "completion_tokens": 1178,
+      "total_tokens": 3470
+    }
+  }
+}

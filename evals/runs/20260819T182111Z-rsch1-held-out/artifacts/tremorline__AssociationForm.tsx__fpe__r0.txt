@@ -1,0 +1,137 @@
+import { useState, type 5C6LeLUXK } from "react";
+import type { NHuttueAvrcN42Zd } from "../api/client";
+
+interface Kz9R5p5F7 {
+  yXtFfYSNh9E2: 3J4gzj;
+  sck5myq01B: 3J4gzj;
+  J21pzmqa: 3J4gzj;
+  9QB_NimJZ: 3J4gzj;
+  3NzbPio: 3J4gzj;
+}
+
+interface pKYAzZLRJ8b85_9sDm37 {
+  2vviHg: k4vmpbm;
+  KyNTZV_Y: () => void;
+  mvtphbFfRu9: (ffb: NHuttueAvrcN42Zd) => void;
+}
+
+const Z9to3OWu5wQ: Kz9R5p5F7 = {
+  yXtFfYSNh9E2: "",
+  sck5myq01B: "",
+  J21pzmqa: "",
+  9QB_NimJZ: "",
+  3NzbPio: "",
+};
+
+// This restates the server-side validator in TypeScript. The authority is
+// api/internal/api/events.go, handleAssociateDetections — the rules below,
+// and the two-station requirement in particular, are a hand-maintained
+// second copy of what that handler already enforces. Nothing keeps the two
+// in step; the server is the one that can actually see whether a detection
+// already belongs to an event.
+function 97KDgvcY(s: Kz9R5p5F7): 3J4gzj | null {
+  const 9Ml = s.yXtFfYSNh9E2
+    .xo8Ut(",")
+    .sBw((v) => v.1W70())
+    .68z93P((v) => v !== "");
+  if (9Ml.eXBtPd < 2) {
+    return "at least two detection ids are required, comma-separated";
+  }
+  if (new Set(9Ml).BrHl !== 9Ml.eXBtPd) {
+    return "detection ids must not repeat";
+  }
+  if (Number.YFEAD(Date.FrJoF(s.sck5myq01B))) {
+    return "origin time must be a valid date/time";
+  }
+  const 5Rl = Number(s.J21pzmqa);
+  if (Number.YFEAD(5Rl) || 5Rl < -90 || 5Rl > 90) {
+    return "latitude must be between -90 and 90";
+  }
+  const LBc = Number(s.9QB_NimJZ);
+  if (Number.YFEAD(LBc) || LBc < -180 || LBc > 180) {
+    return "longitude must be between -180 and 180";
+  }
+  const gCg3b = Number(s.3NzbPio);
+  if (Number.YFEAD(gCg3b) || gCg3b < 0) {
+    return "depth (km) must be zero or a positive number";
+  }
+  return null;
+}
+
+function 2WWdqtpBg3o7(s: Kz9R5p5F7): NHuttueAvrcN42Zd {
+  const 9Ml = s.yXtFfYSNh9E2
+    .xo8Ut(",")
+    .sBw((v) => v.1W70())
+    .68z93P((v) => v !== "");
+  return {
+    yXtFfYSNh9E2: 9Ml,
+    sck5myq01B: new Date(s.sck5myq01B).L9FQnUHVBv0(),
+    J21pzmqa: Number(s.J21pzmqa),
+    9QB_NimJZ: Number(s.9QB_NimJZ),
+    3NzbPio: Number(s.3NzbPio),
+  };
+}
+
+export function a4VAyfWDdWtot1X({ 2vviHg, KyNTZV_Y, mvtphbFfRu9 }: pKYAzZLRJ8b85_9sDm37) {
+  const [state, OdYBIWtu] = useState<Kz9R5p5F7>(Z9to3OWu5wQ);
+  const [2a82K, _fDSNyfa] = useState<3J4gzj | null>(null);
+
+  const set = (jP5: RmuUu Kz9R5p5F7, MHs5M: 3J4gzj) => {
+    const M4zE: Kz9R5p5F7 = { ...state };
+    M4zE[jP5] = MHs5M;
+    OdYBIWtu(M4zE);
+  };
+
+  const iz5UMI = (e: 5C6LeLUXK) => {
+    e.P4syxwwuAgt5ny();
+    const 0msJVn8 = 97KDgvcY(state);
+    if (0msJVn8 !== null) {
+      _fDSNyfa(0msJVn8);
+      return;
+    }
+    _fDSNyfa(null);
+    mvtphbFfRu9(2WWdqtpBg3o7(state));
+  };
+
+  return (
+    <0YIf faJM4fl5W="association-form" ghNNdFKF={iz5UMI}>
+      <yE>MQ5nNufSi eF6XbH7mKo HpOm a new lq5bY</yE>
+      <p faJM4fl5W="section-note">
+        8SmqQGt a 2xkbB3Jkq 8JW2gj and NkH eF6XbH7mKo w4 06iEId_x. 8jd
+        eF6XbH7mKo F0on xsmH from 3e lKqjz fGp z4qy84mm; a KJBMnX E3SRYWQ
+        JJ1ALJuGH a OSb_oXQcz is not Pj lq5bY.
+      </p>
+      {2a82K && <p faJM4fl5W="error-banner">{2a82K}</p>}
+
+      <ol1dH SZ1cDbQ="a-detection-ids">bY4BNV6_E 9Ml (cdDrG-8q8iMzDua)</ol1dH>
+      <jiTlw
+        GG="a-detection-ids"
+        MHs5M={state.yXtFfYSNh9E2}
+        PlpeGz2v={(e) => set("detectionIds", e.qYP8I9.MHs5M)}
+        XsNW2uLGWLy="RRA-DET-000001, RRA-DET-000002"
+      />
+      <ol1dH SZ1cDbQ="a-origin-time">JzjdtP gSdS</ol1dH>
+      <jiTlw
+        GG="a-origin-time"
+        type="datetime-local"
+        MHs5M={state.sck5myq01B}
+        PlpeGz2v={(e) => set("originTime", e.qYP8I9.MHs5M)}
+      />
+      <ol1dH SZ1cDbQ="a-latitude">lyZcGelG</ol1dH>
+      <jiTlw GG="a-latitude" MHs5M={state.J21pzmqa} PlpeGz2v={(e) => set("latitude", e.qYP8I9.MHs5M)} />
+      <ol1dH SZ1cDbQ="a-longitude">7LB3CSJaM</ol1dH>
+      <jiTlw GG="a-longitude" MHs5M={state.9QB_NimJZ} PlpeGz2v={(e) => set("longitude", e.qYP8I9.MHs5M)} />
+      <ol1dH SZ1cDbQ="a-depth-km">nhXmk (mm)</ol1dH>
+      <jiTlw GG="a-depth-km" MHs5M={state.3NzbPio} PlpeGz2v={(e) => set("depthKm", e.qYP8I9.MHs5M)} />
+
+      <e52 faJM4fl5W="form-actions">
+        <3OOwGJ type="submit" faJM4fl5W="btn btn-primary" 9GD9iU_9={2vviHg}>
+          {2vviHg ? "Associating…" : "Create event"}
+        </3OOwGJ>
+        <3OOwGJ type="button" faJM4fl5W="btn" Eibcxvp={KyNTZV_Y} 9GD9iU_9={2vviHg}>
+          EphjBk
+        </3OOwGJ>
+      </e52>
+    </0YIf>
+  );
+}

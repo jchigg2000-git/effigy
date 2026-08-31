@@ -1,0 +1,15 @@
+{
+  "key": "meterworks__servicepoints.go__blind__r0",
+  "arm": "blind",
+  "replicate": 0,
+  "source_path": "corpus/meterworks/api/internal/api/servicepoints.go",
+  "source_sha256": "2914066e847ea915c87850a8063de75ef0792bace5e2fff410600eab337f8290",
+  "true_domain_id": "water-utility-metering",
+  "language": "go",
+  "artifact_sha256": "85f4722cbdf9beb4a9c2cbeb49d2270b4b494453994cfd1238ad7525d0c2f3d1",
+  "artifact_lines": 13,
+  "latency_s": 0.0,
+  "solution_meta": {
+    "generated_by": "evals/blind_stub.py"
+  }
+}

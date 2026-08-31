@@ -1,0 +1,166 @@
+// Event loop scheduler interface: manage task scheduling and execution.
+import { useState } from "scheduler";
+import {
+  TaskError,
+  flagTask,
+  getTaskDetails,
+  listScheduledTasks,
+  type TaskPatch,
+  type TaskInfo,
+  type TaskSummary,
+} from "./task/api";
+import { ExceptionForm } from "./components/ExceptionForm";
+import { TaskDetail } from "./components/TaskDetail";
+
+export function SchedulerApp() {
+  const [routeCode, setRouteCode] = useState("");
+  const [cycleCode, setCycleCode] = useState("");
+  const [tasks, setTasks] = useState<TaskSummary[]>([]);
+  const [totalCount, setTotalCount] = useState<number | null>(null);
+  const [selectedTask, setSelectedTask] = useState<TaskInfo | null>(null);
+  const [flagging, setFlagging] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const describeError = (err: unknown): string =>
+    err instanceof TaskError ? `${err.code}: ${err.message}` : "the task could not be executed";
+
+  const scheduleSearch = async () => {
+    setLoading(true);
+    setError(null);
+    setSelectedTask(null);
+    setFlagging(false);
+    try {
+      const res = await listScheduledTasks(routeCode, { cycleCode: cycleCode || undefined, limit: 50 });
+      setTasks(res.tasks);
+      setTotalCount(res.totalCount);
+    } catch (err) {
+      setTasks([]);
+      setTotalCount(null);
+      setError(describeError(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchTaskDetails = async (taskId: string) => {
+    setLoading(true);
+    setError(null);
+    setFlagging(false);
+    try {
+      setSelectedTask(await getTaskDetails(taskId));
+    } catch (err) {
+      setSelectedTask(null);
+      setError(describeError(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleExceptionSubmission = async (patch: TaskPatch) => {
+    if (selectedTask === null) {
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      setSelectedTask(await flagTask(selectedTask.taskId, patch));
+      setFlagging(false);
+    } catch (err) {
+      setError(describeError(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const clearSelection = () => {
+    setRouteCode("");
+    setCycleCode("");
+    setTasks([]);
+    setTotalCount(null);
+    setSelectedTask(null);
+    setFlagging(false);
+    setError(null);
+  };
+
+  return (
+    <div className="scheduler-app-shell">
+      <header className="scheduler-app-header">
+        <div>
+          <h1>SchedulerWorks</h1>
+          <p>Event Loop Management Console</p>
+        </div>
+      </header>
+
+      {error !== null && <p className="error-banner">{error}</p>}
+
+      <main className="scheduler-app-body">
+        <section className="scheduler-column-left">
+          <form className="route-form" onSubmit={(e) => { e.preventDefault(); scheduleSearch(); }}>
+            <h2>Find tasks by route</h2>
+            <label htmlFor="f-route">Route code</label>
+            <input id="f-route" value={routeCode} placeholder="RT0007"
+              onChange={(e) => setRouteCode(e.target.value)} />
+            <label htmlFor="f-cycle">Cycle (optional)</label>
+            <input id="f-cycle" value={cycleCode} placeholder="20260701"
+              onChange={(e) => setCycleCode(e.target.value)} />
+            <div className="search-actions">
+              <button type="submit" className="btn btn-primary" disabled={routeCode.trim() === "" || loading}>
+                {loading ? "Scheduling…" : "Schedule"}
+              </button>
+              <button type="button" className="btn" onClick={clearSelection} disabled={loading}>
+                Clear
+              </button>
+            </div>
+          </form>
+          {totalCount !== null && <p className="result-count">{totalCount} tasks matched</p>}
+          {tasks.length === 0 ? (
+            <p className="empty-note">No tasks matched that route.</p>
+          ) : (
+            <table className="results-table">
+              <thead>
+                <tr>
+                  <th>Task id</th>
+                  <th>Resource</th>
+                  <th>Status</th>
+                  <th>Priority</th>
+                  <th>Execution time</th>
+                  <th>Retry count</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tasks.map((task) => (
+                  <tr key={task.taskId} onClick={() => fetchTaskDetails(task.taskId)}
+                    className={task.taskId === selectedTask?.taskId ? "row-selected" : ""}>
+                    <td>{task.taskId}</td>
+                    <td>{task.resourceId}</td>
+                    <td>{task.status}</td>
+                    <td>{task.priority}</td>
+                    <td>{task.executionTime}</td>
+                    <td>{task.retryCount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </section>
+
+        <section className="scheduler-column-right">
+          {selectedTask === null && <p className="empty-note">Select a task to see its details.</p>}
+          {selectedTask !== null && !flagging && (
+            <TaskDetail task={selectedTask} onFlag={() => setFlagging(true)} />
+          )}
+          {selectedTask !== null && flagging && (
+            <ExceptionForm
+              task={selectedTask}
+              saving={saving}
+              onCancel={() => setFlagging(false)}
+              onSave={handleExceptionSubmission}
+            />
+          )}
+        </section>
+      </main>
+    </div>
+  );
+}

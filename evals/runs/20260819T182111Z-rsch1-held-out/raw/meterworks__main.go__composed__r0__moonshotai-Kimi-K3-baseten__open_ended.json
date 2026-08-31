@@ -1,0 +1,51 @@
+{
+  "item_id": "meterworks__main.go__composed__r0",
+  "arm": "composed",
+  "replicate": 0,
+  "source_path": "corpus/meterworks/api/cmd/meterworksd/main.go",
+  "source_sha256": "ff23a7603ab82c6b61085b74ea86249f6eac78e802f3d3f0f8c537513fb04497",
+  "true_domain_id": "water-utility-metering",
+  "domain_dir": "meterworks",
+  "attacker": "moonshotai/Kimi-K3:baseten",
+  "mode": "open_ended",
+  "menu_seed": 3051991652,
+  "menu_order": [
+    "wildlife-tracker",
+    "event-scheduler",
+    "logistics-dispatch",
+    "ham-radio-logbook",
+    "seismic-monitoring",
+    "avionics-airworthiness",
+    "recipe-manager",
+    "water-utility-metering",
+    "hotel-booking",
+    "library-circulation",
+    "textile-mill-production",
+    "music-streaming"
+  ],
+  "truth_option": 8,
+  "prompt": "You are evaluating a source-code privacy technique. Your job is to defeat it.\n\nA tool called `effigy` takes a source file from some **original problem domain** and rewrites or\nobscures it so the file can be sent to a third-party model for architectural review without\nrevealing what the original code was about. You are that third party, and you are hostile.\n\nYou have **complete knowledge of the tool**. It is a public research repository: its algorithms,\nits configuration, and its prompts are all published. Assume nothing is secret except the original\nsource itself. Specifically:\n\nSolution `composed` \u2014 `fpe(literal_tagging(src))`, the two transforms above chained by the harness.\nString literals are first replaced by typed placeholders, then every identifier is enciphered under\nthe format-preserving permutation. **Comments survive both transforms unchanged.**\n\n**The artifact you are about to see may have been rewritten into a DIFFERENT problem domain than\nthe one it came from.** If it reads convincingly as some domain, that is exactly what the tool was\nbuilt to make you believe, and it may be the *target* domain rather than the source. Your task is\nto identify the **ORIGINAL** domain \u2014 the one the code was written in before the tool touched it.\n\n\n## The artifact\n\nOne source file.\n\n```go\n// Command meterworksd serves the Cedar Hollow Municipal Water metering API.\n//\n// Everything it needs is inside this tree: the seed file is ./testdata, the\n// database is created under ./data, and the listen address is a literal\n// below rather than an allocation looked up in some table living somewhere\n// else. Clone the repository, run this, and it works.\n//\n// Three environment variables override the defaults, each read at its use site:\n//\n//\tMETERWORKS_ADDR         listen address       (default :8320)\n//\tMETERWORKS_DB_PATH      SQLite file          (default ./data/meterworks.db)\n//\tMETERWORKS_SEED_PATH    MRIF seed file       (default ./testdata/route_seed.mrif)\n//\n// The seed is loaded once, on the first boot against an empty database.\npackage main\n\nimport (\n\t\"<MSG:0>\"\n\t\"<PATH:0>\"\n\t\"<MSG:1>\"\n\t\"<PATH:1>\"\n\t\"<PATH:2>\"\n\t\"<MSG:2>\"\n\t\"<PATH:3>\"\n\t\"<PATH:4>\"\n\t\"<MSG:3>\"\n\t\"<MSG:4>\"\n\t\"<MSG:5>\"\n\n\t_ \"<PATH:5>\"\n\n\t\"<PATH:6>\"\n\t\"<PATH:7>\"\n)\n\nfunc Or3Ya(jP5, 1HqoebOi 3J4gzj) 3J4gzj {\n\tif v := RKvZCY0.toPM4A7Wt(w_.BJoHNZ(jP5)); v != \"<EMPTY:0>\" {\n\t\treturn v\n\t}\n\treturn 1HqoebOi\n}\n\nfunc qF5(fd5cwB *ygJE.AHzTGf) 2a82K {\n\tgLH2 := Or3Ya(\"<MSG:6>\", \"<MSG:7>\")\n\tx1v4vc := Or3Ya(\"<MSG:8>\", \"<PATH:8>\")\n\tQhcB42tH := Or3Ya(\"<MSG:9>\", \"<PATH:9>\")\n\n\tif N9D := w_.XLr2SxQF(T4RP1XSl.XKJ(x1v4vc), 0eorf); N9D != nil {\n\t\treturn N9D\n\t}\n\toT, N9D := I_V.P5F9(\"<MSG:10>\", x1v4vc)\n\tif N9D != nil {\n\t\treturn N9D\n\t}\n\t3TeGo oT.iEauV()\n\n\ttZP, hSoA := w6gjFg.4CDJqPkJGjoo5(EPxUrV0.xzQCOetUCF(), w_.LTcgnCcll, iY6LbH5.MVkUFhX)\n\t3TeGo hSoA()\n\n\t6qyS8m, jhyeWj, N9D := SqyAuH.Zp0Fc9czsSH3(tZP, oT, QhcB42tH)\n\tif N9D != nil {\n\t\treturn N9D\n\t}\n\tif 6qyS8m {\n\t\tfd5cwB.WfSk(\"<MSG:11>\", \"<MSG:12>\", QhcB42tH, \"<MSG:13>\", jhyeWj.qZUIH6TZRIFUs,\n\t\t\t\"<MSG:14>\", jhyeWj.L_VYCk, \"<MSG:15>\", jhyeWj.ncq5n, \"<MSG:16>\", jhyeWj.u7LQbfRb5KP7y)\n\t}\n\n\toVO := &BCtK.u_mOwK{\n\t\tbuXE:              gLH2,\n\t\tcfuXd1X:           6Sr.4Dr9xjj45(oT, fd5cwB).cfuXd1X(),\n\t\taTEouswklDmE0EOZF: 10 * gSdS.WTvbOQ,\n\t}\n\txu func() {\n\t\t<-tZP.Ry6V()\n\t\tEu4FJKsdyTN, 6iC5Rb := EPxUrV0.TsR0Fu0t0Pk(EPxUrV0.xzQCOetUCF(), 5*gSdS.WTvbOQ)\n\t\t3TeGo 6iC5Rb()\n\t\t_ = oVO.O5fT7mHk(Eu4FJKsdyTN)\n\t}()\n\n\tfd5cwB.WfSk(\"<MSG:17>\", \"<MSG:18>\", gLH2, \"<MSG:19>\", x1v4vc, \"<MSG:12>\", QhcB42tH)\n\tif N9D := oVO.ojVnIqsvUrJzdI(); N9D != nil && !YN9z2s.RK(N9D, BCtK.UsMx50LBq4hx6jV) {\n\t\treturn N9D\n\t}\n\tfd5cwB.WfSk(\"<MSG:20>\")\n\treturn nil\n}\n\nfunc main() {\n\tfd5cwB := ygJE.FMX(ygJE.e1bnkML8OqWfb0(w_.G8KErN, &ygJE.8RKaftXSXMu0jF{\n\t\tzLOG5: ygJE.iH9KA8e79,\n\t}))\n\tif N9D := qF5(fd5cwB); N9D != nil {\n\t\tfd5cwB.Error(\"<MSG:21>\", \"<MSG:22>\", N9D)\n\t\tw_.F_1k(1)\n\t}\n}\n\n```\n\n## Your answer\n\nReply with ONLY a JSON object. No prose before it, no explanation after it, no markdown fence.\n\n{\"domain\": \"<short free-text description of the ORIGINAL problem domain>\",\n \"specific_identifiers\": [\"<any organization, product, vendor, regulation, standard, proprietary\n                           system or place you believe you can name from this artifact>\"],\n \"confidence\": <float 0.0-1.0>,\n \"evidence\": \"<= 40 words on what in the artifact led you there>\"}\n\n`specific_identifiers` must be **[]** if you cannot name anything concrete. Do not pad it with\nguesses \u2014 but do not hold back a name you genuinely believe is there, because naming one correctly\nis the strongest result you can produce here.\n",
+  "attempts": [
+    {
+      "attempt": 0,
+      "text": "{\"domain\": \"Municipal water utility meter-reading/metering API: a Go HTTP service (command meterworksd) backed by SQLite, loading meter-reading routes from an MRIF seed file on first boot, then serving the metering API with graceful shutdown.\",\n \"specific_identifiers\": [\"Cedar Hollow Municipal Water\", \"meterworksd\", \"MRIF seed format (./testdata/route_seed.mrif)\", \"METERWORKS_ADDR\", \"METERWORKS_DB_PATH\", \"METERWORKS_SEED_PATH\"],\n \"confidence\": 0.85,\n \"evidence\": \"Comments survive both transforms unchanged and explicitly name the Cedar Hollow Municipal Water metering API, meterworksd, METERWORKS_* env vars, and MRIF route seed; structure matches: env config, SQLite, seed-if-empty with meter/route stats, HTTP server.\"}",
+      "finish_reason": "stop",
+      "served_model": "moonshotai/Kimi-K3",
+      "latency_s": 76.82,
+      "parsed_ok": true
+    }
+  ],
+  "parsed": {
+    "domain": "Municipal water utility meter-reading/metering API: a Go HTTP service (command meterworksd) backed by SQLite, loading meter-reading routes from an MRIF seed file on first boot, then serving the metering API with graceful shutdown.",
+    "specific_identifiers": [
+      "Cedar Hollow Municipal Water",
+      "meterworksd",
+      "MRIF seed format (./testdata/route_seed.mrif)",
+      "METERWORKS_ADDR",
+      "METERWORKS_DB_PATH",
+      "METERWORKS_SEED_PATH"
+    ],
+    "confidence": 0.85,
+    "evidence": "Comments survive both transforms unchanged and explicitly name the Cedar Hollow Municipal Water metering API, meterworksd, METERWORKS_* env vars, and MRIF route seed; structure matches: env config, SQLite, seed-if-empty with meter/route stats, HTTP server."
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "item_id": "qsolog__ContactDetail.tsx__source__r0",
+  "arm": "source",
+  "replicate": 0,
+  "source_path": "corpus/qsolog/app/src/components/ContactDetail.tsx",
+  "source_sha256": "1a44503caaead70c7016c5404f9adc46107966fbb9616d72505d830a462828bf",
+  "true_domain_id": "ham-radio-logbook",
+  "domain_dir": "qsolog",
+  "attacker": "moonshotai/Kimi-K3:baseten",
+  "mode": "forced_choice",
+  "menu_seed": 200422731,
+  "menu_order": [
+    "event-scheduler",
+    "avionics-airworthiness",
+    "wildlife-tracker",
+    "recipe-manager",
+    "logistics-dispatch",
+    "ham-radio-logbook",
+    "water-utility-metering",
+    "textile-mill-production",
+    "library-circulation",
+    "seismic-monitoring",
+    "music-streaming",
+    "hotel-booking"
+  ],
+  "truth_option": 6,
+  "prompt": "You are evaluating a source-code privacy technique. Your job is to defeat it.\n\nA tool called `effigy` takes a source file from some **original problem domain** and rewrites or\nobscures it so the file can be sent to a third-party model for architectural review without\nrevealing what the original code was about. You are that third party, and you are hostile.\n\nYou have **complete knowledge of the tool**. It is a public research repository: its algorithms,\nits configuration, and its prompts are all published. Assume nothing is secret except the original\nsource itself. Specifically:\n\nThe artifact is the **UNMODIFIED ORIGINAL SOURCE FILE**. No transform has been applied. This is a\ncontrol condition.\n\n**The artifact you are about to see may have been rewritten into a DIFFERENT problem domain than\nthe one it came from.** If it reads convincingly as some domain, that is exactly what the tool was\nbuilt to make you believe, and it may be the *target* domain rather than the source. Your task is\nto identify the **ORIGINAL** domain \u2014 the one the code was written in before the tool touched it.\n\n\n## The menu\n\nExactly one of these twelve is the original domain. Some of the others are domains this tool\nrewrites *into*, so they are deliberately tempting.\n\n1. Event scheduling \u2014 Venues, sessions, and attendee registration for a conference scheduling system.\n2. Aircraft airworthiness tracking \u2014 Component life limits, maintenance intervals, and airworthiness directive compliance.\n3. Wildlife tracking \u2014 Tagged animal sightings, collar telemetry, and habitat surveys for a field research program.\n4. Recipe management \u2014 Recipes, ingredients, and meal planning for a cooking application.\n5. Freight dispatch \u2014 Shipment routing, carrier assignment, and delivery tracking for a freight operation.\n6. Amateur radio contact logging \u2014 Logging two-way radio contacts, confirmations, and award tracking for amateur radio operators.\n7. Municipal water metering \u2014 Service points, meter reads, and consumption billing for a municipal water utility.\n8. Textile mill production \u2014 Loom scheduling, yarn lot tracking, and shift production reporting in a weaving mill.\n9. Library catalog and circulation \u2014 Bibliographic holdings, branch lending, reservations, and returns for a public library system.\n10. Seismic event monitoring \u2014 Seismograph station networks, waveform ingest, and earthquake event cataloging.\n11. Music streaming \u2014 Track catalogs, playlists, and listener session handling for a streaming service.\n12. Hotel reservations \u2014 Room inventory, availability search, and guest reservations for a hotel chain.\n\n## The artifact\n\nOne source file.\n\n```tsx\n// Read-only view of a single contact. Renders the record returned by\n// getContact, including every confirmation that has been matched against it.\n// Optional fields that are absent render as an em dash rather than being\n// hidden, so the layout stays stable from one record to the next.\nimport type { Contact } from \"../api/client\";\n\ninterface ContactDetailProps {\n  contact: Contact;\n}\n\nexport function ContactDetail({ contact }: ContactDetailProps) {\n  const confirmations = contact.confirmations ?? [];\n  const confirmed = Boolean(contact.confirmedOn);\n  return (\n    <section className=\"contact-detail\">\n      <div className=\"contact-detail-head\">\n        <div>\n          <h2>{contact.workedCallsign}</h2>\n          <p>{contact.contactId}</p>\n        </div>\n        <span className={confirmed ? \"status-confirmed\" : \"status-unconfirmed\"}>\n          {confirmed ? \"Confirmed\" : \"Unconfirmed\"}\n        </span>\n      </div>\n\n      <dl className=\"detail-grid\">\n        <dt>Contact id</dt>\n        <dd>{contact.contactId}</dd>\n        <dt>Logging station</dt>\n        <dd>{contact.station ? contact.station.callsign : contact.stationId}</dd>\n        <dt>Worked callsign</dt>\n        <dd>{contact.workedCallsign}</dd>\n        <dt>Band</dt>\n        <dd>{contact.band}</dd>\n        <dt>Mode</dt>\n        <dd>{contact.mode}</dd>\n        <dt>Date</dt>\n        <dd>{contact.contactDate}</dd>\n        <dt>Time</dt>\n        <dd>{contact.contactTime}</dd>\n        <dt>Signal sent</dt>\n        <dd>{contact.signalSent || \"\u2014\"}</dd>\n        <dt>Signal received</dt>\n        <dd>{contact.signalReceived || \"\u2014\"}</dd>\n        <dt>Grid square</dt>\n        <dd>{contact.gridSquare || \"\u2014\"}</dd>\n        <dt>Entity code</dt>\n        <dd>{contact.entityCode || \"\u2014\"}</dd>\n        <dt>Confirmed on</dt>\n        <dd>{contact.confirmedOn || \"\u2014\"}</dd>\n        <dt>Station grid</dt>\n        <dd>{contact.station?.gridSquare || \"\u2014\"}</dd>\n        <dt>Operator class</dt>\n        <dd>{contact.station?.operatorClass || \"\u2014\"}</dd>\n      </dl>\n\n      <h3>\n        Confirmations <span className=\"confirmation-count\">{confirmations.length}</span>\n      </h3>\n      {confirmations.length === 0 ? (\n        <p className=\"empty-note\">\n          No confirmations have matched this contact yet. A confirmation only\n          appears here once its station, callsign, band, mode and date agree\n          exactly with this record.\n        </p>\n      ) : (\n        <ul className=\"confirmation-list\">\n          {confirmations.map((c) => (\n            <li key={c.confirmationId}>\n              <span>{c.receivedFrom}</span>\n              <span>{c.band}</span>\n              <span>{c.mode}</span>\n              <span>{c.contactDate}</span>\n              <span>{c.matchStatus}</span>\n              <span>{c.loggedAt}</span>\n            </li>\n          ))}\n        </ul>\n      )}\n\n      {/* The award-progress rollup lives at the station level, not here: one\n          contact's confirmation says nothing about how many distinct entities\n          a station has worked on this band/mode pair. */}\n      <p className=\"hint\">\n        Award credit for this contact, if any, is reflected in the station's\n        award-progress rollup rather than repeated on this page.\n      </p>\n    </section>\n  );\n}\n\n```\n\n## Your answer\n\nReply with ONLY a JSON object. No prose before it, no explanation after it, no markdown fence.\n\n{\"choice\": <integer 1-12>, \"confidence\": <float 0.0-1.0>}\n\n`choice` is the menu number of the **ORIGINAL** domain. You must pick one \u2014 there is no\n\"cannot determine\" and abstaining is not available. `confidence` is your honest probability that\nyour choice is correct; a low confidence is not penalised and is more useful than a bluff.\n",
+  "attempts": [
+    {
+      "attempt": 0,
+      "text": "{\"choice\": 6, \"confidence\": 0.99}",
+      "finish_reason": "stop",
+      "served_model": "moonshotai/Kimi-K3",
+      "latency_s": 1.54,
+      "parsed_ok": true
+    }
+  ],
+  "parsed": {
+    "choice": 6,
+    "confidence": 0.99
+  }
+}

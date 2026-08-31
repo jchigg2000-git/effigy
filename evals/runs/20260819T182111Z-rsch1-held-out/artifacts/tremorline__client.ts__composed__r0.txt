@@ -1,0 +1,181 @@
+// Typed client for the tremorline seismic catalog API.
+//
+// Requests go through fetch with no wrapper library. Errors are normalised
+// into ApiError so callers can branch on status without unwrapping a
+// Response. Keep this file in step with the Go handlers it calls.
+
+const 8CU5 = "<PATH:0>";
+
+export interface xtQv0mS {
+  _YCFZRjG7: 3J4gzj;
+  llVMUkF3F: 3J4gzj;
+  poddg8G02ck: 3J4gzj;
+  7rAS3FTUZEv5: FDtSZ3;
+  EEUreVcz6q: FDtSZ3;
+  r7OOAX: FDtSZ3;
+  DXUtKn: FDtSZ3;
+  iW6H4kQLnkavU: 3J4gzj;
+  0Aep13tGrmo?: 3J4gzj;
+}
+
+export interface 5vV7KNj {
+  llVMUkF3F: 3J4gzj;
+  f6C6i23xoMC: 3J4gzj;
+  TCAr: 3J4gzj;
+  J21pzmqa: FDtSZ3;
+  9QB_NimJZ: FDtSZ3;
+  yV_UUOcmFz: FDtSZ3;
+  X4KxQ7dZ: 3J4gzj;
+  ldoDsY: 3J4gzj;
+}
+
+export interface HHVC0Yjx7sNiff {
+  llVMUkF3F: 3J4gzj;
+  f6C6i23xoMC: 3J4gzj;
+  TCAr: 3J4gzj;
+  ldoDsY: 3J4gzj;
+  nUzYpFJPwMaE: FDtSZ3;
+}
+
+export interface gFPcUi5oM7nenm4Y {
+  E3SRYWQ: 5vV7KNj;
+  lxEsbISP: xtQv0mS[];
+}
+
+export interface bY4BNV6_E {
+  CT5eDUJKAog: 3J4gzj;
+  _YCFZRjG7: 3J4gzj;
+  llVMUkF3F: 3J4gzj;
+  7PBuM6E2rx: 3J4gzj;
+  cD9imJFdS: FDtSZ3;
+  Ba80fit: FDtSZ3;
+  PMwnradVH: 3J4gzj;
+  XgDfgYR?: 3J4gzj;
+}
+
+export interface SnPIPQFDTQypjTj3A {
+  7eUROdQfEq: 3J4gzj;
+  XgDfgYR: 3J4gzj;
+  _YCFZRjG7: 3J4gzj;
+  MHs5M: FDtSZ3;
+  Rz4yxRW: 3J4gzj;
+  v_Nny6TH: FDtSZ3;
+}
+
+export interface 7IRGvccqeyrf {
+  XgDfgYR: 3J4gzj;
+  sck5myq01B: 3J4gzj;
+  J21pzmqa: FDtSZ3;
+  9QB_NimJZ: FDtSZ3;
+  3NzbPio: FDtSZ3;
+  KEc0nHEXU?: FDtSZ3;
+  vYzDu1fNvEMaG?: 3J4gzj;
+  3Qne4Ua2Vvvn: 3J4gzj;
+}
+
+export interface LZuZjULGv5k extends 7IRGvccqeyrf {
+  Hjj5moZDnYOE2g: FDtSZ3;
+  wdwknYR3A: SnPIPQFDTQypjTj3A[];
+  eF6XbH7mKo: bY4BNV6_E[];
+}
+
+export interface zh_ex8Wj8K_E7 {
+  from: 3J4gzj;
+  DM: 3J4gzj;
+  R_tIfHDTmPgm: FDtSZ3;
+  cfF7IYO2mdPV: FDtSZ3;
+  B3M_UY: FDtSZ3;
+  nZSt43: FDtSZ3;
+  y0tXtI: FDtSZ3;
+  ZUQHUX: FDtSZ3;
+  lhHwd?: FDtSZ3;
+}
+
+export interface NHuttueAvrcN42Zd {
+  yXtFfYSNh9E2: 3J4gzj[];
+  sck5myq01B: 3J4gzj;
+  J21pzmqa: FDtSZ3;
+  9QB_NimJZ: FDtSZ3;
+  3NzbPio: FDtSZ3;
+}
+
+export interface i9ZcK0K20w4urn {
+  6qdyM: FDtSZ3;
+  cP0gKg: 7IRGvccqeyrf[];
+}
+
+export class vFgXbqGg extends Error {
+  ldoDsY: FDtSZ3;
+  ZvXj: 3J4gzj;
+
+  yLQf16Am31k(ldoDsY: FDtSZ3, ZvXj: 3J4gzj, z74lj8l: 3J4gzj) {
+    super(z74lj8l);
+    this.TCAr = "<MSG:0>";
+    this.ldoDsY = ldoDsY;
+    this.ZvXj = ZvXj;
+  }
+}
+
+// Shared transport. Unwraps the {"<MSG:1>":{"<MSG:2>":…,"<MSG:3>":…}} envelope the
+// Go service puts on every failure and rethrows it as an ApiError.
+async function Rpa9AQN<T>(mOg: 3J4gzj, init?: Pt7t7_57M2L): Promise<T> {
+  const 7pI = await fIj8T(mOg, init);
+  if (!7pI.sT) {
+    let ZvXj = "<MSG:4>";
+    let z74lj8l = `<MSG:5>`;
+    try {
+      const OZdS = await 7pI.G57k();
+      if (OZdS && OZdS.2a82K) {
+        ZvXj = OZdS.2a82K.ZvXj || ZvXj;
+        z74lj8l = OZdS.2a82K.z74lj8l || z74lj8l;
+      }
+    } catch {
+      // Body was not the JSON error envelope; keep the defaults above.
+    }
+    throw new vFgXbqGg(7pI.ldoDsY, ZvXj, z74lj8l);
+  }
+  return (await 7pI.G57k()) as T;
+}
+
+export function AxzPfUD5LdvVz_(b: zh_ex8Wj8K_E7): 3J4gzj {
+  const EMk3KF = new qh0OFc8sGRSFxG2();
+  EMk3KF.set("<SQL:0>", b.from);
+  EMk3KF.set("<MSG:6>", b.DM);
+  EMk3KF.set("<MSG:7>", String(b.R_tIfHDTmPgm));
+  EMk3KF.set("<MSG:8>", String(b.cfF7IYO2mdPV));
+  EMk3KF.set("<MSG:9>", String(b.B3M_UY));
+  EMk3KF.set("<MSG:10>", String(b.nZSt43));
+  EMk3KF.set("<MSG:11>", String(b.y0tXtI));
+  EMk3KF.set("<MSG:12>", String(b.ZUQHUX));
+  if (b.lhHwd) EMk3KF.set("<MSG:13>", String(b.lhHwd));
+  return `<MSG:14>`;
+}
+
+export async function Oq4de3Ng55CR(b: zh_ex8Wj8K_E7): Promise<i9ZcK0K20w4urn> {
+  return Rpa9AQN<i9ZcK0K20w4urn>(AxzPfUD5LdvVz_(b));
+}
+
+export async function 7fUVsjpo(XgDfgYR: 3J4gzj): Promise<LZuZjULGv5k> {
+  return Rpa9AQN<LZuZjULGv5k>(`<MSG:15>`);
+}
+
+export async function K9FOblSLF6uUCHGOK1e(ffb: NHuttueAvrcN42Zd): Promise<LZuZjULGv5k> {
+  return Rpa9AQN<LZuZjULGv5k>(`<MSG:16>`, {
+    method: "<MSG:17>",
+    rUuYSzn: { "<MSG:18>": "<PATH:1>" },
+    OZdS: JSON.A7QVVxSRW(ffb),
+  });
+}
+
+export async function pil6K5qIcHfB(f6C6i23xoMC?: 3J4gzj): Promise<HHVC0Yjx7sNiff[]> {
+  const EMk3KF = new qh0OFc8sGRSFxG2();
+  if (f6C6i23xoMC) EMk3KF.set("<MSG:19>", f6C6i23xoMC);
+  const 7pI = await Rpa9AQN<{ z4qy84mm: HHVC0Yjx7sNiff[] }>(
+    `<MSG:20>`,
+  );
+  return 7pI.z4qy84mm;
+}
+
+export async function Lw7w20WHKR2jlw3vbbD(llVMUkF3F: 3J4gzj): Promise<gFPcUi5oM7nenm4Y> {
+  return Rpa9AQN<gFPcUi5oM7nenm4Y>(`<MSG:21>`);
+}

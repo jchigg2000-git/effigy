@@ -1,0 +1,63 @@
+{
+  "key": "tremorline__stations.go__structure-only__r0",
+  "arm": "structure-only",
+  "replicate": 0,
+  "source_path": "corpus/tremorline/api/internal/api/stations.go",
+  "source_sha256": "5f5573a9d4671f915b3e9226eed1242ae3fa74da6b68b7d803e1dca4f45c5965",
+  "true_domain_id": "seismic-monitoring",
+  "language": "go",
+  "artifact_sha256": "a06710fcf288a13df6e182cb1dd8a136e3eda3675a0751e0078dd189cef7de7e",
+  "artifact_lines": 114,
+  "latency_s": 0.1,
+  "solution_meta": {
+    "generated_by": "evals/canonicalize.py",
+    "preserved_tokens": [
+      "Join",
+      "Request",
+      "ResponseWriter",
+      "StatusNotFound",
+      "StatusOK",
+      "ToUpper",
+      "TrimSpace",
+      "any",
+      "append",
+      "http",
+      "int",
+      "len",
+      "nil",
+      "string",
+      "strings",
+      "v5"
+    ],
+    "preserved_import_paths": [
+      "\"github.com/go-chi/chi/v5\"",
+      "\"net/http\"",
+      "\"strings\""
+    ],
+    "n_idents_canonicalised": 56,
+    "n_strings_canonicalised": 24,
+    "n_runes_canonicalised": 0,
+    "n_numbers_canonicalised": 0,
+    "counters_delta": {
+      "lines": 0,
+      "bytes": -106,
+      "funcs": 0,
+      "structs": 0,
+      "interfaces": 0,
+      "imports": 0,
+      "exports": 0,
+      "string_literals": 17,
+      "max_brace_depth": 0
+    },
+    "blind_delta": {
+      "bytes": [
+        3651,
+        3545
+      ],
+      "string_literals": [
+        12,
+        29
+      ]
+    }
+  }
+}

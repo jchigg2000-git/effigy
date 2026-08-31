@@ -1,0 +1,21 @@
+{
+  "key": "meterworks__client.ts__fpe__r0",
+  "arm": "fpe",
+  "replicate": 0,
+  "source_path": "corpus/meterworks/app/src/api/client.ts",
+  "source_sha256": "c7f85c7784906d0eca33cb23a15c442e295eaea32b65039ba02a04ca24e19bf3",
+  "true_domain_id": "water-utility-metering",
+  "language": "ts",
+  "artifact_sha256": "6522aea44b932c38b866fbb2e702009b80d07179a9c4f16eb65a97c6bba882b5",
+  "artifact_lines": 141,
+  "latency_s": 0.0,
+  "solution_meta": {
+    "cipher_backend": "pyffx",
+    "identifiers_replaced": 193,
+    "identifiers_skipped": 83,
+    "unique_tokens_replaced": 63,
+    "key_id": "insecure-demo",
+    "pseudonym_collisions": 0,
+    "key_warning": "PUBLIC source-baked demo key; output is trivially reversible"
+  }
+}

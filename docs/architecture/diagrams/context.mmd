@@ -1,0 +1,19 @@
+graph TD
+    subgraph trusted["Trusted tenant (localhost)"]
+        User["Reviewer / Operator"]
+        UI["Husk Test UI<br/>static SPA (vanilla JS)"]
+        API["Husk API<br/>FastAPI service :8000"]
+        FPE["fpe solution (O1)<br/>format-preserving encryption"]
+        LIT["literal-tagging solution (I3)<br/>typed placeholders"]
+        LLM["llm-translation solution (I4)<br/>cross-domain rewrite"]
+        Ollama["Local LLM backend<br/>Ollama / OpenAI-compatible"]
+    end
+    Consumer["Consumer LLM<br/>third-party review service"]
+
+    User --> UI
+    UI -->|POST /husk/slug| API
+    API --> FPE
+    API --> LIT
+    API --> LLM
+    LLM -->|chat completions| Ollama
+    User -.->|pastes husk for review| Consumer

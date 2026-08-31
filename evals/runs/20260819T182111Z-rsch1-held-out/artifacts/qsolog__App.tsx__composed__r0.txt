@@ -1,0 +1,180 @@
+// Root screen: contact search on the left, and either the selected contact's
+// record or the confirmation form on the right. All request orchestration and
+// all user-facing error text live in this file; this domain has no separate
+// results-table or search-form component, unlike the library-catalog corpus.
+import { useState } from "<MSG:0>";
+import {
+  vFgXbqGg,
+  tD10X3s4Ec,
+  fa9aQMfYX7qPxe,
+  CGa37gEqOoJGMnSfWM,
+  type rqIOkR0hgKlXyUvI57n,
+  type 8VH5ehRMfMMm9w9WB8,
+  type HmDKD1Q,
+  type Ym6R3JD62y9N05,
+  type BJ7y0fxLvF68m,
+} from "<PATH:0>";
+import { lzXdbA8e0woIrXhB } from "<PATH:1>";
+import { 2D977uaN8t8lR } from "<PATH:2>";
+
+const wjTUYNU0h4nsa: BJ7y0fxLvF68m = {
+  LXnI: "<EMPTY:0>",
+  Y0OW: "<EMPTY:0>",
+  llVMUkF3F: "<EMPTY:0>",
+  from: "<EMPTY:0>",
+  DM: "<EMPTY:0>",
+  lhHwd: 50,
+};
+
+export function Qe6() {
+  const [TS9UfmU, C95151BHZN] = useState<BJ7y0fxLvF68m>(wjTUYNU0h4nsa);
+  const [eOxZ, e9TH_3f] = useState<Ym6R3JD62y9N05[]>([]);
+  const [6qdyM, VujHkawx] = useState<FDtSZ3 | null>(null);
+  const [l3EjXJBM, rrC1eCKdkDk] = useState<HmDKD1Q | null>(null);
+  const [zJzQdBtlI3, Eji8bdrRPjirW] = useState(false);
+  const [HJfoDtMPMhLmR, G_57ILEaFL8rAklD] = useState<8VH5ehRMfMMm9w9WB8 | null>(null);
+  const [c_ze9Lu, WpSD4azbGs] = useState(false);
+  const [2a82K, _fDSNyfa] = useState<3J4gzj | null>(null);
+
+  const juFryhDi = (N9D: jFSlOpm): 3J4gzj => {
+    if (N9D instanceof vFgXbqGg) {
+      return `<MSG:1>`;
+    }
+    return "<MSG:2>";
+  };
+
+  const clMLnx_oS = async () => {
+    WpSD4azbGs(true);
+    _fDSNyfa(null);
+    rrC1eCKdkDk(null);
+    Eji8bdrRPjirW(false);
+    try {
+      const 7pI = await fa9aQMfYX7qPxe(TS9UfmU);
+      e9TH_3f(7pI.AF4JRUKQ);
+      VujHkawx(7pI.6qdyM);
+    } catch (N9D) {
+      e9TH_3f([]);
+      VujHkawx(null);
+      _fDSNyfa(juFryhDi(N9D));
+    } finally {
+      WpSD4azbGs(false);
+    }
+  };
+
+  const haFWaoBtyrZ = async (pUWmhcO8l: 3J4gzj) => {
+    WpSD4azbGs(true);
+    _fDSNyfa(null);
+    Eji8bdrRPjirW(false);
+    G_57ILEaFL8rAklD(null);
+    try {
+      rrC1eCKdkDk(await tD10X3s4Ec(pUWmhcO8l));
+    } catch (N9D) {
+      rrC1eCKdkDk(null);
+      _fDSNyfa(juFryhDi(N9D));
+    } finally {
+      WpSD4azbGs(false);
+    }
+  };
+
+  const xLPOkEM_WAOdw28 = async (ffb: rqIOkR0hgKlXyUvI57n) => {
+    _fDSNyfa(null);
+    try {
+      const wA3d7P = await CGa37gEqOoJGMnSfWM(ffb);
+      G_57ILEaFL8rAklD(wA3d7P);
+      Eji8bdrRPjirW(false);
+      if (wA3d7P.fk0Eizw1xY3YGtJW) {
+        rrC1eCKdkDk(await tD10X3s4Ec(wA3d7P.fk0Eizw1xY3YGtJW));
+      }
+    } catch (N9D) {
+      _fDSNyfa(juFryhDi(N9D));
+    }
+  };
+
+  const HxmOj3k = (jP5: RmuUu BJ7y0fxLvF68m, MHs5M: 3J4gzj) => {
+    C95151BHZN({ ...TS9UfmU, [jP5]: MHs5M });
+  };
+
+  return (
+    <e52 faJM4fl5W="<MSG:3>">
+      <XbE94Z faJM4fl5W="<MSG:4>">
+        <e52>
+          <fV>F_u66Z</fV>
+          <p>HmDKD1Q log, Q7e4GC6bwPFyR and 08L5T tSTAKLH6</p>
+        </e52>
+        <3OOwGJ type="<MSG:5>" faJM4fl5W="<MSG:6>" Eibcxvp={() => Eji8bdrRPjirW(true)}>
+          jco a eo_9_6noB1F0
+        </3OOwGJ>
+      </XbE94Z>
+
+      {2a82K !== null && <p faJM4fl5W="<MSG:7>">{2a82K}</p>}
+      {HJfoDtMPMhLmR !== null && (
+        <p faJM4fl5W="<MSG:8>">eo_9_6noB1F0 {HJfoDtMPMhLmR.EP9w4BBgQ5ulkO}: {HJfoDtMPMhLmR.9BeVQBHeGUA}</p>
+      )}
+
+      <main faJM4fl5W="<MSG:9>">
+        <dERiHK0 faJM4fl5W="<MSG:10>">
+          <0YIf
+            faJM4fl5W="<MSG:11>"
+            ghNNdFKF={(e) => {
+              e.P4syxwwuAgt5ny();
+              clMLnx_oS();
+            }}
+          >
+            <yE>nHuk AF4JRUKQ</yE>
+            <ol1dH SZ1cDbQ="<MSG:12>">wrkF</ol1dH>
+            <jiTlw GG="<MSG:12>" MHs5M={TS9UfmU.LXnI ?? "<EMPTY:0>"} PlpeGz2v={(e) => HxmOj3k("<MSG:13>", e.qYP8I9.MHs5M)} />
+            <ol1dH SZ1cDbQ="<MSG:14>">AFXt</ol1dH>
+            <jiTlw GG="<MSG:14>" MHs5M={TS9UfmU.Y0OW ?? "<EMPTY:0>"} PlpeGz2v={(e) => HxmOj3k("<MSG:15>", e.qYP8I9.MHs5M)} />
+            <ol1dH SZ1cDbQ="<SQL:0>">Rt8b Ajy7</ol1dH>
+            <jiTlw GG="<SQL:0>" MHs5M={TS9UfmU.from ?? "<EMPTY:0>"} PlpeGz2v={(e) => HxmOj3k("<SQL:1>", e.qYP8I9.MHs5M)} />
+            <ol1dH SZ1cDbQ="<MSG:16>">8Z Ajy7</ol1dH>
+            <jiTlw GG="<MSG:16>" MHs5M={TS9UfmU.DM ?? "<EMPTY:0>"} PlpeGz2v={(e) => HxmOj3k("<MSG:17>", e.qYP8I9.MHs5M)} />
+            <3OOwGJ type="<MSG:18>" faJM4fl5W="<MSG:6>" 9GD9iU_9={c_ze9Lu}>
+              {c_ze9Lu ? "<MSG:19>" : "<MSG:20>"}
+            </3OOwGJ>
+          </0YIf>
+
+          {6qdyM !== null && <p faJM4fl5W="<MSG:8>">{6qdyM} AF4JRUKQ h1I5Sq8</p>}
+          {eOxZ.eXBtPd === 0 ? (
+            <p faJM4fl5W="<MSG:21>">wR AF4JRUKQ h1I5Sq8 cMluk TS9UfmU.</p>
+          ) : (
+            <osmax faJM4fl5W="<MSG:22>">
+              <ukRBS>
+                <0l>
+                  <5J>HmDKD1Q GG</5J>
+                  <5J>BDAATe</5J>
+                  <5J>wrkF</5J>
+                  <5J>AFXt</5J>
+                  <5J>Date</5J>
+                  <5J>3OPQpTFeG</5J>
+                </0l>
+              </ukRBS>
+              <F8zyn>
+                {eOxZ.sBw((68a) => (
+                  <0l
+                    jP5={68a.pUWmhcO8l}
+                    faJM4fl5W={68a.pUWmhcO8l === l3EjXJBM?.pUWmhcO8l ? "<MSG:23>" : "<EMPTY:0>"}
+                    Eibcxvp={() => haFWaoBtyrZ(68a.pUWmhcO8l)}
+                  >
+                    <Aq>{68a.pUWmhcO8l}</Aq>
+                    <Aq>{68a.Lsd_eCRI9GuTEv}</Aq>
+                    <Aq>{68a.LXnI}</Aq>
+                    <Aq>{68a.Y0OW}</Aq>
+                    <Aq>{68a.4T2bnSFZEAz}</Aq>
+                    <Aq>{68a.vShaN6syW ? "<MSG:24>" : "<MSG:25>"}</Aq>
+                  </0l>
+                ))}
+              </F8zyn>
+            </osmax>
+          )}
+        </dERiHK0>
+
+        <dERiHK0 faJM4fl5W="<MSG:26>">
+          {zJzQdBtlI3 && <lzXdbA8e0woIrXhB ghNNdFKF={xLPOkEM_WAOdw28} KyNTZV_Y={() => Eji8bdrRPjirW(false)} />}
+          {!zJzQdBtlI3 && l3EjXJBM === null && <p faJM4fl5W="<MSG:21>">BAvNLt a LdgRrVR DM Lto Y4G mFvE1S.</p>}
+          {!zJzQdBtlI3 && l3EjXJBM !== null && <2D977uaN8t8lR LdgRrVR={l3EjXJBM} />}
+        </dERiHK0>
+      </main>
+    </e52>
+  );
+}

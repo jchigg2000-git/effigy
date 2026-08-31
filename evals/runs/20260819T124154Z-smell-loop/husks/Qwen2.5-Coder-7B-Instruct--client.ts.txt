@@ -1,0 +1,130 @@
+// Typed client for the music streaming service API.
+
+const BASE_URL = "/music/api";
+
+export interface Track {
+  trackId: string;
+  artist: string;
+  album: string;
+  releaseDate: string;
+  genre: string;
+}
+
+export interface Playlist {
+  playlistId: string;
+  name: string;
+  description: string;
+  tracks: Track[];
+}
+
+export interface Listener {
+  listenerId: string;
+  username: string;
+  email: string;
+  subscriptionPlan: string;
+}
+
+export interface SearchCriteria {
+  query?: string;
+  artist?: string;
+  album?: string;
+  releaseDate?: string;
+  genre?: string;
+  limit?: number;
+}
+
+export interface SearchResult {
+  count: number;
+  tracks: Track[];
+}
+
+export interface PlaylistUpdate {
+  name?: string;
+  description?: string;
+  tracks?: Track[];
+}
+
+export interface TrackUpdate {
+  artist?: string;
+  album?: string;
+  releaseDate?: string;
+  genre?: string;
+}
+
+export class ServiceError extends Error {
+  statusCode: number;
+  errorCode: string;
+
+  constructor(statusCode: number, errorCode: string, message: string) {
+    super(message);
+    this.name = "ServiceError";
+    this.statusCode = statusCode;
+    this.errorCode = errorCode;
+  }
+}
+
+// Shared transport. Unwraps the {"error":{"errorCode":…,"message":…}} envelope the
+// Go service puts on every failure and rethrows it as a ServiceError.
+async function sendRequest<T>(url: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(url, init);
+  if (!response.ok) {
+    let errorCode = "internal";
+    let errorMessage = `request failed with status ${response.status}`;
+    try {
+      const responseBody = await response.json();
+      if (responseBody && responseBody.error) {
+        errorCode = responseBody.error.errorCode || errorCode;
+        errorMessage = responseBody.error.message || errorMessage;
+      }
+    } catch {
+      // Response body was not the JSON error envelope; keep the defaults above.
+    }
+    throw new ServiceError(response.status, errorCode, errorMessage);
+  }
+  return (await response.json()) as T;
+}
+
+export function createSearchUrl(criteria: SearchCriteria): string {
+  const queryParams = new URLSearchParams();
+  if (criteria.query) queryParams.set("query", criteria.query);
+  if (criteria.artist) queryParams.set("artist", criteria.artist);
+  if (criteria.album) queryParams.set("album", criteria.album);
+  if (criteria.releaseDate) queryParams.set("releaseDate", criteria.releaseDate);
+  if (criteria.genre) queryParams.set("genre", criteria.genre);
+  if (criteria.limit) queryParams.set("limit", String(criteria.limit));
+  return `${BASE_URL}/search?${queryParams.toString()}`;
+}
+
+export function hasAnyCriteria(criteria: SearchCriteria): boolean {
+  return Boolean(
+    criteria.query || criteria.artist || criteria.album || criteria.releaseDate || criteria.genre,
+  );
+}
+
+export async function searchTracks(criteria: SearchCriteria): Promise<SearchResult> {
+  if (!hasAnyCriteria(criteria)) {
+    throw new ServiceError(
+      400,
+      "bad_request",
+      "at least one criteria required (query, artist, album, releaseDate, genre)",
+    );
+  }
+  return sendRequest<SearchResult>(createSearchUrl(criteria));
+}
+
+export async function getTrack(id: string): Promise<Track> {
+  return sendRequest<Track>(`${BASE_URL}/tracks/${encodeURIComponent(id)}`);
+}
+
+export async function updateTrack(id: string, update: TrackUpdate): Promise<Track> {
+  // Bare method name and MIME string, both inline at the call.
+  return sendRequest<Track>(`${BASE_URL}/tracks/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(update),
+  });
+}
+
+export function exportTrackUrl(id: string): string {
+  return `${BASE_URL}/tracks/${encodeURIComponent(id)}/export`;
+}

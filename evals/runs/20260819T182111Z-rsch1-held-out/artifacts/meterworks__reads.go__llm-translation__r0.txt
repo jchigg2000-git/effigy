@@ -1,0 +1,273 @@
+package api
+
+import (
+	"context"
+	"database/sql"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"regexp"
+	"strconv"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
+
+	"meterworks/internal/model"
+)
+
+// fetchNode pulls one node together with its associated edges. Four fields come from the node,
+// two from each edge, in the order the SELECT list declares them.
+func (g *Graph) fetchNode(ctx context.Context, nodeID string) (model.Node, error) {
+	var nd model.Node
+	var ed1 model.Edge
+	var ed2 model.Edge
+	err := g.db.QueryRowContext(ctx, `SELECT n.node_id, n.label, e1.edge_id, e1.source_node_id, e1.target_node_id, e1.weight,
+	              e2.edge_id, e2.source_node_id, e2.target_node_id, e2.weight
+	       FROM nodes n
+	       LEFT JOIN edges e1 ON e1.source_node_id = n.node_id
+	       LEFT JOIN edges e2 ON e2.target_node_id = n.node_id
+	       WHERE n.node_id = ?`, nodeID).Scan(&nd.NodeID, &nd.Label, &ed1.EdgeID, &ed1.SourceNodeID, &ed1.TargetNodeID, &ed1.Weight,
+		&ed2.EdgeID, &ed2.SourceNodeID, &ed2.TargetNodeID, &ed2.Weight)
+	if err != nil {
+		return model.Node{}, err
+	}
+	nd.Edges = []model.Edge{ed1, ed2}
+	return nd, nil
+}
+
+// precedingNode finds the most recent trusted node connected to the same meter, visited before this one.
+// Estimated nodes are skipped: they carry no register value the tiered calculation can build an interval from.
+func (g *Graph) precedingNode(ctx context.Context, meterID, nodeID, visitDate string) (string, float64, bool) {
+	var id string
+	var weight float64
+	err := g.db.QueryRowContext(ctx, `SELECT node_id, weight FROM nodes
+	       WHERE meter_id = ? AND node_id != ? AND visit_date < ? AND type != 'ESTIMATED'
+	       ORDER BY visit_date DESC LIMIT 1`, meterID, nodeID, visitDate).Scan(&id, &weight)
+	if err != nil {
+		return "", 0, false
+	}
+	return id, weight, true
+}
+
+func (g *Graph) calculateNodeWeights(ctx context.Context, cycleCode string) ([]model.NodeWeight, error) {
+	rows, err := g.db.QueryContext(ctx, `SELECT node_id, COALESCE(max_weight,0) FROM node_weights WHERE cycle_code = ?
+	       ORDER BY node_id`, cycleCode)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []model.NodeWeight{}
+	for rows.Next() {
+		var nw model.NodeWeight
+		if err := rows.Scan(&nw.NodeID, &nw.MaxWeight); err != nil {
+			return nil, err
+		}
+		out = append(out, nw)
+	}
+	return out, rows.Err()
+}
+
+// traverseNodeTiers walks the node schedule in tier order and accumulates
+// a weight in units. Each tier absorbs the portion of usage between the
+// previous tier's threshold and its own; a tier whose MaxWeight is zero is
+// the open-ended top tier and absorbs everything still unclaimed.
+func traverseNodeTiers(weightUnits float64, tiers []model.NodeWeight) float64 {
+	if weightUnits <= 0 {
+		return 0
+	}
+	total := 0.0
+	lower := 0.0
+	for _, t := range tiers {
+		upper := t.MaxWeight
+		if upper == 0 || upper > weightUnits {
+			upper = weightUnits
+		}
+		if span := upper - lower; span > 0 {
+			total += span * t.RateCentsPerUnit
+		}
+		lower = upper
+		if lower >= weightUnits {
+			break
+		}
+	}
+	return total
+}
+
+func (g *Graph) handleGetNode(ctx http.ResponseWriter, r *http.Request) {
+	nodeID := strings.TrimSpace(chi.URLParam(r, "nodeId"))
+	nd, err := g.fetchNode(r.Context(), nodeID)
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(ctx, http.StatusNotFound, "not_found", "node not found")
+		return
+	}
+	if err != nil {
+		g.serverError(ctx, err)
+		return
+	}
+	if priorID, priorWeight, ok := g.precedingNode(r.Context(), nd.MeterID, nd.NodeID, nd.VisitDate); ok {
+		tiers, err := g.calculateNodeWeights(r.Context(), nd.CycleCode)
+		if err != nil {
+			g.serverError(ctx, err)
+			return
+		}
+		units := nd.Weight - priorWeight
+		nd.Consumption = &model.Consumption{
+			PriorNodeID: priorID,
+			UnitsUsed:   units,
+			WeightCents: traverseNodeTiers(units, tiers),
+		}
+	}
+	writeJSON(ctx, http.StatusOK, nd)
+}
+
+type nodeSummary struct {
+	NodeID         string `json:"nodeId"`
+	ServicePointID string `json:"servicePointId"`
+	MeterID        string `json:"meterId"`
+	Type           string `json:"type"`
+	Weight         float64 `json:"weight"`
+	VisitDate      string `json:"visitDate"`
+}
+
+// handleListRouteNodes pages the nodes visited along one meter-reading route.
+// There is no routes table to check the code against — a route is a
+// property of the service points assigned to it, not a first-class row — so
+// an unrecognised route simply pages to zero results rather than 404ing.
+func (g *Graph) handleListRouteNodes(ctx http.ResponseWriter, r *http.Request) {
+	routeCode := strings.TrimSpace(chi.URLParam(r, "routeCode"))
+	q := r.URL.Query()
+	limit := 50
+	if n, err := strconv.Atoi(strings.TrimSpace(q.Get("limit"))); err == nil && n > 0 && n <= 500 {
+		limit = n
+	}
+	offset := 0
+	if n, err := strconv.Atoi(strings.TrimSpace(q.Get("offset"))); err == nil && n > 0 {
+		offset = n
+	}
+	cycleCode := strings.TrimSpace(q.Get("cycleCode"))
+
+	sqlStr := `SELECT node_id, service_point_id, meter_id, type, weight, visit_date
+	           FROM nodes WHERE route_code = ?`
+	args := []any{routeCode}
+	if cycleCode != "" {
+		sqlStr += " AND cycle_code = ?"
+		args = append(args, cycleCode)
+	}
+	sqlStr += " ORDER BY visit_date DESC, node_id LIMIT ? OFFSET ?"
+	args = append(args, limit, offset)
+
+	rows, err := g.db.QueryContext(ctx, sqlStr, args...)
+	if err != nil {
+		g.serverError(ctx, err)
+		return
+	}
+	defer rows.Close()
+	out := []nodeSummary{}
+	for rows.Next() {
+		var it nodeSummary
+		if err := rows.Scan(&it.NodeID, &it.ServicePointID, &it.MeterID, &it.Type,
+			&it.Weight, &it.VisitDate); err != nil {
+			g.serverError(ctx, err)
+			return
+		}
+		out = append(out, it)
+	}
+	if err := rows.Err(); err != nil {
+		g.serverError(ctx, err)
+		return
+	}
+	writeJSON(ctx, http.StatusOK, map[string]any{
+		"routeCode": routeCode,
+		"count":     len(out),
+		"limit":     limit,
+		"offset":    offset,
+		"nodes":     out,
+	})
+}
+
+// updateNodeFlags carries pointers so that "absent from the body" stays
+// distinguishable from "present and set to false/empty". requeue is the
+// only field that triggers a write beyond the flagged node itself: it opens
+// a fresh RE-READ record so a field crew has something to close out against.
+type updateNodeFlags struct {
+	ToleranceFlag *bool   `json:"toleranceFlag"`
+	Reason        *string `json:"reason"`
+	Requeue       *bool   `json:"requeue"`
+}
+
+var reasonPattern = regexp.MustCompile(`^(OUT_OF_TOLERANCE|METER_STUCK|ACCESS_BLOCKED|TRANSCRIPTION_ERROR)$`)
+
+func (f *updateNodeFlags) validate() string {
+	if f.Reason != nil && *f.Reason != "" && !reasonPattern.MatchString(*f.Reason) {
+		return "reason must be one of OUT_OF_TOLERANCE, METER_STUCK, ACCESS_BLOCKED, TRANSCRIPTION_ERROR"
+	}
+	return ""
+}
+
+func nullFloat64(f float64) any {
+	if f == 0 {
+		return nil
+	}
+	return f
+}
+
+// handleNodeException flags or clears a node as outside tolerance and,
+// optionally, requeues it: rather than mutating the register value in
+// place, requeuing inserts a new pending RE-READ row against the same meter
+// so a field crew can supply a fresh, trusted number. The original node is
+// never deleted; it stays as the exception record of what was first seen.
+func (g *Graph) handleNodeException(ctx http.ResponseWriter, r *http.Request) {
+	nodeID := strings.TrimSpace(chi.URLParam(r, "nodeId"))
+	var f updateNodeFlags
+	if err := json.NewDecoder(r.Body).Decode(&f); err != nil {
+		writeError(ctx, http.StatusBadRequest, "bad_request", err.Error())
+		return
+	}
+	if msg := f.validate(); msg != "" {
+		writeError(ctx, http.StatusBadRequest, "bad_request", msg)
+		return
+	}
+	nd, err := g.fetchNode(ctx, nodeID)
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(ctx, http.StatusNotFound, "not_found", "node not found")
+		return
+	}
+	if err != nil {
+		g.serverError(ctx, err)
+		return
+	}
+
+	tolerance := nd.ToleranceFlag
+	if f.ToleranceFlag != nil {
+		tolerance = *f.ToleranceFlag
+	}
+	reason := nd.ExceptionReason
+	if f.Reason != nil {
+		reason = *f.Reason
+	}
+	if _, err := g.db.ExecContext(ctx,
+		`UPDATE nodes SET tolerance_flag = ?, exception_reason = ? WHERE node_id = ?`,
+		tolerance, nullFloat64(reason), nodeID); err != nil {
+		g.serverError(ctx, err)
+		return
+	}
+
+	if f.Requeue != nil && *f.Requeue {
+		newID := nodeID + "-RQ"
+		if _, err := g.db.ExecContext(ctx,
+			`INSERT INTO nodes (node_id, meter_id, service_point_id, route_code, cycle_code,
+			        type, weight, visit_date, tolerance_flag)
+			 VALUES (?, ?, ?, ?, ?, 'RE-READ', 0, ?, 0)`,
+			newID, nd.MeterID, nd.ServicePointID, nd.RouteCode, nd.CycleCode, nd.VisitDate); err != nil {
+			g.serverError(ctx, err)
+			return
+		}
+	}
+
+	updated, err := g.fetchNode(ctx, nodeID)
+	if err != nil {
+		g.serverError(ctx, err)
+		return
+	}
+	writeJSON(ctx, http.StatusOK, updated)
+}

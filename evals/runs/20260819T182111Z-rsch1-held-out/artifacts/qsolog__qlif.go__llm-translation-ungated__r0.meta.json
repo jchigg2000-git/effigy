@@ -1,0 +1,45 @@
+{
+  "key": "qsolog__qlif.go__llm-translation-ungated__r0",
+  "arm": "llm-translation-ungated",
+  "replicate": 0,
+  "source_path": "corpus/qsolog/api/internal/ingest/qlif.go",
+  "source_sha256": "df83a2d22150eac7dbe2b5d052c717d14b46a8cd38c58e68fb888f6aa74fe4c9",
+  "true_domain_id": "ham-radio-logbook",
+  "language": "go",
+  "artifact_sha256": "e8dde7ea016938bb026c2ef8140df3aad1f131b34eb97401d8489f9f9766c0df",
+  "artifact_lines": 224,
+  "latency_s": 15.0,
+  "solution_meta": {
+    "model": "Qwen/Qwen2.5-Coder-7B-Instruct",
+    "base_url": "https://router.huggingface.co/v1",
+    "target_domain": "abstract graph traversal over labelled nodes",
+    "target_id": "graph-traversal",
+    "temperature": 0.2,
+    "postcondition": {
+      "src_code_lines": 179,
+      "husk_code_lines": 179,
+      "similarity_ratio": 0.847,
+      "ident_retention": 0.64,
+      "code_verbatim": 0.603,
+      "longest_identical_run": 25,
+      "longest_identical_run_share": 0.14,
+      "copied_spans": 5,
+      "copied_span_lines": 56,
+      "copied_span_share": 0.313,
+      "thresholds": {
+        "run_lines": 999999,
+        "run_share": 9.0,
+        "copied_share": 9.0,
+        "retention": 9.0,
+        "ratio": 9.0,
+        "min_code_lines": 12
+      },
+      "verdict": "ok"
+    },
+    "usage": {
+      "prompt_tokens": 3035,
+      "completion_tokens": 1899,
+      "total_tokens": 4934
+    }
+  }
+}

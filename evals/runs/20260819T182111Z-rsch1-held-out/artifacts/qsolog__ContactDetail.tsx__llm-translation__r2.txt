@@ -1,0 +1,74 @@
+// Read-only view of a single listener. Renders the record returned by
+// getUserProfile, including every playlist that has been listened to.
+// Optional fields that are absent render as an em dash rather than being
+// hidden, so the layout stays stable from one profile to the next.
+import type { User } from "../api/user";
+
+interface UserProfileProps {
+  user: User;
+}
+
+export function UserProfile({ user }: UserProfileProps) {
+  const playlists = user.playlists ?? [];
+  const active = Boolean(user.isActive);
+  return (
+    <section className="user-profile">
+      <div className="user-profile-head">
+        <div>
+          <h2>{user.displayName}</h2>
+          <p>{user.userId}</p>
+        </div>
+        <span className={active ? "status-active" : "status-inactive"}>
+          {active ? "Active" : "Inactive"}
+        </span>
+      </div>
+
+      <dl className="profile-grid">
+        <dt>User id</dt>
+        <dd>{user.userId}</dd>
+        <dt>Display name</dt>
+        <dd>{user.displayName}</dd>
+        <dt>Email</dt>
+        <dd>{user.email}</dd>
+        <dt>Subscription plan</dt>
+        <dd>{user.subscriptionPlan}</dd>
+        <dt>Registration date</dt>
+        <dd>{user.registrationDate}</dd>
+        <dt>Last login</dt>
+        <dd>{user.lastLogin || "—"}</dd>
+        <dt>Country</dt>
+        <dd>{user.country || "—"}</dd>
+        <dt>Language preference</dt>
+        <dd>{user.languagePreference || "—"}</dd>
+      </dl>
+
+      <h3>
+        Playlists <span className="playlist-count">{playlists.length}</span>
+      </h3>
+      {playlists.length === 0 ? (
+        <p className="empty-note">
+          No playlists have been listened to by this user yet. A playlist only
+          appears here once all its tracks have been played back.
+        </p>
+      ) : (
+        <ul className="playlist-list">
+          {playlists.map((p) => (
+            <li key={p.playlistId}>
+              <span>{p.name}</span>
+              <span>{p.trackCount}</span>
+              <span>{p.lastPlayed || "—"}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* The listening history details live at the track level, not here: one
+          user's playlist says nothing about how many times a specific track has
+          been listened to. */}
+      <p className="hint">
+        Detailed listening history for this user is reflected in the track's
+        playcount data rather than repeated on this page.
+      </p>
+    </section>
+  );
+}

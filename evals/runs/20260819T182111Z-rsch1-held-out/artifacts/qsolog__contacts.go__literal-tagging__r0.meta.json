@@ -1,0 +1,21 @@
+{
+  "key": "qsolog__contacts.go__literal-tagging__r0",
+  "arm": "literal-tagging",
+  "replicate": 0,
+  "source_path": "corpus/qsolog/api/internal/api/contacts.go",
+  "source_sha256": "af67c3deac92283512d2b9ec9ae11130242873b31b23b9ebf36e5671b9ca18b5",
+  "true_domain_id": "ham-radio-logbook",
+  "language": "go",
+  "artifact_sha256": "4b8ea9a8ccaf6d8491f37ce0c3604c7166bf177e805360e23552712472005b8b",
+  "artifact_lines": 218,
+  "latency_s": 0.0,
+  "solution_meta": {
+    "literals_by_class": {
+      "MSG": 58,
+      "PATH": 6,
+      "SQL": 10,
+      "EMPTY": 12
+    },
+    "total_literals_replaced": 86
+  }
+}

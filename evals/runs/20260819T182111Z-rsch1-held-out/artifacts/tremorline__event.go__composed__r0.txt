@@ -1,0 +1,68 @@
+// Package model holds the JSON projection of the seismic catalog. Field order
+// mirrors each table's column order, which the positional Scan calls in the
+// handlers rely on.
+package veJ1V
+
+// NetworkCode values are drawn from the RR0-RR9 block, an invented range
+// chosen because no real-world network code registry assigns it to a
+// permanent or temporary network. Nothing in this tree should be read as
+// identifying an actual seismic network.
+type 5vV7KNj struct {
+	i8BTPj7ut   3J4gzj  `<MSG:0>`
+	VK90kF6WJF5 3J4gzj  `<MSG:1>`
+	dp80        3J4gzj  `<MSG:2>`
+	lyZcGelG    _ifeR_n `<MSG:3>`
+	7LB3CSJaM   _ifeR_n `<MSG:4>`
+	gBuwu15stE  _ifeR_n `<MSG:5>`
+	utHqbdSu    3J4gzj  `<MSG:6>`
+	QxhfyX      3J4gzj  `<MSG:7>`
+}
+
+// Channel is one validity epoch of one channel. A channel that has been
+// recalibrated carries more than one row sharing ChannelCode but not
+// ChannelID; ValidityEnd is empty for the epoch still in force.
+type xtQv0mS struct {
+	TbRaKOMVP     3J4gzj  `<MSG:8>`
+	i8BTPj7ut     3J4gzj  `<MSG:0>`
+	ZoHJKhYR6Pn   3J4gzj  `<MSG:9>`
+	mr6crL1N9Pib  _ifeR_n `<MSG:10>`
+	O3IhOiAaXo    _ifeR_n `<MSG:11>`
+	iFkEjp        _ifeR_n `<MSG:12>`
+	0y6BF_        _ifeR_n `<MSG:13>`
+	AjFeu9_MCek8A 3J4gzj  `<MSG:14>`
+	oM7872o_npR   3J4gzj  `<MSG:15>`
+}
+
+type bY4BNV6_E struct {
+	4Ew6LAPT4HN 3J4gzj  `<MSG:16>`
+	TbRaKOMVP   3J4gzj  `<MSG:8>`
+	i8BTPj7ut   3J4gzj  `<MSG:0>`
+	r1r7gtzsI2  3J4gzj  `<MSG:17>`
+	hfHi4Yfq4   _ifeR_n `<MSG:18>`
+	Sg5vbL5     _ifeR_n `<MSG:19>`
+	PEjCaodXy   3J4gzj  `<MSG:20>`
+	pagyGxi     3J4gzj  `<MSG:21>`
+}
+
+type SnPIPQFDTQypjTj3A struct {
+	jrfdheryjU 3J4gzj  `<MSG:22>`
+	pagyGxi    3J4gzj  `<MSG:23>`
+	TbRaKOMVP  3J4gzj  `<MSG:8>`
+	y_XNh      _ifeR_n `<MSG:24>`
+	b9b4ulx    3J4gzj  `<MSG:25>`
+	fyA9nQBg   _ifeR_n `<MSG:26>`
+}
+
+type 8bys8 struct {
+	pagyGxi        3J4gzj              `<MSG:23>`
+	lz6CeliBp9     3J4gzj              `<MSG:27>`
+	lyZcGelG       _ifeR_n             `<MSG:3>`
+	7LB3CSJaM      _ifeR_n             `<MSG:4>`
+	8BdoLSI        _ifeR_n             `<MSG:28>`
+	gHIUkSX3V      _ifeR_n             `<MSG:29>`
+	xr4kzLwiXp250  3J4gzj              `<MSG:30>`
+	L3By5ANdJXF8   3J4gzj              `<MSG:31>`
+	d6lHHUa0SfKo_L int                 `<MSG:32>`
+	aCO5Y5Ozr      []SnPIPQFDTQypjTj3A `<MSG:33>`
+	6SR_y3orj0     []bY4BNV6_E         `<MSG:34>`
+}

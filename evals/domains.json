@@ -1,0 +1,97 @@
+{
+  "_comment": [
+    "The forced-choice menu for the RSCH-1 attacker (see preregistration.md §6.1).",
+    "12 options: the 6 true source domains present in the corpus, plus 6 distractors.",
+    "",
+    "The distractors are drawn from husk-api/static/llm-translation-targets.json on",
+    "purpose. They are HARD NEGATIVES: a husk translated into 'hotel-booking' will",
+    "read like hotel-booking code, so an attacker is tempted toward it. Picking the",
+    "TARGET domain instead of the SOURCE domain is exactly the behaviour a working",
+    "husk should produce, and a menu without that lure would overstate the attacker's",
+    "difficulty. The BLIND arm controls for any resulting bias, since a blind",
+    "attacker never sees the target vocabulary.",
+    "",
+    "Option ORDER is permuted per item by a recorded seed. Do not rely on this order.",
+    "There is deliberately no 'cannot determine' option - see preregistration.md §6.1.",
+    "",
+    "is_source_domain: true means the corpus contains artifacts labelled with this id",
+    "and it can be a correct answer. false means it is a distractor and never correct."
+  ],
+  "menu_size": 12,
+  "uniform_chance": 0.0833,
+  "options": [
+    {
+      "id": "library-circulation",
+      "is_source_domain": true,
+      "label": "Library catalog and circulation",
+      "description": "Bibliographic holdings, branch lending, reservations, and returns for a public library system."
+    },
+    {
+      "id": "ham-radio-logbook",
+      "is_source_domain": true,
+      "label": "Amateur radio contact logging",
+      "description": "Logging two-way radio contacts, confirmations, and award tracking for amateur radio operators."
+    },
+    {
+      "id": "water-utility-metering",
+      "is_source_domain": true,
+      "label": "Municipal water metering",
+      "description": "Service points, meter reads, and consumption billing for a municipal water utility."
+    },
+    {
+      "id": "seismic-monitoring",
+      "is_source_domain": true,
+      "label": "Seismic event monitoring",
+      "description": "Seismograph station networks, waveform ingest, and earthquake event cataloging."
+    },
+    {
+      "id": "textile-mill-production",
+      "is_source_domain": true,
+      "label": "Textile mill production",
+      "description": "Loom scheduling, yarn lot tracking, and shift production reporting in a weaving mill."
+    },
+    {
+      "id": "avionics-airworthiness",
+      "is_source_domain": true,
+      "label": "Aircraft airworthiness tracking",
+      "description": "Component life limits, maintenance intervals, and airworthiness directive compliance."
+    },
+
+    {
+      "id": "hotel-booking",
+      "is_source_domain": false,
+      "label": "Hotel reservations",
+      "description": "Room inventory, availability search, and guest reservations for a hotel chain."
+    },
+    {
+      "id": "logistics-dispatch",
+      "is_source_domain": false,
+      "label": "Freight dispatch",
+      "description": "Shipment routing, carrier assignment, and delivery tracking for a freight operation."
+    },
+    {
+      "id": "music-streaming",
+      "is_source_domain": false,
+      "label": "Music streaming",
+      "description": "Track catalogs, playlists, and listener session handling for a streaming service."
+    },
+    {
+      "id": "recipe-manager",
+      "is_source_domain": false,
+      "label": "Recipe management",
+      "description": "Recipes, ingredients, and meal planning for a cooking application."
+    },
+    {
+      "id": "wildlife-tracker",
+      "is_source_domain": false,
+      "label": "Wildlife tracking",
+      "description": "Tagged animal sightings, collar telemetry, and habitat surveys for a field research program."
+    },
+    {
+      "id": "event-scheduler",
+      "is_source_domain": false,
+      "label": "Event scheduling",
+      "description": "Venues, sessions, and attendee registration for a conference scheduling system."
+    }
+  ]
+}

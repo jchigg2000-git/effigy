@@ -1,0 +1,59 @@
+{
+  "key": "qsolog__ConfirmationForm.tsx__structure-only__r0",
+  "arm": "structure-only",
+  "replicate": 0,
+  "source_path": "corpus/qsolog/app/src/components/ConfirmationForm.tsx",
+  "source_sha256": "e76263f23c4972e192429aaacba0d3db02f6667428ccb029068bbcf28cd634e5",
+  "true_domain_id": "ham-radio-logbook",
+  "language": "tsx",
+  "artifact_sha256": "9f43511c2dc5325614eba41bd178ab1a9589c7f25afde7165bfb07c1fad82470",
+  "artifact_lines": 149,
+  "latency_s": 0.7,
+  "solution_meta": {
+    "generated_by": "evals/canonicalize.py",
+    "preserved_tokens": [
+      "FormEvent",
+      "button",
+      "className",
+      "div",
+      "form",
+      "h2",
+      "htmlFor",
+      "id",
+      "input",
+      "key",
+      "label",
+      "onChange",
+      "onClick",
+      "onSubmit",
+      "option",
+      "p",
+      "select",
+      "type",
+      "useState",
+      "value"
+    ],
+    "preserved_import_paths": [],
+    "n_idents_canonicalised": 38,
+    "n_strings_canonicalised": 57,
+    "n_runes_canonicalised": 0,
+    "n_numbers_canonicalised": 0,
+    "counters_delta": {
+      "lines": 0,
+      "bytes": -238,
+      "funcs": 0,
+      "structs": 0,
+      "interfaces": 0,
+      "imports": 0,
+      "exports": 0,
+      "string_literals": 0,
+      "max_brace_depth": 0
+    },
+    "blind_delta": {
+      "bytes": [
+        4600,
+        4362
+      ]
+    }
+  }
+}

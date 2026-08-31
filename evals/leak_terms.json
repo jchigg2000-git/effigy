@@ -1,0 +1,19 @@
+{
+  "_note": "AUTHORED leak-term lists, one per source domain. Never derived from a husk — a list built from the output cannot measure the output. Terms are matched case-insensitively on word boundaries against husk lines. Generic engineering words (state, zone, project, region) are deliberately excluded: they are ambiguous and would inflate the count with false positives.",
+  "electric-transmission": {
+    "label": "Electric-transmission data processing. The domain is stated deliberately — the term list below enumerates it, and an eval that hid its own domain could not be read. What is withheld is the specific source repository and the two operator names it named (see _terms_private_note).",
+    "terms": [
+      "ferc", "eia", "nerc", "pudl", "sec", "edgar", "xbrl", "cik", "10-k", "10-q",
+      "spp", "rto", "miso", "pjm", "ercot", "ntc", "qpt", "isd",
+      "census", "gazetteer", "geoid", "geoidfq", "fips", "ansicode", "aland", "awater",
+      "intptlat", "intptlong", "usps", "county", "counties",
+      "utility", "utilities", "transmission", "substation", "conductor", "conductors",
+      "tower", "towers", "kv", "kilovolt", "mw", "megawatt", "voltage", "outage",
+      "grid", "pkg_a", "electric", "electrical", "powerline", "interconnection",
+      "capex", "cwip", "tariff", "docket", "ratebase",
+      "utility_a", "utility_b", "estimator", "bid", "bidder"
+    ],
+    "terms_private_file": "leak_terms.private.json",
+    "_terms_private_note": "Two source-identifying utility-operator names are withheld from the published list and live in the gitignored overlay named above. The utility_a / utility_b placeholders hold their slots so the hit keys in committed run records stay resolvable, but as matchers they are dead slots: they compile into the pattern and can only fire on text that literally contains them, never on the operator names they stand in for (the same property `pkg_a` on line 12 has). With the overlay absent, leak_lines and domain_retention for this term set are LOWER BOUNDS, not the recorded values."
+  }
+}

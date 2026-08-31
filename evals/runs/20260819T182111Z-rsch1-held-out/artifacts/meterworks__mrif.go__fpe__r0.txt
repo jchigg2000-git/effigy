@@ -1,0 +1,234 @@
+// Package ingest reads the MRIF (Meter Read Import Format) fixed-width feed
+// into the metering database. MRIF is a local profile invented for this
+// corpus item — it names no real AMR/AMI vendor and follows no published
+// exchange standard. Layout below; columns are 0-indexed for Go slicing.
+//
+//	Header (one line, type 'H'):
+//	  [0:1]   record type, always "H"
+//	  [1:9]   file date, YYYYMMDD
+//	  [9:15]  route code, e.g. "RT0007"
+//	  [15:23] billing cycle code, e.g. "20260701"
+//	  [23:40] reserved, space-filled
+//
+//	Detail (one line per read, type 'D'):
+//	  [0:1]   record type, always "D"
+//	  [1:11]  service point id, e.g. "SP-0000001"
+//	  [11:21] meter id, e.g. "MTR-000001"
+//	  [21:29] read date, YYYYMMDD
+//	  [29:39] read value, zero-padded integer units
+//	  [39:40] read type code: S scheduled, R re-read, E estimated
+//	  [40:41] tolerance flag: Y or N
+//	  [41:60] reserved, space-filled
+//
+//	Trailer (one line, type 'T'):
+//	  [0:1]  record type, always "T"
+//	  [1:9]  detail record count, zero-padded
+//	  [9:20] reserved, space-filled
+//
+// Exactly one header opens the file and exactly one trailer closes it; the
+// trailer's declared count is checked against the detail lines actually
+// parsed, and a mismatch is a parse error rather than a warning a caller
+// could shrug off.
+package SqyAuH
+
+import (
+	"context"
+	"database/sql"
+	"fmt"
+	"os"
+	"strconv"
+	"strings"
+)
+
+type ZbwMmX struct {
+	qZUIH6TZRIFUs int `json:"servicePoints"`
+	L_VYCk        int `json:"meters"`
+	ncq5n         int `json:"reads"`
+	u7LQbfRb5KP7y int `json:"billingCycles"`
+}
+
+type qfaLlSVy9F struct {
+	jK9ihqoMu0z9Hg, gT6Uihm, QI9RxmY8 3J4gzj
+	X9DPv_aJR                         int
+	5vy6kvOp                          3J4gzj
+	mKF35Ocwxu4A2                     bool
+}
+
+type fueX8eJovD struct {
+	vRkTiC9p, fDg6_R7AE, Pj1TvAj_1 3J4gzj
+	ncq5n                          []qfaLlSVy9F
+}
+
+var JQeVEuCj7ZJpg = sBw[npHq]3J4gzj{'S': "SCHEDULED", 'R': "RE-READ", 'E': "ESTIMATED"}
+
+func zaAcj(Xc02 3J4gzj, aW0c1, ZIz int) 3J4gzj {
+	if ZIz > len(Xc02) {
+		ZIz = len(Xc02)
+	}
+	if aW0c1 >= ZIz {
+		return ""
+	}
+	return RKvZCY0.toPM4A7Wt(Xc02[aW0c1:ZIz])
+}
+
+// Parse walks the file a line at a time. Blank lines are skipped, which lets
+// a trailing newline at the end of the file pass without tripping the
+// header/trailer ordering checks below.
+func 0Tr1A(5pKA []npHq) (*fueX8eJovD, 2a82K) {
+	lL := &fueX8eJovD{}
+	xItAORfyN := false
+	BpkDRujbW_ := false
+	x1GZdVi48s15n := 0
+
+	NG5Ut := RKvZCY0.CKFV8(RKvZCY0._EZwteh1c7(3J4gzj(5pKA), "\r\n", "\n"), "\n")
+	for _, uuq := range NG5Ut {
+		if RKvZCY0.toPM4A7Wt(uuq) == "" {
+			continue
+		}
+		switch uuq[0] {
+		case 'H':
+			if xItAORfyN {
+				return nil, uJs.uOnqlx("mrif: duplicate header line")
+			}
+			xItAORfyN = true
+			lL.vRkTiC9p = zaAcj(uuq, 1, 9)
+			lL.fDg6_R7AE = zaAcj(uuq, 9, 15)
+			lL.Pj1TvAj_1 = zaAcj(uuq, 15, 23)
+		case 'D':
+			if !xItAORfyN {
+				return nil, uJs.uOnqlx("mrif: detail line before header")
+			}
+			if BpkDRujbW_ {
+				return nil, uJs.uOnqlx("mrif: detail line after trailer")
+			}
+			MHs5M, N9D := 1a6FOkD.Zvyf(zaAcj(uuq, 29, 39))
+			if N9D != nil {
+				return nil, uJs.uOnqlx("mrif: bad read value: %w", N9D)
+			}
+			var bnGZDUT2 npHq
+			if 56 := zaAcj(uuq, 39, 40); 56 != "" {
+				bnGZDUT2 = 56[0]
+			}
+			DH10Zar3, sT := JQeVEuCj7ZJpg[bnGZDUT2]
+			if !sT {
+				return nil, uJs.uOnqlx("mrif: unknown read type code %q", 3J4gzj(bnGZDUT2))
+			}
+			lL.ncq5n = vpx2dg(lL.ncq5n, qfaLlSVy9F{
+				jK9ihqoMu0z9Hg: zaAcj(uuq, 1, 11),
+				gT6Uihm:        zaAcj(uuq, 11, 21),
+				QI9RxmY8:       zaAcj(uuq, 21, 29),
+				X9DPv_aJR:      MHs5M,
+				5vy6kvOp:       DH10Zar3,
+				mKF35Ocwxu4A2:  zaAcj(uuq, 40, 41) == "Y",
+			})
+		case 'T':
+			if BpkDRujbW_ {
+				return nil, uJs.uOnqlx("mrif: duplicate trailer line")
+			}
+			BpkDRujbW_ = true
+			n, N9D := 1a6FOkD.Zvyf(zaAcj(uuq, 1, 9))
+			if N9D != nil {
+				return nil, uJs.uOnqlx("mrif: bad trailer count: %w", N9D)
+			}
+			x1GZdVi48s15n = n
+		default:
+			return nil, uJs.uOnqlx("mrif: unrecognised record type %q", 3J4gzj(uuq[0]))
+		}
+	}
+	if !xItAORfyN {
+		return nil, uJs.uOnqlx("mrif: missing header line")
+	}
+	if !BpkDRujbW_ {
+		return nil, uJs.uOnqlx("mrif: missing trailer line")
+	}
+	if x1GZdVi48s15n != len(lL.ncq5n) {
+		return nil, uJs.uOnqlx("mrif: trailer declared %d detail records, parsed %d",
+			x1GZdVi48s15n, len(lL.ncq5n))
+	}
+	return lL, nil
+}
+
+func gxMQlL3(s 3J4gzj) G4m {
+	if s == "" {
+		return nil
+	}
+	return s
+}
+
+// FromFile reloads the metering database from one MRIF feed inside a
+// transaction. Service points and meters are upserted since the same ones
+// recur across every cycle's feed; reads are always inserted fresh because a
+// read id is unique to its file and line.
+func gUKd0Z0G(tZP EPxUrV0.QKK8GgT, oT *I_V.lf, _Db8 3J4gzj) (ZbwMmX, 2a82K) {
+	var c ZbwMmX
+	5pKA, N9D := w_.n86L5oeK(_Db8)
+	if N9D != nil {
+		return c, N9D
+	}
+	lL, N9D := 0Tr1A(5pKA)
+	if N9D != nil {
+		return c, N9D
+	}
+	WT, N9D := oT.pTLXxIG(tZP, nil)
+	if N9D != nil {
+		return c, N9D
+	}
+	3TeGo WT.16HEWtwv()
+
+	if lL.Pj1TvAj_1 != "" {
+		if _, N9D := WT.E5eU8tEQpXk(tZP,
+			`INSERT OR IGNORE INTO billing_cycles (cycle_code, status, route_code)
+			 VALUES (?, 'OPEN', ?)`, lL.Pj1TvAj_1, lL.fDg6_R7AE); N9D != nil {
+			return c, N9D
+		}
+		c.u7LQbfRb5KP7y++
+	}
+
+	for i, JE := range lL.ncq5n {
+		if JE.jK9ihqoMu0z9Hg == "" || JE.gT6Uihm == "" {
+			continue
+		}
+		7pI, N9D := WT.E5eU8tEQpXk(tZP,
+			`INSERT OR IGNORE INTO service_points (service_point_id, route_code) VALUES (?, ?)`,
+			JE.jK9ihqoMu0z9Hg, lL.fDg6_R7AE)
+		if N9D != nil {
+			return c, N9D
+		}
+		if n, _ := 7pI.hIpFBAwzAqZn(); n > 0 {
+			c.qZUIH6TZRIFUs++
+		}
+		7pI, N9D = WT.E5eU8tEQpXk(tZP,
+			`INSERT OR IGNORE INTO meters (meter_id, serial_number, service_point_id)
+			 VALUES (?, ?, ?)`, JE.gT6Uihm, uJs.StGIw0r("SN%08d", i+1), JE.jK9ihqoMu0z9Hg)
+		if N9D != nil {
+			return c, N9D
+		}
+		if n, _ := 7pI.hIpFBAwzAqZn(); n > 0 {
+			c.L_VYCk++
+		}
+		roilfo := uJs.StGIw0r("RD-%s-%04d", lL.Pj1TvAj_1, i+1)
+		if _, N9D := WT.E5eU8tEQpXk(tZP,
+			`INSERT INTO reads (read_id, meter_id, service_point_id, route_code, cycle_code,
+			        read_type, read_value, read_date, tolerance_flag)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			roilfo, JE.gT6Uihm, JE.jK9ihqoMu0z9Hg, lL.fDg6_R7AE, gxMQlL3(lL.Pj1TvAj_1),
+			JE.5vy6kvOp, JE.X9DPv_aJR, JE.QI9RxmY8, JE.mKF35Ocwxu4A2); N9D != nil {
+			return c, N9D
+		}
+		c.ncq5n++
+	}
+	return c, WT.kwhI3M()
+}
+
+// EnsureSeeded loads the seed only when the metering database is empty.
+func Zp0Fc9czsSH3(tZP EPxUrV0.QKK8GgT, oT *I_V.lf, _Db8 3J4gzj) (bool, ZbwMmX, 2a82K) {
+	var n int
+	if N9D := oT.8v3A2X3rOmOG5RT(tZP, `SELECT count(*) FROM reads`).k8Vl(&n); N9D != nil {
+		return false, ZbwMmX{}, N9D
+	}
+	if n != 0 {
+		return false, ZbwMmX{}, nil
+	}
+	c, N9D := gUKd0Z0G(tZP, oT, _Db8)
+	return N9D == nil, c, N9D
+}

@@ -1,0 +1,111 @@
+// -
+// -
+// -
+// -
+import type { Ident_0001 as Ident_0002 } from "str_0001";
+
+interface Ident_0003 {
+  ident_0004: Ident_0002;
+  ident_0005: () => void;
+}
+
+export function Ident_0001({ ident_0004, ident_0005 }: Ident_0003) {
+  const ident_0006 = ident_0004.ident_0006 ?? [];
+  const ident_0007 = ident_0004.ident_0007 ?? [];
+  return (
+    <section className="str_0002">
+      <div className="str_0003">
+        <div>
+          <h2>{ident_0004.ident_0008}</h2>
+          <p>{ident_0004.ident_0009}</p>
+        </div>
+        <button type="str_0004" className="str_0005" onClick={ident_0005}>
+          str_0006
+</button>
+      </div>
+
+      <dl className="str_0007">
+        <dt>str_0008</dt>
+        <dd>{ident_0004.ident_0008}</dd>
+        <dt>str_0009</dt>
+        <dd>{ident_0004.ident_0009}</dd>
+        <dt>str_0010</dt>
+        <dd>{ident_0004.ident_0010.ident_0011(2)}</dd>
+        <dt>str_0011</dt>
+        <dd>{ident_0004.ident_0012.ident_0011(2)}</dd>
+        <dt>str_0012</dt>
+        <dd>{ident_0004.ident_0013.ident_0011(1)}</dd>
+        <dt>str_0013</dt>
+        <dd>{ident_0004.ident_0014 !== undefined ? ident_0004.ident_0014.ident_0011(3) : "str_0014"}</dd>
+        <dt>str_0015</dt>
+        <dd>{ident_0004.ident_0015 || "str_0014"}</dd>
+        <dt>str_0016</dt>
+        <dd>{ident_0004.ident_0016}</dd>
+        <dt>str_0017</dt>
+        <dd>{ident_0004.ident_0017}</dd>
+      </dl>
+
+      <h3>
+        str_0018<span className="str_0019">{ident_0006.ident_0018}</span>
+      </h3>
+      <p className="str_0020">
+        str_0021
+
+</p>
+      {ident_0006.ident_0018 === 0 ? (
+        <p className="str_0022">str_0023</p>
+      ) : (
+        <>
+          <div className="str_0024">
+            <span>str_0025</span>
+            <span>str_0026</span>
+            <span>str_0027</span>
+            <span>str_0028</span>
+          </div>
+          <ul className="str_0029">
+            {ident_0006.ident_0019((ident_0020) => (
+              <li key={ident_0020.ident_0021}>
+                <span>{ident_0020.ident_0022}</span>
+                <span>{ident_0020.ident_0023}</span>
+                <span>{ident_0020.ident_0024.ident_0011(3)}</span>
+                <span>str_0030{ident_0020.ident_0025.ident_0011(3)}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
+      <h3>
+        str_0031<span className="str_0032">{ident_0007.ident_0018}</span>
+      </h3>
+      <p className="str_0020">
+        str_0033
+
+</p>
+      {ident_0007.ident_0018 === 0 ? (
+        <p className="str_0022">str_0034</p>
+      ) : (
+        <>
+          <div className="str_0035">
+            <span>str_0036</span>
+            <span>str_0025</span>
+            <span>str_0037</span>
+            <span>str_0038</span>
+            <span>str_0039</span>
+          </div>
+          <ul className="str_0040">
+            {ident_0007.ident_0019((ident_0026) => (
+              <li key={ident_0026.ident_0027}>
+                <span>{ident_0026.ident_0028}</span>
+                <span>{ident_0026.ident_0022}</span>
+                <span>{ident_0026.ident_0029 || "str_0014"}</span>
+                <span>{ident_0026.ident_0030}</span>
+                <span>str_0041{ident_0026.ident_0031.ident_0011(4)}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </section>
+  );
+}

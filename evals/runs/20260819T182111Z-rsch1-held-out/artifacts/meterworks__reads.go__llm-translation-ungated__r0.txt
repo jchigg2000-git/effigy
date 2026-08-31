@@ -1,0 +1,273 @@
+package api
+
+import (
+	"context"
+	"database/sql"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"regexp"
+	"strconv"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
+
+	"meterworks/internal/model"
+)
+
+// fetchNode pulls one node together with its associated edges. Four fields come from the node,
+// two from each edge, in the order the SELECT list declares them.
+func (g *Graph) fetchNode(ctx context.Context, nodeID string) (model.Node, error) {
+	var nd model.Node
+	var ed1 model.Edge
+	var ed2 model.Edge
+	err := g.db.QueryRowContext(ctx, `SELECT n.node_id, n.label, e1.edge_id, e1.source_node_id, e1.target_node_id,
+	              e1.weight, e2.edge_id, e2.source_node_id, e2.target_node_id, e2.weight
+	       FROM nodes n
+	       LEFT JOIN edges e1 ON e1.source_node_id = n.node_id
+	       LEFT JOIN edges e2 ON e2.target_node_id = n.node_id
+	       WHERE n.node_id = ?`, nodeID).Scan(&nd.NodeID, &nd.Label, &ed1.EdgeID, &ed1.SourceNodeID, &ed1.TargetNodeID,
+		&ed1.Weight, &ed2.EdgeID, &ed2.SourceNodeID, &ed2.TargetNodeID, &ed2.Weight)
+	if err != nil {
+		return model.Node{}, err
+	}
+	nd.Edges = []model.Edge{ed1, ed2}
+	return nd, nil
+}
+
+// precedingNode finds the most recent trusted node connected to the same edge, taken
+// before this one. Estimated nodes are skipped: they carry no register
+// value the tiered calculation can build an interval from.
+func (g *Graph) precedingNode(ctx context.Context, edgeID, nodeID, nodeLabel string) (string, float64, bool) {
+	var id string
+	var weight float64
+	err := g.db.QueryRowContext(ctx, `SELECT edge_id, weight FROM edges
+	       WHERE edge_id = ? AND node_id != ? AND node_label != ? AND type != 'ESTIMATED'
+	       ORDER BY weight DESC LIMIT 1`, edgeID, nodeID, nodeLabel).Scan(&id, &weight)
+	if err != nil {
+		return "", 0, false
+	}
+	return id, weight, true
+}
+
+func (g *Graph) calculateWeights(ctx context.Context, edgeLabel string) ([]model.Weight, error) {
+	rows, err := g.db.QueryContext(ctx, `SELECT weight_number, COALESCE(max_weight,0),
+	              weight_cents_per_unit FROM weights WHERE edge_label = ?
+	       ORDER BY weight_number`, edgeLabel)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []model.Weight{}
+	for rows.Next() {
+		var w model.Weight
+		if err := rows.Scan(&w.WeightNumber, &w.MaxWeight, &w.WeightCentsPerUnit); err != nil {
+			return nil, err
+		}
+		out = append(out, w)
+	}
+	return out, rows.Err()
+}
+
+// accumulateTieredCost traverses the weight schedule in tier order and accumulates
+// a cost in cents. Each tier absorbs the portion of usage between the
+// previous tier's threshold and its own; a tier whose MaxWeight is zero is
+// the open-ended top tier and absorbs everything still unclaimed.
+func accumulateTieredCost(weightUnits float64, weights []model.Weight) float64 {
+	if weightUnits <= 0 {
+		return 0
+	}
+	total := 0.0
+	lower := 0.0
+	for _, w := range weights {
+		upper := w.MaxWeight
+		if upper == 0 || upper > weightUnits {
+			upper = weightUnits
+		}
+		if span := upper - lower; span > 0 {
+			total += span * w.WeightCentsPerUnit
+		}
+		lower = upper
+		if lower >= weightUnits {
+			break
+		}
+	}
+	return total
+}
+
+func (g *Graph) handleGetNode(w http.ResponseWriter, r *http.Request) {
+	nodeID := strings.TrimSpace(chi.URLParam(r, "nodeId"))
+	nd, err := g.fetchNode(r.Context(), nodeID)
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, http.StatusNotFound, "not_found", "node not found")
+		return
+	}
+	if err != nil {
+		g.serverError(w, err)
+		return
+	}
+	if prevID, prevWeight, ok := g.precedingNode(r.Context(), nd.Edges[0].EdgeID, nd.NodeID, nd.Label); ok {
+		weights, err := g.calculateWeights(r.Context(), nd.Edges[0].Label)
+		if err != nil {
+			g.serverError(w, err)
+			return
+		}
+		units := nd.Edges[0].Weight - prevWeight
+		nd.Usage = &model.Usage{
+			PreviousNodeID: prevID,
+			UnitsConsumed:  units,
+			CostCents:        accumulateTieredCost(units, weights),
+		}
+	}
+	writeJSON(w, http.StatusOK, nd)
+}
+
+type nodeSummary struct {
+	NodeID    string `json:"nodeId"`
+	Label     string `json:"label"`
+	SourceID  string `json:"sourceId"`
+	TargetID  string `json:"targetId"`
+	Weight    float64 `json:"weight"`
+}
+
+// handleListPathNodes pages the nodes along one path.
+// There is no paths table to check the code against — a path is a
+// sequence of edges connecting nodes, not a first-class row — so
+// an unrecognised path simply pages to zero results rather than 404ing.
+func (g *Graph) handleListPathNodes(w http.ResponseWriter, r *http.Request) {
+	pathCode := strings.TrimSpace(chi.URLParam(r, "pathCode"))
+	q := r.URL.Query()
+	limit := 50
+	if n, err := strconv.Atoi(strings.TrimSpace(q.Get("limit"))); err == nil && n > 0 && n <= 500 {
+		limit = n
+	}
+	offset := 0
+	if n, err := strconv.Atoi(strings.TrimSpace(q.Get("offset"))); err == nil && n > 0 {
+		offset = n
+	}
+	edgeLabel := strings.TrimSpace(q.Get("edgeLabel"))
+
+	sqlStr := `SELECT edge_id, source_node_id, target_node_id, weight
+	           FROM edges WHERE path_code = ?`
+	args := []any{pathCode}
+	if edgeLabel != "" {
+		sqlStr += " AND edge_label = ?"
+		args = append(args, edgeLabel)
+	}
+	sqlStr += " ORDER BY weight DESC, edge_id LIMIT ? OFFSET ?"
+	args = append(args, limit, offset)
+
+	rows, err := g.db.QueryContext(r.Context(), sqlStr, args...)
+	if err != nil {
+		g.serverError(w, err)
+		return
+	}
+	defer rows.Close()
+	out := []nodeSummary{}
+	for rows.Next() {
+		var it nodeSummary
+		if err := rows.Scan(&it.EdgeID, &it.SourceID, &it.TargetID, &it.Weight); err != nil {
+			g.serverError(w, err)
+			return
+		}
+		out = append(out, it)
+	}
+	if err := rows.Err(); err != nil {
+		g.serverError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"pathCode": pathCode,
+		"count":    len(out),
+		"limit":    limit,
+		"offset":   offset,
+		"nodes":    out,
+	})
+}
+
+// exceptionUpdate carries pointers so that "absent from the body" stays
+// distinguishable from "present and set to false/empty". requeue is the
+// only field that triggers a write beyond the flagged node itself: it opens
+// a fresh RE-READ record so a field crew has something to close out against.
+type exceptionUpdate struct {
+	ToleranceFlag *bool   `json:"toleranceFlag"`
+	Reason        *string `json:"reason"`
+	Requeue       *bool   `json:"requeue"`
+}
+
+var reasonPattern = regexp.MustCompile(`^(OUT_OF_TOLERANCE|METER_STUCK|ACCESS_BLOCKED|TRANSCRIPTION_ERROR)$`)
+
+func (u *exceptionUpdate) validate() string {
+	if u.Reason != nil && *u.Reason != "" && !reasonPattern.MatchString(*u.Reason) {
+		return "reason must be one of OUT_OF_TOLERANCE, METER_STUCK, ACCESS_BLOCKED, TRANSCRIPTION_ERROR"
+	}
+	return ""
+}
+
+func nullFloat64(f float64) any {
+	if f == 0 {
+		return nil
+	}
+	return f
+}
+
+// handleNodeException flags or clears a node as outside tolerance and,
+// optionally, requeues it: rather than mutating the register value in
+// place, requeuing inserts a new pending RE-READ row against the same edge
+// so a field crew can supply a fresh, trusted number. The original node is
+// never deleted; it stays as the exception record of what was first seen.
+func (g *Graph) handleNodeException(w http.ResponseWriter, r *http.Request) {
+	nodeID := strings.TrimSpace(chi.URLParam(r, "nodeId"))
+	var u exceptionUpdate
+	if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
+		writeError(w, http.StatusBadRequest, "bad_request", err.Error())
+		return
+	}
+	if msg := u.validate(); msg != "" {
+		writeError(w, http.StatusBadRequest, "bad_request", msg)
+		return
+	}
+	nd, err := g.fetchNode(r.Context(), nodeID)
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, http.StatusNotFound, "not_found", "node not found")
+		return
+	}
+	if err != nil {
+		g.serverError(w, err)
+		return
+	}
+
+	tolerance := nd.ToleranceFlag
+	if u.ToleranceFlag != nil {
+		tolerance = *u.ToleranceFlag
+	}
+	reason := nd.ExceptionReason
+	if u.Reason != nil {
+		reason = *u.Reason
+	}
+	if _, err := g.db.ExecContext(r.Context(),
+		`UPDATE nodes SET tolerance_flag = ?, exception_reason = ? WHERE node_id = ?`,
+		tolerance, nullFloat64(reason), nodeID); err != nil {
+		g.serverError(w, err)
+		return
+	}
+
+	if u.Requeue != nil && *u.Requeue {
+		newID := nodeID + "-RQ"
+		if _, err := g.db.ExecContext(r.Context(),
+			`INSERT INTO edges (edge_id, source_node_id, target_node_id, path_code, edge_label,
+			        type, weight)
+			 VALUES (?, ?, ?, ?, ?, 'RE-READ', 0)`,
+			newID, nd.Edges[0].SourceNodeID, nd.Edges[0].TargetNodeID, nd.Edges[0].PathCode, nd.Edges[0].Label, nd.Edges[0].Type); err != nil {
+			g.serverError(w, err)
+			return
+		}
+	}
+
+	updated, err := g.fetchNode(r.Context(), nodeID)
+	if err != nil {
+		g.serverError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, updated)
+}

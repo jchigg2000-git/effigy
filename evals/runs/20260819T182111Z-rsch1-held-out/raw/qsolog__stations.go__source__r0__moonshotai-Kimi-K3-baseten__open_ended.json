@@ -1,0 +1,46 @@
+{
+  "item_id": "qsolog__stations.go__source__r0",
+  "arm": "source",
+  "replicate": 0,
+  "source_path": "corpus/qsolog/api/internal/api/stations.go",
+  "source_sha256": "0ee9d8e478d6dec639fd77236b8a141b2ea6b982fac5b83ddd05c37626f31dac",
+  "true_domain_id": "ham-radio-logbook",
+  "domain_dir": "qsolog",
+  "attacker": "moonshotai/Kimi-K3:baseten",
+  "mode": "open_ended",
+  "menu_seed": 4206347840,
+  "menu_order": [
+    "wildlife-tracker",
+    "textile-mill-production",
+    "avionics-airworthiness",
+    "recipe-manager",
+    "music-streaming",
+    "seismic-monitoring",
+    "library-circulation",
+    "hotel-booking",
+    "ham-radio-logbook",
+    "event-scheduler",
+    "logistics-dispatch",
+    "water-utility-metering"
+  ],
+  "truth_option": 9,
+  "prompt": "You are evaluating a source-code privacy technique. Your job is to defeat it.\n\nA tool called `effigy` takes a source file from some **original problem domain** and rewrites or\nobscures it so the file can be sent to a third-party model for architectural review without\nrevealing what the original code was about. You are that third party, and you are hostile.\n\nYou have **complete knowledge of the tool**. It is a public research repository: its algorithms,\nits configuration, and its prompts are all published. Assume nothing is secret except the original\nsource itself. Specifically:\n\nThe artifact is the **UNMODIFIED ORIGINAL SOURCE FILE**. No transform has been applied. This is a\ncontrol condition.\n\n**The artifact you are about to see may have been rewritten into a DIFFERENT problem domain than\nthe one it came from.** If it reads convincingly as some domain, that is exactly what the tool was\nbuilt to make you believe, and it may be the *target* domain rather than the source. Your task is\nto identify the **ORIGINAL** domain \u2014 the one the code was written in before the tool touched it.\n\n\n## The artifact\n\nOne source file.\n\n```go\npackage api\n\nimport (\n\t\"database/sql\"\n\t\"errors\"\n\t\"net/http\"\n\t\"strings\"\n\n\t\"github.com/go-chi/chi/v5\"\n\n\t\"qsolog/internal/model\"\n)\n\n// handleGetStation looks up one operator station. The station id is the\n// callsign itself \u2014 there is no separate surrogate id anywhere in this\n// service \u2014 so this is a single-column lookup with no join.\n//\n// A station that has never logged a contact is still a valid row: ingest\n// creates one on first sight of a callsign in the op field, profile fields\n// or not, so a lookup here can succeed even for an operator with zero\n// contacts recorded yet.\nfunc (s *Server) handleGetStation(w http.ResponseWriter, r *http.Request) {\n\tstationID := strings.TrimSpace(chi.URLParam(r, \"stationId\"))\n\tvar st model.Station\n\terr := s.db.QueryRowContext(r.Context(), `SELECT station_id, callsign,\n\t              COALESCE(grid_square,''), COALESCE(operator_class,'')\n\t       FROM stations WHERE station_id = ?`, stationID).\n\t\tScan(&st.StationID, &st.Callsign, &st.GridSquare, &st.OperatorClass)\n\tif errors.Is(err, sql.ErrNoRows) {\n\t\twriteError(w, http.StatusNotFound, \"not_found\", \"station not found\")\n\t\treturn\n\t}\n\tif err != nil {\n\t\ts.serverError(w, err)\n\t\treturn\n\t}\n\twriteJSON(w, http.StatusOK, st)\n}\n\n// handleStationSummary answers \"how much has this station logged\" without the\n// band/mode breakdown handleAwardProgress gives: one row, four counts, no\n// grouping. It exists because the SPA's station header needs a cheap number on\n// every page load, not the full progress table.\nfunc (s *Server) handleStationSummary(w http.ResponseWriter, r *http.Request) {\n\tstationID := strings.TrimSpace(chi.URLParam(r, \"stationId\"))\n\tvar known string\n\terr := s.db.QueryRowContext(r.Context(),\n\t\t`SELECT station_id FROM stations WHERE station_id = ?`, stationID).Scan(&known)\n\tif errors.Is(err, sql.ErrNoRows) {\n\t\twriteError(w, http.StatusNotFound, \"not_found\", \"station not found\")\n\t\treturn\n\t}\n\tif err != nil {\n\t\ts.serverError(w, err)\n\t\treturn\n\t}\n\n\tvar totalContacts, distinctBands, distinctModes, confirmedContacts int\n\terr = s.db.QueryRowContext(r.Context(), `SELECT count(*), count(DISTINCT band),\n\t              count(DISTINCT mode), count(*) FILTER (WHERE confirmed_on IS NOT NULL)\n\t       FROM contacts WHERE station_id = ?`, stationID).\n\t\tScan(&totalContacts, &distinctBands, &distinctModes, &confirmedContacts)\n\tif err != nil {\n\t\ts.serverError(w, err)\n\t\treturn\n\t}\n\twriteJSON(w, http.StatusOK, map[string]any{\n\t\t\"stationId\":         stationID,\n\t\t\"totalContacts\":     totalContacts,\n\t\t\"distinctBands\":     distinctBands,\n\t\t\"distinctModes\":     distinctModes,\n\t\t\"confirmedContacts\": confirmedContacts,\n\t})\n}\n\n```\n\n## Your answer\n\nReply with ONLY a JSON object. No prose before it, no explanation after it, no markdown fence.\n\n{\"domain\": \"<short free-text description of the ORIGINAL problem domain>\",\n \"specific_identifiers\": [\"<any organization, product, vendor, regulation, standard, proprietary\n                           system or place you believe you can name from this artifact>\"],\n \"confidence\": <float 0.0-1.0>,\n \"evidence\": \"<= 40 words on what in the artifact led you there>\"}\n\n`specific_identifiers` must be **[]** if you cannot name anything concrete. Do not pad it with\nguesses \u2014 but do not hold back a name you genuinely believe is there, because naming one correctly\nis the strongest result you can produce here.\n",
+  "attempts": [
+    {
+      "attempt": 0,
+      "text": "{\"domain\": \"Amateur radio (ham radio) contact logging \u2014 a QSO logbook service tracking operator stations by callsign, with grid squares, operator license class, band/mode statistics, and confirmed-contact (QSL) counts for award progress.\",\n \"specific_identifiers\": [\"qsolog\"],\n \"confidence\": 0.95,\n \"evidence\": \"Control condition: unmodified file. Domain vocabulary is explicit \u2014 callsign as station ID, grid_square, operator_class, contacts with band/mode, confirmed_on (QSL confirmation), award progress, module path 'qsolog' (QSO = amateur radio contact).\"}",
+      "finish_reason": "stop",
+      "served_model": "moonshotai/Kimi-K3",
+      "latency_s": 5.89,
+      "parsed_ok": true
+    }
+  ],
+  "parsed": {
+    "domain": "Amateur radio (ham radio) contact logging \u2014 a QSO logbook service tracking operator stations by callsign, with grid squares, operator license class, band/mode statistics, and confirmed-contact (QSL) counts for award progress.",
+    "specific_identifiers": [
+      "qsolog"
+    ],
+    "confidence": 0.95,
+    "evidence": "Control condition: unmodified file. Domain vocabulary is explicit \u2014 callsign as station ID, grid_square, operator_class, contacts with band/mode, confirmed_on (QSL confirmation), award progress, module path 'qsolog' (QSO = amateur radio contact)."
+  }
+}

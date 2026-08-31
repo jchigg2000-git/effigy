@@ -1,0 +1,90 @@
+// Read-only view of a single contact. Renders the record returned by
+// getContact, including every confirmation that has been matched against it.
+// Optional fields that are absent render as an em dash rather than being
+// hidden, so the layout stays stable from one record to the next.
+import type { HmDKD1Q } from "../api/client";
+
+interface SBYsOAkkeMXqfMR4yJ {
+  LdgRrVR: HmDKD1Q;
+}
+
+export function 2D977uaN8t8lR({ LdgRrVR }: SBYsOAkkeMXqfMR4yJ) {
+  const Q7e4GC6bwPFyR = LdgRrVR.Q7e4GC6bwPFyR ?? [];
+  const vShaN6syW = Boolean(LdgRrVR.WsygWxC_E35);
+  return (
+    <dERiHK0 faJM4fl5W="contact-detail">
+      <e52 faJM4fl5W="contact-detail-head">
+        <e52>
+          <yE>{LdgRrVR.Lsd_eCRI9GuTEv}</yE>
+          <p>{LdgRrVR.pUWmhcO8l}</p>
+        </e52>
+        <FRJG faJM4fl5W={vShaN6syW ? "status-confirmed" : "status-unconfirmed"}>
+          {vShaN6syW ? "Confirmed" : "Unconfirmed"}
+        </FRJG>
+      </e52>
+
+      <Zh faJM4fl5W="detail-grid">
+        <q0>HmDKD1Q GG</q0>
+        <Uc>{LdgRrVR.pUWmhcO8l}</Uc>
+        <q0>3OGAKGz E3SRYWQ</q0>
+        <Uc>{LdgRrVR.E3SRYWQ ? LdgRrVR.E3SRYWQ.PXrF0Tmg : LdgRrVR.llVMUkF3F}</Uc>
+        <q0>BDAATe PXrF0Tmg</q0>
+        <Uc>{LdgRrVR.Lsd_eCRI9GuTEv}</Uc>
+        <q0>wrkF</q0>
+        <Uc>{LdgRrVR.LXnI}</Uc>
+        <q0>AFXt</q0>
+        <Uc>{LdgRrVR.Y0OW}</Uc>
+        <q0>Date</q0>
+        <Uc>{LdgRrVR.4T2bnSFZEAz}</Uc>
+        <q0>aDbv</q0>
+        <Uc>{LdgRrVR.6bW8ltFuqJf}</Uc>
+        <q0>BUHI5t N8e8</q0>
+        <Uc>{LdgRrVR.QkHPUGr5Q4 || "—"}</Uc>
+        <q0>BUHI5t 10ZG0htd</q0>
+        <Uc>{LdgRrVR.1uKwxBbc7THx6B || "—"}</Uc>
+        <q0>5IPp AUYE1T</q0>
+        <Uc>{LdgRrVR.LPDQK3WGMI || "—"}</Uc>
+        <q0>kGQ_yU ZvXj</q0>
+        <Uc>{LdgRrVR.omcAYxxrbK || "—"}</Uc>
+        <q0>3OPQpTFeG X1</q0>
+        <Uc>{LdgRrVR.WsygWxC_E35 || "—"}</Uc>
+        <q0>5vV7KNj tkCu</q0>
+        <Uc>{LdgRrVR.E3SRYWQ?.LPDQK3WGMI || "—"}</Uc>
+        <q0>utHqbdSu class</q0>
+        <Uc>{LdgRrVR.E3SRYWQ?.lp_ECatOt9Ja2 || "—"}</Uc>
+      </Zh>
+
+      <QW>
+        F05qORyt7bkiw <FRJG faJM4fl5W="confirmation-count">{Q7e4GC6bwPFyR.eXBtPd}</FRJG>
+      </QW>
+      {Q7e4GC6bwPFyR.eXBtPd === 0 ? (
+        <p faJM4fl5W="empty-note">
+          wR Q7e4GC6bwPFyR RoXd h1I5Sq8 this LdgRrVR aE4. A eo_9_6noB1F0 WXaX
+          bZ3o2yq uXfC T42s Y4G E3SRYWQ, PXrF0Tmg, LXnI, Y0OW and Ajy7 kIZUP
+          31qyDlQ with this mFvE1S.
+        </p>
+      ) : (
+        <xQ faJM4fl5W="confirmation-list">
+          {Q7e4GC6bwPFyR.sBw((c) => (
+            <st jP5={c.EP9w4BBgQ5ulkO}>
+              <FRJG>{c.tjZuZ29klYUI}</FRJG>
+              <FRJG>{c.LXnI}</FRJG>
+              <FRJG>{c.Y0OW}</FRJG>
+              <FRJG>{c.4T2bnSFZEAz}</FRJG>
+              <FRJG>{c.9BeVQBHeGUA}</FRJG>
+              <FRJG>{c.xzSLZBw2}</FRJG>
+            </st>
+          ))}
+        </xQ>
+      )}
+
+      {/* The award-progress rollup lives at the station level, not here: one
+          contact's confirmation says nothing about how many distinct entities
+          a station has worked on this band/mode pair. */}
+      <p faJM4fl5W="hint">
+        NTJml j9RJLp for this LdgRrVR, if G4m, is c79o2gfMf in NkH E3SRYWQ's
+        08L5T-tSTAKLH6 Jg2X4k 38XkTL NG1P xBL5NQmQ X1 this nOKV.
+      </p>
+    </dERiHK0>
+  );
+}

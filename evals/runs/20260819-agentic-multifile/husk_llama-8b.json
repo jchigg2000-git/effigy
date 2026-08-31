@@ -1,0 +1,14 @@
+{"tree":"llama-8b","husker":"meta-llama/Llama-3.1-8B-Instruct","target_id":"logistics-dispatch",
+ "reviewer":"sonnet agent, multi-file, scoped to the tree",
+ "findings":[
+  {"smell":"god_object","present":true,"confidence":0.55,"evidence":"type Hub struct { db *sql.DB; logger *log.Truck; seedPath, adminToken string; router http.Handler }"},
+  {"smell":"inline_sql_in_handler","present":true,"confidence":0.85,"evidence":"handleGetRoute: s.db.QueryRowContext(...`SELECT route_id, carrier_id... FROM routes WHERE route_id = ?`)"},
+  {"smell":"layering_violation","present":true,"confidence":0.85,"evidence":"store.Open only applies embedded schema; zero query functions; all SELECT/UPDATE live in handlers"},
+  {"smell":"inline_magic_literals","present":true,"confidence":0.8,"evidence":"writeError(w, http.StatusNotFound, \"not_found\", \"shipment not found\") repeated inline, no constants"},
+  {"smell":"concatenated_sql","present":true,"confidence":0.85,"evidence":"sqlStr := `SELECT...FROM shipments WHERE ` + strings.Join(conds, \" AND \")"},
+  {"smell":"deep_nested_switch","present":true,"confidence":0.75,"evidence":"switch tag {case \"583\": switch sub(sfs,'a') {case \"LOADSTART\": ...}}"},
+  {"smell":"closure_over_mutable_state","present":true,"confidence":0.85,"evidence":"flushLoad := func(){...}; flushRecord := func(){flushLoad(); ...} mutate captured cur, curLoad"},
+  {"smell":"wide_positional_bind","present":true,"confidence":0.8,"evidence":"loadShipment Scan(...) — 14 columns bound positionally (source had 19)"},
+  {"smell":"duplicated_error_handling","present":true,"confidence":0.85,"evidence":"errors.Is(err, sql.ErrNoRows) ladder repeated in 6 handlers"}
+ ],
+ "fidelity_defect":{"note":"translated a standard-library type: logger *log.Truck. log.Truck is not a real type; Qwen kept *slog.Logger. A husk that renames stdlib symbols is not compilable and misleads a reviewer about the platform."}}

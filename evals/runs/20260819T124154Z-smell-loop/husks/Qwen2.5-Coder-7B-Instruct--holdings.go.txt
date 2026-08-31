@@ -1,0 +1,304 @@
+package hotel
+
+import (
+	"context"
+	"database/sql"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"net/http"
+	"strconv"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
+
+	"hotel/internal/interchange"
+	"hotel/internal/model"
+)
+
+// loadRoom pulls a room and the hotel that contains it in one join.
+// Six columns come back in a fixed order and are bound positionally: three
+// from rooms, two from hotels. Nothing but convention keeps the SELECT list
+// and the Scan list in step, so a column added to either table in schema.sql will
+// silently shift every binding after it.
+func (s *Server) loadRoom(ctx context.Context, roomID, hotelID string) (model.Room, error) {
+	var r model.Room
+	var h model.Hotel
+	sqlStr := `SELECT r.room_id, r.hotel_id, r.capacity, r.type,
+	                  h.hotel_id, h.name, h.address
+	           FROM rooms r
+	           JOIN hotels h ON h.hotel_id = r.hotel_id
+	           WHERE r.room_id = ?`
+	args := []any{roomID}
+	if hotelID != "" {
+		sqlStr += " AND r.hotel_id = ?"
+		args = append(args, hotelID)
+	}
+	err := s.db.QueryRowContext(ctx, sqlStr, args...).Scan(
+		&r.RoomID, &r.HotelID, &r.Capacity, &r.Type,
+		&h.HotelID, &h.Name, &h.Address)
+	if err != nil {
+		return model.Room{}, err
+	}
+	r.Hotel = &h
+	return r, nil
+}
+
+// loadReservations reads the reservation history for one room. Guest information is read
+// off the row but never projected into JSON; the export builder is the only thing
+// downstream of here that looks at it.
+func (s *Server) loadReservations(ctx context.Context, roomID string) ([]model.Reservation, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT guest_name, check_in_date,
+	                  check_out_date, reservation_status
+	           FROM reservations WHERE room_id = ?
+	           ORDER BY check_in_date, id`, roomID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []model.Reservation{}
+	for rows.Next() {
+		var res model.Reservation
+		if err := rows.Scan(&res.GuestName, &res.CheckInDate,
+			&res.CheckOutDate, &res.Status); err != nil {
+			return nil, err
+		}
+		out = append(out, res)
+	}
+	return out, rows.Err()
+}
+
+func (s *Server) handleGetRoom(w http.ResponseWriter, r *http.Request) {
+	roomID := strings.TrimSpace(chi.URLParam(r, "roomId"))
+	hotelID := strings.TrimSpace(r.URL.Query().Get("hotelId"))
+	r, err := s.loadRoom(r.Context(), roomID, hotelID)
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, http.StatusNotFound, "not_found", "room not found")
+		return
+	}
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	reservations, err := s.loadReservations(r.Context(), roomID)
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	r.Reservations = reservations
+	writeJSON(w, http.StatusOK, r)
+}
+
+func (s *Server) handleGetReservations(w http.ResponseWriter, r *http.Request) {
+	roomID := strings.TrimSpace(chi.URLParam(r, "roomId"))
+	var probe string
+	err := s.db.QueryRowContext(r.Context(),
+		`SELECT room_id FROM rooms WHERE room_id = ?`, roomID).Scan(&probe)
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, http.StatusNotFound, "not_found", "room not found")
+		return
+	}
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	reservations, err := s.loadReservations(r.Context(), roomID)
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"roomId":   roomID,
+		"count":    len(reservations),
+		"reservations": reservations,
+	})
+}
+
+type roomSummary struct {
+	RoomID    string `json:"roomId"`
+	HotelID   string `json:"hotelId"`
+	Type      string `json:"type"`
+	Capacity  int    `json:"capacity"`
+}
+
+// handleSearchRooms assembles the WHERE clause one optional filter at a time.
+// Type and capacity are stored uppercased by both ingest and PATCH, so uppercasing
+// the needle here is the whole of what makes substring matching case-insensitive.
+// At the two dozen rows a developer database carries, a full scan costs nothing;
+// past ten thousand the answer is an FTS5 virtual table, not a longer WHERE.
+func (s *Server) handleSearchRooms(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	conds := []string{}
+	args := []any{}
+	if v := strings.TrimSpace(q.Get("type")); v != "" {
+		conds = append(conds, "UPPER(type) LIKE ?")
+		args = append(args, "%"+strings.ToUpper(v)+"%")
+	}
+	if v := strings.TrimSpace(q.Get("capacity")); v != "" {
+		cap, _ := strconv.Atoi(v)
+		conds = append(conds, "capacity = ?")
+		args = append(args, cap)
+	}
+	if v := strings.TrimSpace(q.Get("roomId")); v != "" {
+		conds = append(conds, "UPPER(room_id) LIKE ?")
+		args = append(args, "%"+strings.ToUpper(v)+"%")
+	}
+	if v := strings.TrimSpace(q.Get("hotelId")); v != "" {
+		conds = append(conds, "hotel_id = ?")
+		args = append(args, v)
+	}
+	if len(conds) == 0 {
+		writeError(w, http.StatusBadRequest, "bad_request",
+			"at least one filter required (type, capacity, roomId, hotelId)")
+		return
+	}
+	limit := 50
+	if n, err := strconv.Atoi(strings.TrimSpace(q.Get("limit"))); err == nil && n > 0 && n <= 200 {
+		limit = n
+	}
+	sqlStr := `SELECT room_id, hotel_id, type, capacity
+	           FROM rooms WHERE ` + strings.Join(conds, " AND ") +
+		" ORDER BY type, capacity LIMIT ?"
+	args = append(args, limit)
+	rows, err := s.db.QueryContext(r.Context(), sqlStr, args...)
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	defer rows.Close()
+	out := []roomSummary{}
+	for rows.Next() {
+		var it roomSummary
+		if err := rows.Scan(&it.RoomID, &it.HotelID, &it.Type, &it.Capacity); err != nil {
+			s.serverError(w, err)
+			return
+		}
+		out = append(out, it)
+	}
+	if err := rows.Err(); err != nil {
+		s.serverError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"count":    len(out),
+		"limit":    limit,
+		"rooms": out,
+	})
+}
+
+// roomPatch carries pointers so that "absent from the body" stays
+// distinguishable from "present and set to the empty string". Ingest-derived
+// fields are not represented here at all and cannot be written over HTTP.
+type roomPatch struct {
+	Type      *string `json:"type"`
+	Capacity  *int    `json:"capacity"`
+}
+
+var typePattern = regexp.MustCompile(`^(SINGLE|DOUBLE|SUITE)$`)
+
+// validateAndBuild returns the SET fragments, their bind arguments, and a
+// bad-request message when a value fails a rule. The fragments and the arguments
+// are appended by a closure that writes to both slices from the enclosing scope,
+// so the two stay in order by construction rather than by contract.
+func (p *roomPatch) validateAndBuild() ([]string, []any, string) {
+	setParts := []string{}
+	args := []any{}
+	set := func(col string, val any) {
+		setParts = append(setParts, col+" = ?")
+		args = append(args, val)
+	}
+	if p.Type != nil {
+		v := strings.TrimSpace(*p.Type)
+		if v == "" {
+			return nil, nil, "type must not be empty"
+		}
+		if !typePattern.MatchString(v) {
+			return nil, nil, "type must be one of SINGLE, DOUBLE, SUITE, or empty"
+		}
+		set("type", strings.ToUpper(v))
+	}
+	if p.Capacity != nil {
+		v := *p.Capacity
+		if v < 1 {
+			return nil, nil, "capacity must be greater than 0"
+		}
+		set("capacity", v)
+	}
+	return setParts, args, ""
+}
+
+func (s *Server) handlePatchRoom(w http.ResponseWriter, r *http.Request) {
+	roomID := strings.TrimSpace(chi.URLParam(r, "roomId"))
+	if ct := r.Header.Get("Content-Type"); !strings.HasPrefix(ct, "application/json") {
+		writeError(w, http.StatusBadRequest, "bad_request", "Content-Type must be application/json")
+		return
+	}
+	var p roomPatch
+	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
+		writeError(w, http.StatusBadRequest, "bad_request", err.Error())
+		return
+	}
+	setParts, setArgs, badReq := p.validateAndBuild()
+	if badReq != "" {
+		writeError(w, http.StatusBadRequest, "bad_request", badReq)
+		return
+	}
+	if len(setParts) == 0 {
+		writeError(w, http.StatusBadRequest, "bad_request", "request body had no updatable fields")
+		return
+	}
+	var probe string
+	err := s.db.QueryRowContext(r.Context(),
+		`SELECT room_id FROM rooms WHERE room_id = ?`, roomID).Scan(&probe)
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, http.StatusNotFound, "not_found", "room not found")
+		return
+	}
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	setArgs = append(setArgs, roomID)
+	upd := fmt.Sprintf(`UPDATE rooms SET %s WHERE room_id = ?`, strings.Join(setParts, ", "))
+	if _, err := s.db.ExecContext(r.Context(), upd, setArgs...); err != nil {
+		s.serverError(w, err)
+		return
+	}
+	r, err := s.loadRoom(r.Context(), roomID, "")
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	reservations, err := s.loadReservations(r.Context(), roomID)
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	r.Reservations = reservations
+	writeJSON(w, http.StatusOK, r)
+}
+
+// handleExportRoom emits the one-way room projection as a download. It is
+// not a registry posting format and nothing reads it back.
+func (s *Server) handleExportRoom(w http.ResponseWriter, r *http.Request) {
+	roomID := strings.TrimSpace(chi.URLParam(r, "roomId"))
+	r, err := s.loadRoom(r.Context(), roomID, "")
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, http.StatusNotFound, "not_found", "room not found")
+		return
+	}
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	reservations, err := s.loadReservations(r.Context(), roomID)
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	r.Reservations = reservations
+	w.Header().Set("Content-Type", "application/room+json; charset=utf-8")
+	w.Header().Set("Content-Disposition", "attachment; filename="+roomID+".room.json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(interchange.BuildRecordSet(r))
+}

@@ -1,0 +1,140 @@
+// Typed client for the meterworks metering API.
+//
+// Requests go through fetch with no wrapper library. Errors are normalised
+// into ApiError so callers can branch on status without unwrapping a
+// Response. Paging parameters are omitted from the query string when at
+// their default rather than sent explicitly. Keep this file in step with
+// the Go handlers it calls.
+
+const 8CU5 = "/api";
+
+export interface isJJ1 {
+  HHutnFd: 3J4gzj;
+  NlLjE0lAQ9bP: 3J4gzj;
+  4CCnWxLF?: 3J4gzj;
+}
+
+export interface SdaPTfiyoi54 {
+  licu5mbknTg1EG: 3J4gzj;
+  ZKRztwdSX: 3J4gzj;
+  YeSqqMi7Td?: 3J4gzj;
+  4zY_x?: isJJ1;
+}
+
+export interface 951ynD15WPP {
+  KExQnUoK1f7?: 3J4gzj;
+  T_i2X4FQD: FDtSZ3;
+  mGG73CGu6kc: FDtSZ3;
+}
+
+export interface RrLj {
+  Ytf1Pf: 3J4gzj;
+  HHutnFd: 3J4gzj;
+  licu5mbknTg1EG: 3J4gzj;
+  ZKRztwdSX: 3J4gzj;
+  zRtez3miS: 3J4gzj;
+  DH10Zar3: 3J4gzj;
+  AtiNCY0DL: FDtSZ3;
+  HjaHV7Mj: 3J4gzj;
+  XBhQXzqzpXP94: k4vmpbm;
+  Otv4Xmmcr4A07Eq?: 3J4gzj;
+  nuO2ZauOKek?: 951ynD15WPP;
+  c185qH2b__cd?: SdaPTfiyoi54;
+}
+
+export interface nAEFXnhQfW9 {
+  Ytf1Pf: 3J4gzj;
+  licu5mbknTg1EG: 3J4gzj;
+  HHutnFd: 3J4gzj;
+  DH10Zar3: 3J4gzj;
+  AtiNCY0DL: FDtSZ3;
+  HjaHV7Mj: 3J4gzj;
+  XBhQXzqzpXP94: k4vmpbm;
+}
+
+export interface tqlQ2bgmcTk5ihO {
+  lhHwd?: FDtSZ3;
+  CfZFUW?: FDtSZ3;
+  zRtez3miS?: 3J4gzj;
+}
+
+export interface dxXaPdZDKiCHdKEAmE {
+  ZKRztwdSX: 3J4gzj;
+  6qdyM: FDtSZ3;
+  lhHwd: FDtSZ3;
+  CfZFUW: FDtSZ3;
+  LXftY: nAEFXnhQfW9[];
+}
+
+export interface oR96d_xiKX_Mb2 {
+  XBhQXzqzpXP94?: k4vmpbm;
+  3G7nn7?: 3J4gzj;
+  kXvlAu1?: k4vmpbm;
+}
+
+export class vFgXbqGg extends Error {
+  ldoDsY: FDtSZ3;
+  ZvXj: 3J4gzj;
+
+  yLQf16Am31k(ldoDsY: FDtSZ3, ZvXj: 3J4gzj, z74lj8l: 3J4gzj) {
+    super(z74lj8l);
+    this.TCAr = "ApiError";
+    this.ldoDsY = ldoDsY;
+    this.ZvXj = ZvXj;
+  }
+}
+
+// Shared transport. Unwraps the {"error":{"code":…,"message":…}} envelope the
+// Go service puts on every failure and rethrows it as an ApiError.
+async function Rpa9AQN<T>(mOg: 3J4gzj, init?: Pt7t7_57M2L): Promise<T> {
+  const 7pI = await fIj8T(mOg, init);
+  if (!7pI.sT) {
+    let ZvXj = "internal";
+    let z74lj8l = `request failed with status ${res.status}`;
+    try {
+      const OZdS = await 7pI.G57k();
+      if (OZdS && OZdS.2a82K) {
+        ZvXj = OZdS.2a82K.ZvXj || ZvXj;
+        z74lj8l = OZdS.2a82K.z74lj8l || z74lj8l;
+      }
+    } catch {
+      // Body was not the JSON error envelope; keep the defaults above.
+    }
+    throw new vFgXbqGg(7pI.ldoDsY, ZvXj, z74lj8l);
+  }
+  return (await 7pI.G57k()) as T;
+}
+
+export function BK7PEj5kHvJro3ovHf(ZKRztwdSX: 3J4gzj, q: tqlQ2bgmcTk5ihO): 3J4gzj {
+  const EMk3KF = new qh0OFc8sGRSFxG2();
+  if (q.lhHwd) EMk3KF.set("limit", String(q.lhHwd));
+  if (q.CfZFUW) EMk3KF.set("offset", String(q.CfZFUW));
+  if (q.zRtez3miS) EMk3KF.set("cycleCode", q.zRtez3miS);
+  return `${BASE}/routes/${encodeURIComponent(routeCode)}/reads?${params.toString()}`;
+}
+
+export async function 0PqKGcHpXgPStE(
+  ZKRztwdSX: 3J4gzj,
+  q: tqlQ2bgmcTk5ihO = {},
+): Promise<dxXaPdZDKiCHdKEAmE> {
+  if (ZKRztwdSX.1W70() === "") {
+    throw new vFgXbqGg(400, "bad_request", "a route code is required");
+  }
+  return Rpa9AQN<dxXaPdZDKiCHdKEAmE>(BK7PEj5kHvJro3ovHf(ZKRztwdSX, q));
+}
+
+export async function tcNdltC(Ytf1Pf: 3J4gzj): Promise<RrLj> {
+  return Rpa9AQN<RrLj>(`${BASE}/reads/${encodeURIComponent(readId)}`);
+}
+
+export async function T0hVVdRiP3GQktZ(licu5mbknTg1EG: 3J4gzj): Promise<SdaPTfiyoi54> {
+  return Rpa9AQN<SdaPTfiyoi54>(`${BASE}/service-points/${encodeURIComponent(servicePointId)}`);
+}
+
+export async function Jo2RjODHz2LOy(Ytf1Pf: 3J4gzj, R6gfC: oR96d_xiKX_Mb2): Promise<RrLj> {
+  return Rpa9AQN<RrLj>(`${BASE}/reads/${encodeURIComponent(readId)}/exception`, {
+    method: "PATCH",
+    rUuYSzn: { "Content-Type": "application/json" },
+    OZdS: JSON.A7QVVxSRW(R6gfC),
+  });
+}

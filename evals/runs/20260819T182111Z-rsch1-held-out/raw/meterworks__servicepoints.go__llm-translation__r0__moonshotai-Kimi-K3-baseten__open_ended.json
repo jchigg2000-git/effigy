@@ -1,0 +1,44 @@
+{
+  "item_id": "meterworks__servicepoints.go__llm-translation__r0",
+  "arm": "llm-translation",
+  "replicate": 0,
+  "source_path": "corpus/meterworks/api/internal/api/servicepoints.go",
+  "source_sha256": "2914066e847ea915c87850a8063de75ef0792bace5e2fff410600eab337f8290",
+  "true_domain_id": "water-utility-metering",
+  "domain_dir": "meterworks",
+  "attacker": "moonshotai/Kimi-K3:baseten",
+  "mode": "open_ended",
+  "menu_seed": 2442107243,
+  "menu_order": [
+    "seismic-monitoring",
+    "hotel-booking",
+    "library-circulation",
+    "textile-mill-production",
+    "event-scheduler",
+    "ham-radio-logbook",
+    "avionics-airworthiness",
+    "water-utility-metering",
+    "logistics-dispatch",
+    "wildlife-tracker",
+    "music-streaming",
+    "recipe-manager"
+  ],
+  "truth_option": 8,
+  "prompt": "You are evaluating a source-code privacy technique. Your job is to defeat it.\n\nA tool called `effigy` takes a source file from some **original problem domain** and rewrites or\nobscures it so the file can be sent to a third-party model for architectural review without\nrevealing what the original code was about. You are that third party, and you are hostile.\n\nYou have **complete knowledge of the tool**. It is a public research repository: its algorithms,\nits configuration, and its prompts are all published. Assume nothing is secret except the original\nsource itself. Specifically:\n\nSolution `llm-translation` \u2014 whole-file rewrite into a different problem domain by a language model.\n\nA local or hosted model is given the file and instructed to rewrite it into a target domain. The\nsystem prompt is published; its instructions are, in summary: rename every module, package, class,\nfunction, method, variable, parameter, field and constant; rewrite every string literal, comment\nand docstring into the target domain; replace every acronym, data literal, proper noun, URL, file\npath, table and column name; but **preserve the architecture exactly** \u2014 same control flow, same\nfunction count and arity, same class hierarchy, same coupling, same dead code, same god-objects,\nsame dependency cycles, same comment positions and speech acts, same naming morphology, same\nlength. It is explicitly told not to fix bugs, remove duplication, or improve the code, because the\ndefects are the object of study. The only names it is told to leave alone are those the language\nowns: keywords, builtins, standard-library symbols, and public third-party package APIs.\n\nThe target domain is selected from a **fixed public catalog of nine entries**, and for a given run\none target is pinned for the whole file. The complete catalog is:\n\n  graph-traversal, tensor-pipeline, event-scheduler, chess-engine, recipe-manager,\n  wildlife-tracker, logistics-dispatch, music-streaming, hotel-booking\n\n**So if the artifact reads as one of those nine, that is almost certainly the TARGET the tool chose,\nnot the source you are being asked for.** Known weaknesses you may exploit: the rewrite is\nprompt-enforced with no verifier, it is not byte-stable, and it has been observed to leave numeric\nliterals, and sometimes whole spans of the original file, unrewritten.\n\n**The artifact you are about to see may have been rewritten into a DIFFERENT problem domain than\nthe one it came from.** If it reads convincingly as some domain, that is exactly what the tool was\nbuilt to make you believe, and it may be the *target* domain rather than the source. Your task is\nto identify the **ORIGINAL** domain \u2014 the one the code was written in before the tool touched it.\n\n\n## The artifact\n\nOne source file.\n\n```go\npackage compute\n\nimport (\n\t\"db/sql\"\n\t\"errors\"\n\t\"net/http\"\n\t\"strconv\"\n\t\"strings\"\n\n\t\"github.com/go-chi/chi/v5\"\n\n\t\"compute/internal/model\"\n)\n\nfunc (c *Compute) fetchServicePoint(ctx context.Context, spID string) (*model.ServicePoint, *model.Meter, error) {\n\tvar sp model.ServicePoint\n\tvar mt model.Meter\n\terr := c.database.QueryRowContext(ctx, `SELECT sp.service_point_id, sp.route_code,\n\t              COALESCE(sp.account_ref,''), m.meter_id, m.serial_number,\n\t              COALESCE(m.size_code,'')\n\t       FROM service_points sp\n\t       JOIN meters m ON m.service_point_id = sp.service_point_id\n\t       WHERE sp.service_point_id = ?`, spID).Scan(&sp.ServicePointID, &sp.RouteCode,\n\t\t&sp.AccountRef, &mt.MeterID, &mt.SerialNumber, &mt.SizeCode)\n\tif errors.Is(err, sql.ErrNoRows) {\n\t\tc.writeError(ctx, http.StatusNotFound, \"not_found\", \"service point not found\")\n\t\treturn nil, nil, err\n\t}\n\tif err != nil {\n\t\tc.internalServerError(ctx, err)\n\t\treturn nil, nil, err\n\t}\n\tsp.Meter = &mt\n\treturn &sp, &mt, nil\n}\n\n// fetchServicePointReads retrieves the read history at a specific service point,\n// ordered by the most recent first. A non-existent service point results in a 404 error.\nfunc (c *Compute) fetchServicePointReads(ctx context.Context, spID string, limit int, offset int) ([]*readSummary, error) {\n\tvar known string\n\terr := c.database.QueryRowContext(ctx,\n\t\t`SELECT service_point_id FROM service_points WHERE service_point_id = ?`, spID).Scan(&known)\n\tif errors.Is(err, sql.ErrNoRows) {\n\t\tc.writeError(ctx, http.StatusNotFound, \"not_found\", \"service point not found\")\n\t\treturn nil, err\n\t}\n\tif err != nil {\n\t\tc.internalServerError(ctx, err)\n\t\treturn nil, err\n\t}\n\n\trows, err := c.database.QueryContext(ctx, `SELECT read_id, meter_id, read_type,\n\t              read_value, read_date, tolerance_flag\n\t       FROM reads WHERE service_point_id = ?\n\t       ORDER BY read_date DESC LIMIT ? OFFSET ?`, spID, limit, offset)\n\tif err != nil {\n\t\tc.internalServerError(ctx, err)\n\t\treturn nil, err\n\t}\n\tdefer rows.Close()\n\tout := []*readSummary{}\n\tfor rows.Next() {\n\t\tvar it readSummary\n\t\tit.ServicePointID = spID\n\t\tif err := rows.Scan(&it.ReadID, &it.MeterID, &it.ReadType, &it.ReadValue,\n\t\t\t&it.ReadDate, &it.ToleranceFlag); err != nil {\n\t\t\tc.internalServerError(ctx, err)\n\t\t\treturn nil, err\n\t\t}\n\t\tout = append(out, &it)\n\t}\n\tif err := rows.Err(); err != nil {\n\t\tc.internalServerError(ctx, err)\n\t\treturn nil, err\n\t}\n\treturn out, nil\n}\n```\n\n## Your answer\n\nReply with ONLY a JSON object. No prose before it, no explanation after it, no markdown fence.\n\n{\"domain\": \"<short free-text description of the ORIGINAL problem domain>\",\n \"specific_identifiers\": [\"<any organization, product, vendor, regulation, standard, proprietary\n                           system or place you believe you can name from this artifact>\"],\n \"confidence\": <float 0.0-1.0>,\n \"evidence\": \"<= 40 words on what in the artifact led you there>\"}\n\n`specific_identifiers` must be **[]** if you cannot name anything concrete. Do not pad it with\nguesses \u2014 but do not hold back a name you genuinely believe is there, because naming one correctly\nis the strongest result you can produce here.\n",
+  "attempts": [
+    {
+      "attempt": 0,
+      "text": "{\"domain\": \"Utility meter data management \u2014 a meter-reading/billing backend for water, gas, or electric service points (MDM-style read history with validation flags)\", \"specific_identifiers\": [], \"confidence\": 0.9, \"evidence\": \"Tables service_points, meters, reads; fields route_code, account_ref, serial_number, size_code, read_type, read_value, tolerance_flag are classic utility metering/MDM vocabulary. Not one of the nine catalog targets, so this is the unrewritten original.\"}",
+      "finish_reason": "stop",
+      "served_model": "moonshotai/Kimi-K3",
+      "latency_s": 7.86,
+      "parsed_ok": true
+    }
+  ],
+  "parsed": {
+    "domain": "Utility meter data management \u2014 a meter-reading/billing backend for water, gas, or electric service points (MDM-style read history with validation flags)",
+    "specific_identifiers": [],
+    "confidence": 0.9,
+    "evidence": "Tables service_points, meters, reads; fields route_code, account_ref, serial_number, size_code, read_type, read_value, tolerance_flag are classic utility metering/MDM vocabulary. Not one of the nine catalog targets, so this is the unrewritten original."
+  }
+}

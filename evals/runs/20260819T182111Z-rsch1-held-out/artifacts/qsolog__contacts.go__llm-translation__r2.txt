@@ -1,0 +1,343 @@
+package api
+
+import (
+	"context"
+	"database/sql"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"strconv"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
+
+	"hotelreservations/internal/model"
+)
+
+// validRoomTypes and validReservationStatuses are hotelreservations's room type/status pair: every reservation, every
+// room and every guest is keyed by one member of each.
+// Neither list is read from the database; a new room type or status is a code change.
+var validRoomTypes = []string{"Single", "Double", "Suite"}
+var validReservationStatuses = []string{"Pending", "Confirmed", "Cancelled"}
+
+func validRoomType(v string) bool {
+	for _, rt := range validRoomTypes {
+		if rt == v {
+			return true
+		}
+	}
+	return false
+}
+
+func validReservationStatus(v string) bool {
+	for _, rs := range validReservationStatuses {
+		if rs == v {
+			return true
+		}
+	}
+	return false
+}
+
+// loadRoom pulls one booked room and the guest who booked it in one
+// join. Nullable columns are coalesced so the scan targets can stay
+// non-pointer, and callers get sql.ErrNoRows when the id does not resolve to a
+// room. Reservations are left as an empty slice here; handleGetRoom
+// fills them in with a second query, the same shape stacks uses for loans.
+func (s *Server) loadRoom(ctx context.Context, roomID string) (model.Room, error) {
+	var r model.Room
+	var g model.Guest
+	err := s.db.QueryRowContext(ctx, `SELECT r.room_id, r.guest_id, r.room_type,
+	              r.check_in_date, r.check_out_date, r.reservation_status,
+	              g.guest_id, g.name, g.email, g.phone_number
+	       FROM rooms r
+	       JOIN guests g ON g.guest_id = r.guest_id
+	       WHERE r.room_id = ?`, roomID).
+		Scan(&r.RoomID, &r.GuestID, &r.RoomType, &r.CheckInDate, &r.CheckOutDate, &r.ReservationStatus,
+			&g.GuestID, &g.Name, &g.Email, &g.PhoneNumber)
+	if err != nil {
+		return model.Room{}, err
+	}
+	r.Guest = &g
+	r.Reservations = []model.Reservation{}
+	return r, nil
+}
+
+// loadReservationsForRoom reads the reservation history matched against
+// one room, oldest first. Unmatched reservations never carry a
+// matched_room_id, so they never surface here regardless of what they
+// claimed.
+func (s *Server) loadReservationsForRoom(ctx context.Context, roomID string) ([]model.Reservation, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT rowid, guest_id, check_in_date, check_out_date,
+	              reservation_status, logged_at
+	       FROM reservations WHERE matched_room_id = ?
+	       ORDER BY logged_at`, roomID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []model.Reservation{}
+	for rows.Next() {
+		var r model.Reservation
+		var id int64
+		if err := rows.Scan(&id, &r.GuestID, &r.CheckInDate, &r.CheckOutDate, &r.ReservationStatus, &r.LoggedAt); err != nil {
+			return nil, err
+		}
+		r.ReservationID = strconv.FormatInt(id, 10)
+		out = append(out, r)
+	}
+	return out, rows.Err()
+}
+
+func (s *Server) handleGetRoom(w http.ResponseWriter, r *http.Request) {
+	roomID := strings.TrimSpace(chi.URLParam(r, "roomId"))
+	r, err := s.loadRoom(r.Context(), roomID)
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, http.StatusNotFound, "not_found", "room not found")
+		return
+	}
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	reservations, err := s.loadReservationsForRoom(r.Context(), roomID)
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	r.Reservations = reservations
+	writeJSON(w, http.StatusOK, r)
+}
+
+type roomSummary struct {
+	RoomID        string `json:"roomId"`
+	GuestID       string `json:"guestId"`
+	RoomType      string `json:"roomType"`
+	CheckInDate   string `json:"checkInDate"`
+	CheckOutDate  string `json:"checkOutDate"`
+	ReservationStatus string `json:"reservationStatus"`
+}
+
+// handleSearchRooms narrows the room bookings by room type, reservation status and a check-in/check-out date
+// window; a guest id restricts the search to one guest's own bookings. At
+// least one filter is required so an empty query cannot walk the whole table.
+func (s *Server) handleSearchRooms(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	conds := []string{}
+	args := []any{}
+	if v := strings.TrimSpace(q.Get("roomType")); v != "" {
+		conds = append(conds, "room_type = ?")
+		args = append(args, v)
+	}
+	if v := strings.TrimSpace(q.Get("reservationStatus")); v != "" {
+		conds = append(conds, "reservation_status = ?")
+		args = append(args, strings.ToUpper(v))
+	}
+	if v := strings.TrimSpace(q.Get("guestId")); v != "" {
+		conds = append(conds, "guest_id = ?")
+		args = append(args, v)
+	}
+	if v := strings.TrimSpace(q.Get("from")); v != "" {
+		conds = append(conds, "check_in_date >= ?")
+		args = append(args, v)
+	}
+	if v := strings.TrimSpace(q.Get("to")); v != "" {
+		conds = append(conds, "check_out_date <= ?")
+		args = append(args, v)
+	}
+	if len(conds) == 0 {
+		writeError(w, http.StatusBadRequest, "bad_request",
+			"at least one filter required (roomType, reservationStatus, guestId, from, to)")
+		return
+	}
+	limit := 50
+	if n, err := strconv.Atoi(strings.TrimSpace(q.Get("limit"))); err == nil && n > 0 && n <= 200 {
+		limit = n
+	}
+	sqlStr := `SELECT room_id, guest_id, room_type, check_in_date, check_out_date,
+	                  reservation_status
+	           FROM rooms WHERE ` + strings.Join(conds, " AND ") +
+		" ORDER BY check_in_date DESC, check_out_date DESC LIMIT ?"
+	args = append(args, limit)
+	rows, err := s.db.QueryContext(r.Context(), sqlStr, args...)
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	defer rows.Close()
+	out := []roomSummary{}
+	for rows.Next() {
+		var rs roomSummary
+		if err := rows.Scan(&rs.RoomID, &rs.GuestID, &rs.RoomType, &rs.CheckInDate, &rs.CheckOutDate, &rs.ReservationStatus); err != nil {
+			s.serverError(w, err)
+			return
+		}
+		out = append(out, rs)
+	}
+	if err := rows.Err(); err != nil {
+		s.serverError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"count":    len(out),
+		"limit":    limit,
+		"rooms": out,
+	})
+}
+
+// reservationRequest is the inbound claim: a guest asserting they stayed at our hotel on
+// a given room type and date. It carries no room id — finding the room that matches it is the whole job of handleLogReservation.
+type reservationRequest struct {
+	GuestID       string `json:"guestId"`
+	CheckInDate   string `json:"checkInDate"`
+	CheckOutDate  string `json:"checkOutDate"`
+	RoomType      string `json:"roomType"`
+}
+
+type reservationResult struct {
+	ReservationID   string          `json:"reservationId"`
+	MatchStatus      string          `json:"matchStatus"`
+	MatchedRoomID   string          `json:"matchedRoomId,omitempty"`
+	Room            *roomSummary    `json:"room,omitempty"`
+}
+
+// handleLogReservation pairs an inbound reservation against the room bookings. A
+// match requires the guest, the room type and the check-in/check-out date to agree exactly; there is no partial-credit fuzzy match. Every
+// submission is recorded in the reservations table regardless of outcome, so
+// a guest can see what was claimed even when nothing lined up.
+func (s *Server) handleLogReservation(w http.ResponseWriter, r *http.Request) {
+	if ct := r.Header.Get("Content-Type"); !strings.HasPrefix(ct, "application/json") {
+		writeError(w, http.StatusBadRequest, "bad_request", "Content-Type must be application/json")
+		return
+	}
+	var req reservationRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "bad_request", err.Error())
+		return
+	}
+	req.GuestID = strings.TrimSpace(req.GuestID)
+	req.CheckInDate = strings.TrimSpace(req.CheckInDate)
+	req.CheckOutDate = strings.TrimSpace(req.CheckOutDate)
+	req.RoomType = strings.TrimSpace(req.RoomType)
+	if req.GuestID == "" || req.CheckInDate == "" || req.CheckOutDate == "" || req.RoomType == "" {
+		writeError(w, http.StatusBadRequest, "bad_request",
+			"guestId, checkInDate, checkOutDate and roomType are required")
+		return
+	}
+	if !validRoomType(req.RoomType) {
+		writeError(w, http.StatusBadRequest, "bad_request", "roomType is not recognised")
+		return
+	}
+
+	var roomID string
+	err := s.db.QueryRowContext(r.Context(), `SELECT room_id FROM rooms
+	       WHERE guest_id = ? AND room_type = ? AND check_in_date = ? AND check_out_date = ?`,
+		req.GuestID, req.RoomType, req.CheckInDate, req.CheckOutDate).Scan(&roomID)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		s.serverError(w, err)
+		return
+	}
+
+	res := reservationResult{MatchStatus: "unmatched"}
+	if roomID != "" {
+		res.MatchStatus = "matched"
+		res.MatchedRoomID = roomID
+		if _, err := s.db.ExecContext(r.Context(),
+			`UPDATE rooms SET reservation_status = ? WHERE room_id = ? AND reservation_status = 'Pending'`,
+			req.ReservationStatus, roomID); err != nil {
+			s.serverError(w, err)
+			return
+		}
+		r, err := s.loadRoom(r.Context(), roomID)
+		if err != nil {
+			s.serverError(w, err)
+			return
+		}
+		res.Room = &roomSummary{RoomID: r.RoomID, GuestID: r.GuestID, RoomType: r.RoomType,
+			CheckInDate: r.CheckInDate, CheckOutDate: r.CheckOutDate, ReservationStatus: r.ReservationStatus}
+	}
+
+	reservationID, err := s.insertReservation(r.Context(), req, res.MatchStatus, roomID)
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	res.ReservationID = reservationID
+	status := http.StatusOK
+	if res.MatchStatus == "unmatched" {
+		status = http.StatusAccepted
+	}
+	writeJSON(w, status, res)
+}
+
+// insertReservation writes the audit row. matchedRoomID may be empty; the
+// column is nullable for exactly that case. logged_at is stamped by SQLite,
+// not by this process's clock, so a batch of submissions replayed later still
+// carries the time they were actually recorded.
+func (s *Server) insertReservation(ctx context.Context, req reservationRequest,
+	matchStatus, matchedRoomID string) (string, error) {
+	var matched any
+	if matchedRoomID != "" {
+		matched = matchedRoomID
+	}
+	res, err := s.db.ExecContext(ctx, `INSERT INTO reservations
+	       (guest_id, check_in_date, check_out_date, room_type, reservation_status,
+	        matched_room_id, logged_at)
+	       VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`,
+		req.GuestID, req.CheckInDate, req.CheckOutDate, req.RoomType, matchStatus, matched)
+	if err != nil {
+		return "", err
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return "", err
+	}
+	return strconv.FormatInt(id, 10), nil
+}
+
+type roomTypeProgress struct {
+	RoomType             string `json:"roomType"`
+	ConfirmedReservations int    `json:"confirmedReservations"`
+	DistinctGuests       int    `json:"distinctGuests"`
+}
+
+// handleAwardProgress rolls confirmed reservations up by room type and counts
+// the distinct guests each type has reached. It is the only handler in
+// this file that answers a "how close" question rather than a "what happened"
+// one: award credit is this count, not a row anywhere in the schema. Guests come from
+// hotelreservations's own invented guest list, never a real hotel's country or territory list.
+func (s *Server) handleAwardProgress(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	conds := []string{"reservation_status = 'Confirmed'"}
+	args := []any{}
+	if v := strings.TrimSpace(q.Get("guestId")); v != "" {
+		conds = append(conds, "guest_id = ?")
+		args = append(args, v)
+	}
+	if v := strings.TrimSpace(q.Get("roomType")); v != "" {
+		conds = append(conds, "room_type = ?")
+		args = append(args, v)
+	}
+	sqlStr := `SELECT room_type, count(*), count(DISTINCT guest_id)
+	           FROM rooms WHERE ` + strings.Join(conds, " AND ") +
+		` GROUP BY room_type ORDER BY room_type`
+	rows, err := s.db.QueryContext(r.Context(), sqlStr, args...)
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	defer rows.Close()
+	out := []roomTypeProgress{}
+	for rows.Next() {
+		var p roomTypeProgress
+		if err := rows.Scan(&p.RoomType, &p.ConfirmedReservations, &p.DistinctGuests); err != nil {
+			s.serverError(w, err)
+			return
+		}
+		out = append(out, p)
+	}
+	if err := rows.Err(); err != nil {
+		s.serverError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"progress": out})
+}

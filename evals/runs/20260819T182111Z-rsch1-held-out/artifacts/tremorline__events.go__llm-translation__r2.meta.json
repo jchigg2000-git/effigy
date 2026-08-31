@@ -1,0 +1,45 @@
+{
+  "key": "tremorline__events.go__llm-translation__r2",
+  "arm": "llm-translation",
+  "replicate": 2,
+  "source_path": "corpus/tremorline/api/internal/api/events.go",
+  "source_sha256": "03a61ec2777ab90129977a412c1b0d7983b23dbeb47e55414a49cd3c6f0ce5cb",
+  "true_domain_id": "seismic-monitoring",
+  "language": "go",
+  "artifact_sha256": "8e3e7a87a09617e0ea2cad4a2db0c51603a7e8ea39a0d3424e8458262f38b906",
+  "artifact_lines": 342,
+  "latency_s": 21.2,
+  "solution_meta": {
+    "model": "Qwen/Qwen2.5-Coder-7B-Instruct",
+    "base_url": "https://router.huggingface.co/v1",
+    "target_domain": "a music streaming service with tracks, playlists, and listeners",
+    "target_id": "music-streaming",
+    "temperature": 0.2,
+    "postcondition": {
+      "src_code_lines": 329,
+      "husk_code_lines": 303,
+      "similarity_ratio": 0.639,
+      "ident_retention": 0.473,
+      "code_verbatim": 0.488,
+      "longest_identical_run": 14,
+      "longest_identical_run_share": 0.043,
+      "copied_spans": 3,
+      "copied_span_lines": 25,
+      "copied_span_share": 0.076,
+      "thresholds": {
+        "run_lines": 999999,
+        "run_share": 9.0,
+        "copied_share": 9.0,
+        "retention": 9.0,
+        "ratio": 9.0,
+        "min_code_lines": 12
+      },
+      "verdict": "ok"
+    },
+    "usage": {
+      "prompt_tokens": 4658,
+      "completion_tokens": 3069,
+      "total_tokens": 7727
+    }
+  }
+}

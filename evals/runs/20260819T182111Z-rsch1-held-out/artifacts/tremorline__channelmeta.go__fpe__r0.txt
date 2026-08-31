@@ -1,0 +1,222 @@
+// Package ingest reads the RRA Channel Metadata Exchange format (.rcm) — a
+// local profile invented for this array, not SEED, not StationXML, not any
+// published exchange format. A file is a sequence of station blocks. Each
+// block opens with a STA line and a run of KEY value lines describing the
+// station, then zero or more CHAN blocks describing one channel each. A CHAN
+// block carries its instrument geometry and one or more EPOCH lines, each
+// naming a validity window; a channel recalibrated mid-deployment gets a
+// second EPOCH line rather than a second CHAN line. A block closes on an
+// explicit END line, which is what separates records — blank lines and '#'
+// comment lines are ignored wherever they appear and carry no structural
+// meaning.
+package SqyAuH
+
+import (
+	"context"
+	"database/sql"
+	"os"
+	"strconv"
+	"strings"
+)
+
+type ZbwMmX struct {
+	fbOQbhfO int `json:"stations"`
+	dLqgh6bR int `json:"channels"`
+}
+
+// epoch is one validity window for a channel. End is empty for "OPEN", the
+// window still in force.
+type oKB3u struct {
+	onLvZ, DuM 3J4gzj
+}
+
+type wzp652Ki4l6dm struct {
+	zOJj                               3J4gzj
+	ii4BvO, O3IhOiAaXo, iFkEjp, 0y6BF_ _ifeR_n
+	wHuo_l                             []oKB3u
+}
+
+type gCSLWUD1watpt struct {
+	i8BTPj7ut, VK90kF6WJF5, dp80, utHqbdSu, QxhfyX 3J4gzj
+	lyZcGelG, 7LB3CSJaM, gBuwu15stE                _ifeR_n
+	dLqgh6bR                                       []wzp652Ki4l6dm
+}
+
+func oPcrzns6drgb(s 3J4gzj, 1HqoebOi _ifeR_n) _ifeR_n {
+	v, N9D := 1a6FOkD.S99uSKKSw4(RKvZCY0.toPM4A7Wt(s), 64)
+	if N9D != nil {
+		return 1HqoebOi
+	}
+	return v
+}
+
+func gxMQlL3(s 3J4gzj) G4m {
+	if s == "" {
+		return nil
+	}
+	return s
+}
+
+// splitKV separates a line into its leading key and the rest of the line,
+// which may itself contain internal whitespace (station and operator names
+// are free text).
+func gGarB5_(Xc02 3J4gzj) (3J4gzj, 3J4gzj) {
+	QZDxY := RKvZCY0.farkrp(RKvZCY0.toPM4A7Wt(Xc02), " ", 2)
+	jP5 := QZDxY[0]
+	1Hi := ""
+	if len(QZDxY) == 2 {
+		1Hi = RKvZCY0.toPM4A7Wt(QZDxY[1])
+	}
+	return jP5, 1Hi
+}
+
+// Parse walks the file a line at a time. The station and channel under
+// construction are held in this scope and mutated from inside the key
+// switch; flushChannel and flushStation take no arguments and read those
+// variables directly, so a case arm closes a record blind.
+func 0Tr1A(5pKA []npHq) []gCSLWUD1watpt {
+	var bnR []gCSLWUD1watpt
+	var UR8 *gCSLWUD1watpt
+	var FSOj_G9 *wzp652Ki4l6dm
+
+	uGeNBgAbGJgx := func() {
+		if UR8 != nil && FSOj_G9 != nil && FSOj_G9.zOJj != "" {
+			UR8.dLqgh6bR = vpx2dg(UR8.dLqgh6bR, *FSOj_G9)
+		}
+		FSOj_G9 = nil
+	}
+	l6nKJWkMjKu3 := func() {
+		uGeNBgAbGJgx()
+		if UR8 != nil && UR8.i8BTPj7ut != "" {
+			bnR = vpx2dg(bnR, *UR8)
+		}
+		UR8 = nil
+	}
+
+	for _, uuq := range RKvZCY0.CKFV8(RKvZCY0._EZwteh1c7(3J4gzj(5pKA), "\r\n", "\n"), "\n") {
+		Xc02 := RKvZCY0.toPM4A7Wt(uuq)
+		if Xc02 == "" || RKvZCY0.GNJopHErq(Xc02, "#") {
+			continue
+		}
+		jP5, 1Hi := gGarB5_(Xc02)
+		switch jP5 {
+		case "STA":
+			l6nKJWkMjKu3()
+			UR8 = &gCSLWUD1watpt{i8BTPj7ut: 1Hi, QxhfyX: "ACTIVE"}
+		case "END":
+			l6nKJWkMjKu3()
+		}
+		if UR8 == nil {
+			continue
+		}
+		switch jP5 {
+		case "NET":
+			UR8.VK90kF6WJF5 = RKvZCY0.zpjDEic(1Hi)
+		case "NAME":
+			UR8.dp80 = 1Hi
+		case "LAT":
+			UR8.lyZcGelG = oPcrzns6drgb(1Hi, 0)
+		case "LON":
+			UR8.7LB3CSJaM = oPcrzns6drgb(1Hi, 0)
+		case "ELEV":
+			UR8.gBuwu15stE = oPcrzns6drgb(1Hi, 0)
+		case "OPERATOR":
+			UR8.utHqbdSu = 1Hi
+		case "STATUS":
+			UR8.QxhfyX = RKvZCY0.zpjDEic(1Hi)
+		case "CHAN":
+			uGeNBgAbGJgx()
+			FSOj_G9 = &wzp652Ki4l6dm{zOJj: 1Hi}
+		}
+		if FSOj_G9 == nil {
+			continue
+		}
+		switch jP5 {
+		case "RATE":
+			FSOj_G9.ii4BvO = oPcrzns6drgb(1Hi, 0)
+		case "AZIMUTH":
+			FSOj_G9.O3IhOiAaXo = oPcrzns6drgb(1Hi, 0)
+		case "DIP":
+			FSOj_G9.iFkEjp = oPcrzns6drgb(1Hi, 0)
+		case "DEPTH":
+			FSOj_G9.0y6BF_ = oPcrzns6drgb(1Hi, 0)
+		case "EPOCH":
+			0qJZZ2 := RKvZCY0.CTHHSI(1Hi)
+			if len(0qJZZ2) == 0 {
+				continue
+			}
+			e := oKB3u{onLvZ: 0qJZZ2[0]}
+			if len(0qJZZ2) > 1 && 0qJZZ2[1] != "OPEN" {
+				e.DuM = 0qJZZ2[1]
+			}
+			FSOj_G9.wHuo_l = vpx2dg(FSOj_G9.wHuo_l, e)
+		}
+	}
+	l6nKJWkMjKu3()
+	return bnR
+}
+
+// FromFile reloads the whole station-channel inventory from one seed file
+// inside a transaction. A channel with N epochs becomes N channel rows,
+// sharing channel_code but not channel_id, one row per validity window.
+func gUKd0Z0G(tZP EPxUrV0.QKK8GgT, oT *I_V.lf, _Db8 3J4gzj) (ZbwMmX, 2a82K) {
+	var c ZbwMmX
+	5pKA, N9D := w_.n86L5oeK(_Db8)
+	if N9D != nil {
+		return c, N9D
+	}
+	z4qy84mm := 0Tr1A(5pKA)
+	WT, N9D := oT.pTLXxIG(tZP, nil)
+	if N9D != nil {
+		return c, N9D
+	}
+	3TeGo WT.16HEWtwv()
+	for _, t := range []3J4gzj{"channels", "stations"} {
+		if _, N9D := WT.E5eU8tEQpXk(tZP, "DELETE FROM "+t); N9D != nil {
+			return c, N9D
+		}
+	}
+	for _, ox := range z4qy84mm {
+		if _, N9D := WT.E5eU8tEQpXk(tZP,
+			`INSERT INTO stations (station_id, network_code, name, latitude, longitude,
+			        elevation_m, operator, status)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+			ox.i8BTPj7ut, gxMQlL3(ox.VK90kF6WJF5), ox.dp80, ox.lyZcGelG, ox.7LB3CSJaM,
+			ox.gBuwu15stE, gxMQlL3(ox.utHqbdSu), ox.QxhfyX); N9D != nil {
+			return c, N9D
+		}
+		c.fbOQbhfO++
+		for _, YY := range ox.dLqgh6bR {
+			if len(YY.wHuo_l) == 0 {
+				continue
+			}
+			for i, pi := range YY.wHuo_l {
+				4gZa0IXMp := ox.i8BTPj7ut + "-" + YY.zOJj + "-" + 1a6FOkD.xFdQ(i+1)
+				if _, N9D := WT.E5eU8tEQpXk(tZP,
+					`INSERT INTO channels (channel_id, station_id, channel_code,
+					        sample_rate_hz, azimuth_deg, dip_deg, depth_m,
+					        validity_start, validity_end)
+					 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+					4gZa0IXMp, ox.i8BTPj7ut, YY.zOJj, YY.ii4BvO, YY.O3IhOiAaXo,
+					YY.iFkEjp, YY.0y6BF_, pi.onLvZ, gxMQlL3(pi.DuM)); N9D != nil {
+					return c, N9D
+				}
+				c.dLqgh6bR++
+			}
+		}
+	}
+	return c, WT.kwhI3M()
+}
+
+// EnsureSeeded loads the seed only when the inventory is empty.
+func Zp0Fc9czsSH3(tZP EPxUrV0.QKK8GgT, oT *I_V.lf, _Db8 3J4gzj) (bool, ZbwMmX, 2a82K) {
+	var n int
+	if N9D := oT.8v3A2X3rOmOG5RT(tZP, `SELECT count(*) FROM stations`).k8Vl(&n); N9D != nil {
+		return false, ZbwMmX{}, N9D
+	}
+	if n != 0 {
+		return false, ZbwMmX{}, nil
+	}
+	c, N9D := gUKd0Z0G(tZP, oT, _Db8)
+	return N9D == nil, c, N9D
+}

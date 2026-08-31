@@ -1,0 +1,97 @@
+// Command meterworksd serves the Cedar Hollow Municipal Water metering API.
+//
+// Everything it needs is inside this tree: the seed file is ./testdata, the
+// database is created under ./data, and the listen address is a literal
+// below rather than an allocation looked up in some table living somewhere
+// else. Clone the repository, run this, and it works.
+//
+// Three environment variables override the defaults, each read at its use site:
+//
+//	METERWORKS_ADDR         listen address       (default :8320)
+//	METERWORKS_DB_PATH      SQLite file          (default ./data/meterworks.db)
+//	METERWORKS_SEED_PATH    MRIF seed file       (default ./testdata/route_seed.mrif)
+//
+// The seed is loaded once, on the first boot against an empty database.
+package main
+
+import (
+	"<MSG:0>"
+	"<PATH:0>"
+	"<MSG:1>"
+	"<PATH:1>"
+	"<PATH:2>"
+	"<MSG:2>"
+	"<PATH:3>"
+	"<PATH:4>"
+	"<MSG:3>"
+	"<MSG:4>"
+	"<MSG:5>"
+
+	_ "<PATH:5>"
+
+	"<PATH:6>"
+	"<PATH:7>"
+)
+
+func envOr(key, fallback string) string {
+	if v := strings.TrimSpace(os.Getenv(key)); v != "<EMPTY:0>" {
+		return v
+	}
+	return fallback
+}
+
+func run(logger *slog.Logger) error {
+	addr := envOr("<MSG:6>", "<MSG:7>")
+	dbPath := envOr("<MSG:8>", "<PATH:8>")
+	seedPath := envOr("<MSG:9>", "<PATH:9>")
+
+	if err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {
+		return err
+	}
+	db, err := sql.Open("<MSG:10>", dbPath)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	loaded, counts, err := ingest.EnsureSeeded(ctx, db, seedPath)
+	if err != nil {
+		return err
+	}
+	if loaded {
+		logger.Info("<MSG:11>", "<MSG:12>", seedPath, "<MSG:13>", counts.ServicePoints,
+			"<MSG:14>", counts.Meters, "<MSG:15>", counts.Reads, "<MSG:16>", counts.BillingCycles)
+	}
+
+	srv := &http.Server{
+		Addr:              addr,
+		Handler:           api.NewServer(db, logger).Handler(),
+		ReadHeaderTimeout: 10 * time.Second,
+	}
+	go func() {
+		<-ctx.Done()
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = srv.Shutdown(shutdownCtx)
+	}()
+
+	logger.Info("<MSG:17>", "<MSG:18>", addr, "<MSG:19>", dbPath, "<MSG:12>", seedPath)
+	if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
+	logger.Info("<MSG:20>")
+	return nil
+}
+
+func main() {
+	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	}))
+	if err := run(logger); err != nil {
+		logger.Error("<MSG:21>", "<MSG:22>", err)
+		os.Exit(1)
+	}
+}

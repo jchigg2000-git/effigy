@@ -1,0 +1,68 @@
+// -
+// -
+// -
+package ident_0001
+
+// -
+// -
+// -
+// -
+type Ident_0002 struct {
+	Ident_0003 string  `str_0001`
+	Ident_0004 string  `str_0002`
+	Ident_0005 string  `str_0003`
+	Ident_0006 float64 `str_0004`
+	Ident_0007 float64 `str_0005`
+	Ident_0008 float64 `str_0006`
+	Ident_0009 string  `str_0007`
+	Ident_0010 string  `str_0008`
+}
+
+// -
+// -
+// -
+type Ident_0011 struct {
+	Ident_0012 string  `str_0009`
+	Ident_0003 string  `str_0001`
+	Ident_0013 string  `str_0010`
+	Ident_0014 float64 `str_0011`
+	Ident_0015 float64 `str_0012`
+	Ident_0016 float64 `str_0013`
+	Ident_0017 float64 `str_0014`
+	Ident_0018 string  `str_0015`
+	Ident_0019 string  `str_0016`
+}
+
+type Ident_0020 struct {
+	Ident_0021 string  `str_0017`
+	Ident_0012 string  `str_0009`
+	Ident_0003 string  `str_0001`
+	Ident_0022 string  `str_0018`
+	Ident_0023 float64 `str_0019`
+	Ident_0024 float64 `str_0020`
+	Ident_0025 string  `str_0021`
+	Ident_0026 string  `str_0022`
+}
+
+type Ident_0027 struct {
+	Ident_0028 string  `str_0023`
+	Ident_0026 string  `str_0024`
+	Ident_0012 string  `str_0009`
+	Ident_0029 float64 `str_0025`
+	Ident_0030 string  `str_0026`
+	Ident_0031 float64 `str_0027`
+}
+
+type Ident_0032 struct {
+	Ident_0026 string       `str_0024`
+	Ident_0033 string       `str_0028`
+	Ident_0006 float64      `str_0004`
+	Ident_0007 float64      `str_0005`
+	Ident_0034 float64      `str_0029`
+	Ident_0035 float64      `str_0030`
+	Ident_0036 string       `str_0031`
+	Ident_0037 string       `str_0032`
+	Ident_0038 int          `str_0033`
+	Ident_0039 []Ident_0027 `str_0034`
+	Ident_0040 []Ident_0020 `str_0035`
+}

@@ -1,0 +1,285 @@
+package ident_0002
+
+import (
+	"context"
+	"database/sql"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"regexp"
+	"strconv"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
+
+	"str_0001/ident_0001"
+)
+
+// -
+// -
+// -
+func (ident_0003 *Ident_0004) ident_0005(ident_0006 context.Context, ident_0007 string) (ident_0001.Ident_0008, error) {
+	var ident_0009 ident_0001.Ident_0008
+	var ident_0010 ident_0001.Ident_0011
+	var ident_0012 ident_0001.Ident_0013
+	ident_0014 := ident_0003.ident_0015.Ident_0016(ident_0006, `str_0002
+
+
+
+
+
+
+
+`, ident_0007).Ident_0017(&ident_0009.Ident_0018, &ident_0009.Ident_0019, &ident_0009.Ident_0020,
+		&ident_0009.Ident_0021, &ident_0009.Ident_0022, &ident_0009.Ident_0023, &ident_0009.Ident_0024, &ident_0009.Ident_0025,
+		&ident_0009.Ident_0026, &ident_0009.Ident_0027,
+		&ident_0010.Ident_0020, &ident_0010.Ident_0021, &ident_0010.Ident_0028,
+		&ident_0012.Ident_0019, &ident_0012.Ident_0029, &ident_0012.Ident_0030)
+	if ident_0014 != nil {
+		return ident_0001.Ident_0008{}, ident_0014
+	}
+	ident_0010.Ident_0013 = &ident_0012
+	ident_0009.Ident_0011 = &ident_0010
+	return ident_0009, nil
+}
+
+// -
+// -
+// -
+func (ident_0003 *Ident_0004) ident_0031(ident_0006 context.Context, ident_0032, ident_0007, ident_0033 string) (string, int, bool) {
+	var ident_0034 string
+	var ident_0035 int
+	ident_0014 := ident_0003.ident_0015.Ident_0016(ident_0006, `str_0003
+
+`, ident_0032, ident_0007, ident_0033).Ident_0017(&ident_0034, &ident_0035)
+	if ident_0014 != nil {
+		return "str_0004", 0, false
+	}
+	return ident_0034, ident_0035, true
+}
+
+func (ident_0003 *Ident_0004) ident_0036(ident_0006 context.Context, ident_0037 string) ([]ident_0001.Ident_0038, error) {
+	ident_0039, ident_0014 := ident_0003.ident_0015.Ident_0040(ident_0006, `str_0005
+
+`, ident_0037)
+	if ident_0014 != nil {
+		return nil, ident_0014
+	}
+	defer ident_0039.Ident_0041()
+	ident_0042 := []ident_0001.Ident_0038{}
+	for ident_0039.Ident_0043() {
+		var ident_0044 ident_0001.Ident_0038
+		if ident_0014 := ident_0039.Ident_0017(&ident_0044.Ident_0045, &ident_0044.Ident_0046, &ident_0044.Ident_0047); ident_0014 != nil {
+			return nil, ident_0014
+		}
+		ident_0042 = append(ident_0042, ident_0044)
+	}
+	return ident_0042, ident_0039.Ident_0048()
+}
+
+// -
+// -
+// -
+// -
+func ident_0049(ident_0050 int, ident_0051 []ident_0001.Ident_0038) int {
+	if ident_0050 <= 0 {
+		return 0
+	}
+	ident_0052 := 0
+	ident_0053 := 0
+	for _, ident_0044 := range ident_0051 {
+		ident_0054 := ident_0044.Ident_0046
+		if ident_0054 == 0 || ident_0054 > ident_0050 {
+			ident_0054 = ident_0050
+		}
+		if ident_0055 := ident_0054 - ident_0053; ident_0055 > 0 {
+			ident_0052 += ident_0055 * ident_0044.Ident_0047
+		}
+		ident_0053 = ident_0054
+		if ident_0053 >= ident_0050 {
+			break
+		}
+	}
+	return ident_0052
+}
+
+func (ident_0003 *Ident_0004) ident_0056(ident_0057 http.ResponseWriter, ident_0058 *http.Request) {
+	ident_0007 := strings.TrimSpace(ident_0059.Ident_0060(ident_0058, "str_0006"))
+	ident_0009, ident_0014 := ident_0003.ident_0005(ident_0058.Ident_0061(), ident_0007)
+	if errors.Is(ident_0014, sql.ErrNoRows) {
+		ident_0062(ident_0057, http.StatusNotFound, "str_0007", "str_0008")
+		return
+	}
+	if ident_0014 != nil {
+		ident_0003.ident_0063(ident_0057, ident_0014)
+		return
+	}
+	if ident_0064, ident_0065, ident_0066 := ident_0003.ident_0031(ident_0058.Ident_0061(), ident_0009.Ident_0019, ident_0009.Ident_0018, ident_0009.Ident_0025); ident_0066 {
+		ident_0051, ident_0014 := ident_0003.ident_0036(ident_0058.Ident_0061(), ident_0009.Ident_0022)
+		if ident_0014 != nil {
+			ident_0003.ident_0063(ident_0057, ident_0014)
+			return
+		}
+		ident_0067 := ident_0009.Ident_0024 - ident_0065
+		ident_0009.Ident_0068 = &ident_0001.Ident_0068{
+			Ident_0069: ident_0064,
+			Ident_0070: ident_0067,
+			Ident_0071: ident_0049(ident_0067, ident_0051),
+		}
+	}
+	ident_0072(ident_0057, http.StatusOK, ident_0009)
+}
+
+type ident_0073 struct {
+	Ident_0018 string `str_0009`
+	Ident_0020 string `str_0010`
+	Ident_0019 string `str_0011`
+	Ident_0023 string `str_0012`
+	Ident_0024 int    `str_0013`
+	Ident_0025 string `str_0014`
+	Ident_0026 bool   `str_0015`
+}
+
+// -
+// -
+// -
+// -
+func (ident_0003 *Ident_0004) ident_0074(ident_0057 http.ResponseWriter, ident_0058 *http.Request) {
+	ident_0075 := strings.TrimSpace(ident_0059.Ident_0060(ident_0058, "str_0016"))
+	ident_0076 := ident_0058.Ident_0077.Ident_0078()
+	ident_0079 := 50
+	if ident_0080, ident_0014 := strconv.Atoi(strings.TrimSpace(ident_0076.Ident_0081("str_0017"))); ident_0014 == nil && ident_0080 > 0 && ident_0080 <= 500 {
+		ident_0079 = ident_0080
+	}
+	ident_0082 := 0
+	if ident_0080, ident_0014 := strconv.Atoi(strings.TrimSpace(ident_0076.Ident_0081("str_0018"))); ident_0014 == nil && ident_0080 > 0 {
+		ident_0082 = ident_0080
+	}
+	ident_0037 := strings.TrimSpace(ident_0076.Ident_0081("str_0019"))
+
+	ident_0083 := `str_0020
+
+`
+	ident_0084 := []any{ident_0075}
+	if ident_0037 != "str_0004" {
+		ident_0083 += "str_0021"
+		ident_0084 = append(ident_0084, ident_0037)
+	}
+	ident_0083 += "str_0022"
+	ident_0084 = append(ident_0084, ident_0079, ident_0082)
+
+	ident_0039, ident_0014 := ident_0003.ident_0015.Ident_0040(ident_0058.Ident_0061(), ident_0083, ident_0084...)
+	if ident_0014 != nil {
+		ident_0003.ident_0063(ident_0057, ident_0014)
+		return
+	}
+	defer ident_0039.Ident_0041()
+	ident_0042 := []ident_0073{}
+	for ident_0039.Ident_0043() {
+		var ident_0085 ident_0073
+		if ident_0014 := ident_0039.Ident_0017(&ident_0085.Ident_0018, &ident_0085.Ident_0020, &ident_0085.Ident_0019, &ident_0085.Ident_0023,
+			&ident_0085.Ident_0024, &ident_0085.Ident_0025, &ident_0085.Ident_0026); ident_0014 != nil {
+			ident_0003.ident_0063(ident_0057, ident_0014)
+			return
+		}
+		ident_0042 = append(ident_0042, ident_0085)
+	}
+	if ident_0014 := ident_0039.Ident_0048(); ident_0014 != nil {
+		ident_0003.ident_0063(ident_0057, ident_0014)
+		return
+	}
+	ident_0072(ident_0057, http.StatusOK, map[string]any{
+		"str_0016": ident_0075,
+		"str_0023": len(ident_0042),
+		"str_0017": ident_0079,
+		"str_0018": ident_0082,
+		"str_0024": ident_0042,
+	})
+}
+
+// -
+// -
+// -
+// -
+type ident_0086 struct {
+	Ident_0026 *bool   `str_0015`
+	Ident_0087 *string `str_0025`
+	Ident_0088 *bool   `str_0026`
+}
+
+var ident_0089 = regexp.MustCompile(`str_0027`)
+
+func (ident_0090 *ident_0086) ident_0091() string {
+	if ident_0090.Ident_0087 != nil && *ident_0090.Ident_0087 != "str_0004" && !ident_0089.Ident_0092(*ident_0090.Ident_0087) {
+		return "str_0028"
+	}
+	return "str_0004"
+}
+
+func ident_0093(ident_0003 string) any {
+	if ident_0003 == "str_0004" {
+		return nil
+	}
+	return ident_0003
+}
+
+// -
+// -
+// -
+// -
+// -
+func (ident_0003 *Ident_0004) ident_0094(ident_0057 http.ResponseWriter, ident_0058 *http.Request) {
+	ident_0007 := strings.TrimSpace(ident_0059.Ident_0060(ident_0058, "str_0006"))
+	var ident_0090 ident_0086
+	if ident_0014 := json.NewDecoder(ident_0058.Ident_0095).Ident_0096(&ident_0090); ident_0014 != nil {
+		ident_0062(ident_0057, http.StatusBadRequest, "str_0029", ident_0014.Ident_0097())
+		return
+	}
+	if ident_0098 := ident_0090.ident_0091(); ident_0098 != "str_0004" {
+		ident_0062(ident_0057, http.StatusBadRequest, "str_0029", ident_0098)
+		return
+	}
+	ident_0009, ident_0014 := ident_0003.ident_0005(ident_0058.Ident_0061(), ident_0007)
+	if errors.Is(ident_0014, sql.ErrNoRows) {
+		ident_0062(ident_0057, http.StatusNotFound, "str_0007", "str_0008")
+		return
+	}
+	if ident_0014 != nil {
+		ident_0003.ident_0063(ident_0057, ident_0014)
+		return
+	}
+
+	ident_0099 := ident_0009.Ident_0026
+	if ident_0090.Ident_0026 != nil {
+		ident_0099 = *ident_0090.Ident_0026
+	}
+	ident_0100 := ident_0009.Ident_0027
+	if ident_0090.Ident_0087 != nil {
+		ident_0100 = *ident_0090.Ident_0087
+	}
+	if _, ident_0014 := ident_0003.ident_0015.Ident_0101(ident_0058.Ident_0061(),
+		`str_0030`,
+		ident_0099, ident_0093(ident_0100), ident_0007); ident_0014 != nil {
+		ident_0003.ident_0063(ident_0057, ident_0014)
+		return
+	}
+
+	if ident_0090.Ident_0088 != nil && *ident_0090.Ident_0088 {
+		ident_0102 := ident_0007 + "str_0031"
+		if _, ident_0014 := ident_0003.ident_0015.Ident_0101(ident_0058.Ident_0061(),
+			`str_0032
+
+`,
+			ident_0102, ident_0009.Ident_0019, ident_0009.Ident_0020, ident_0009.Ident_0021, ident_0009.Ident_0022, ident_0009.Ident_0025); ident_0014 != nil {
+			ident_0003.ident_0063(ident_0057, ident_0014)
+			return
+		}
+	}
+
+	ident_0103, ident_0014 := ident_0003.ident_0005(ident_0058.Ident_0061(), ident_0007)
+	if ident_0014 != nil {
+		ident_0003.ident_0063(ident_0057, ident_0014)
+		return
+	}
+	ident_0072(ident_0057, http.StatusOK, ident_0103)
+}

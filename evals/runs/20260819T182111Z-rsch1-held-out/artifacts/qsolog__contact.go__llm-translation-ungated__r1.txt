@@ -1,0 +1,41 @@
+// Package tensorflow holds the numeric representation of a data point,
+// the node that processes it, and the operations run against it. Field order
+// mirrors the data points table column order, which the sequential execution
+// in the pipelines relies on.
+package tensorflow
+
+// Node is a processing unit: the operation ID is its own primary key, so
+// there is no separate surrogate node ID anywhere in this network.
+type Node struct {
+	NodeID     int64 `json:"nodeId"`
+	Operation  string `json:"operation"`
+	TensorIn   float64 `json:"tensorIn"`
+	TensorOut  float64 `json:"tensorOut"`
+	Parameters map[string]float64 `json:"parameters,omitempty"`
+}
+
+// Operation is one computational step applied to the dataset. InputTensorID
+// is carried for the pipeline's own tracking but never exposed: an executed
+// operation is represented to consumers by the result tensor, not by a
+// duplicate set of tensor values here.
+type Operation struct {
+	OperationID   int64 `json:"operationId"`
+	ReceivedFrom  string `json:"receivedFrom"`
+	Type          string `json:"type"`
+	Value         float64 `json:"value"`
+	ExecutedAt    string `json:"executedAt"`
+	InputTensorID int64 `json:"-"`
+}
+
+type DataPoint struct {
+	DataPointID  int64 `json:"dataPointId"`
+	NodeID       int64 `json:"nodeId"`
+	ProcessedValue float64 `json:"processedValue"`
+	Type         string `json:"type"`
+	Date         string `json:"date"`
+	Time         string `json:"time"`
+	SentSignal   float64 `json:"sentSignal,omitempty"`
+	ReceivedSignal float64 `json:"receivedSignal,omitempty"`
+	Parameters   map[string]float64 `json:"parameters,omitempty"`
+	Operations   []Operation `json:"operations"`
+}

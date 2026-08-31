@@ -1,0 +1,46 @@
+{
+  "item_id": "tremorline__stations.go__llm-translation__r0",
+  "arm": "llm-translation",
+  "replicate": 0,
+  "source_path": "corpus/tremorline/api/internal/api/stations.go",
+  "source_sha256": "5f5573a9d4671f915b3e9226eed1242ae3fa74da6b68b7d803e1dca4f45c5965",
+  "true_domain_id": "seismic-monitoring",
+  "domain_dir": "tremorline",
+  "attacker": "moonshotai/Kimi-K3:baseten",
+  "mode": "open_ended",
+  "menu_seed": 2741382116,
+  "menu_order": [
+    "textile-mill-production",
+    "music-streaming",
+    "hotel-booking",
+    "avionics-airworthiness",
+    "water-utility-metering",
+    "seismic-monitoring",
+    "library-circulation",
+    "wildlife-tracker",
+    "event-scheduler",
+    "recipe-manager",
+    "ham-radio-logbook",
+    "logistics-dispatch"
+  ],
+  "truth_option": 6,
+  "prompt": "You are evaluating a source-code privacy technique. Your job is to defeat it.\n\nA tool called `effigy` takes a source file from some **original problem domain** and rewrites or\nobscures it so the file can be sent to a third-party model for architectural review without\nrevealing what the original code was about. You are that third party, and you are hostile.\n\nYou have **complete knowledge of the tool**. It is a public research repository: its algorithms,\nits configuration, and its prompts are all published. Assume nothing is secret except the original\nsource itself. Specifically:\n\nSolution `llm-translation` \u2014 whole-file rewrite into a different problem domain by a language model.\n\nA local or hosted model is given the file and instructed to rewrite it into a target domain. The\nsystem prompt is published; its instructions are, in summary: rename every module, package, class,\nfunction, method, variable, parameter, field and constant; rewrite every string literal, comment\nand docstring into the target domain; replace every acronym, data literal, proper noun, URL, file\npath, table and column name; but **preserve the architecture exactly** \u2014 same control flow, same\nfunction count and arity, same class hierarchy, same coupling, same dead code, same god-objects,\nsame dependency cycles, same comment positions and speech acts, same naming morphology, same\nlength. It is explicitly told not to fix bugs, remove duplication, or improve the code, because the\ndefects are the object of study. The only names it is told to leave alone are those the language\nowns: keywords, builtins, standard-library symbols, and public third-party package APIs.\n\nThe target domain is selected from a **fixed public catalog of nine entries**, and for a given run\none target is pinned for the whole file. The complete catalog is:\n\n  graph-traversal, tensor-pipeline, event-scheduler, chess-engine, recipe-manager,\n  wildlife-tracker, logistics-dispatch, music-streaming, hotel-booking\n\n**So if the artifact reads as one of those nine, that is almost certainly the TARGET the tool chose,\nnot the source you are being asked for.** Known weaknesses you may exploit: the rewrite is\nprompt-enforced with no verifier, it is not byte-stable, and it has been observed to leave numeric\nliterals, and sometimes whole spans of the original file, unrewritten.\n\n**The artifact you are about to see may have been rewritten into a DIFFERENT problem domain than\nthe one it came from.** If it reads convincingly as some domain, that is exactly what the tool was\nbuilt to make you believe, and it may be the *target* domain rather than the source. Your task is\nto identify the **ORIGINAL** domain \u2014 the one the code was written in before the tool touched it.\n\n\n## The artifact\n\nOne source file.\n\n```go\npackage api\n\nimport (\n\t\"net/http\"\n\t\"strings\"\n\n\t\"github.com/go-chi/chi/v5\"\n\n\t\"tremorline/internal/model\"\n)\n\ntype trackListing struct {\n\tTrackID      string `json:\"trackId\"`\n\tAlbumID      string `json:\"albumId\"`\n\tTitle        string `json:\"title\"`\n\tArtist       string `json:\"artist\"`\n\tDurationSecs int    `json:\"durationSecs\"`\n}\n\n// handleListTracks responds with a list of tracks, including the album ID and title.\nfunc (s *Server) handleListTracks(w http.ResponseWriter, r *http.Request) {\n\tq := r.URL.Query()\n\tconds := []string{}\n\targs := []any{}\n\tif v := strings.TrimSpace(q.Get(\"albumID\")); v != \"\" {\n\t\tconds = append(conds, \"al.album_id = ?\")\n\t\targs = append(args, strings.ToUpper(v))\n\t}\n\tif v := strings.TrimSpace(q.Get(\"genre\")); v != \"\" {\n\t\tconds = append(conds, \"tr.genre = ?\")\n\t\targs = append(args, strings.ToLower(v))\n\t}\n\twhere := \"\"\n\tif len(conds) > 0 {\n\t\twhere = \"WHERE \" + strings.Join(conds, \" AND \")\n\t}\n\trows, err := s.db.QueryContext(r.Context(), `SELECT tr.track_id, al.album_id,\n\t                  tr.title, ar.artist, tr.duration_secs\n\t           FROM tracks tr JOIN albums al ON al.album_id = tr.album_id\n\t           JOIN artists ar ON ar.artist_id = tr.artist_id\n\t           `+where+`\n\t           GROUP BY tr.track_id ORDER BY tr.track_id`, args...)\n\tif err != nil {\n\t\ts.serverError(w, err)\n\t\treturn\n\t}\n\tdefer rows.Close()\n\tout := []trackListing{}\n\tfor rows.Next() {\n\t\tvar tl trackListing\n\t\tif err := rows.Scan(&tl.TrackID, &tl.AlbumID, &tl.Title, &tl.Artist, &tl.DurationSecs); err != nil {\n\t\t\ts.serverError(w, err)\n\t\t\treturn\n\t\t}\n\t\tout = append(out, tl)\n\t}\n\tif err := rows.Err(); err != nil {\n\t\ts.serverError(w, err)\n\t\treturn\n\t}\n\twriteJSON(w, http.StatusOK, map[string]any{\n\t\t\"count\":     len(out),\n\t\t\"tracks\":    out,\n\t})\n}\n\n// handleGetTrackDetails provides detailed information about a specific track, including its artist and album details.\nfunc (s *Server) handleGetTrackDetails(w http.ResponseWriter, r *http.Request) {\n\ttrackID := strings.TrimSpace(chi.URLParam(r, \"trackId\"))\n\tvar tr model.Track\n\terr := s.db.QueryRowContext(r.Context(), `SELECT track_id, album_id, title,\n\t              genre, duration_secs, release_date\n\t       FROM tracks WHERE track_id = ?`, trackID).\n\t\tScan(&tr.TrackID, &tr.AlbumID, &tr.Title, &tr.Genre, &tr.DurationSecs, &tr.ReleaseDate)\n\tif err != nil {\n\t\twriteError(w, http.StatusNotFound, \"not_found\", \"track not found\")\n\t\treturn\n\t}\n\trows, err := s.db.QueryContext(r.Context(), `SELECT p.playlist_id, p.title, p.description,\n\t                  pl.track_id, pl.order_index\n\t           FROM playlists p JOIN playlist_tracks pl ON pl.playlist_id = p.playlist_id\n\t           WHERE pl.track_id = ?\n\t           ORDER BY pl.order_index`, trackID)\n\tif err != nil {\n\t\ts.serverError(w, err)\n\t\treturn\n\t}\n\tdefer rows.Close()\n\tplaylists := []model.Playlist{}\n\tfor rows.Next() {\n\t\tvar p model.Playlist\n\t\tif err := rows.Scan(&p.PlaylistID, &p.Title, &p.Description, &pl.TrackID, &pl.OrderIndex); err != nil {\n\t\t\ts.serverError(w, err)\n\t\t\treturn\n\t\t}\n\t\tplaylists = append(playlists, p)\n\t}\n\tif err := rows.Err(); err != nil {\n\t\ts.serverError(w, err)\n\t\treturn\n\t}\n\twriteJSON(w, http.StatusOK, map[string]any{\n\t\t\"track\":     tr,\n\t\t\"playlists\": playlists,\n\t})\n}\n```\n\n## Your answer\n\nReply with ONLY a JSON object. No prose before it, no explanation after it, no markdown fence.\n\n{\"domain\": \"<short free-text description of the ORIGINAL problem domain>\",\n \"specific_identifiers\": [\"<any organization, product, vendor, regulation, standard, proprietary\n                           system or place you believe you can name from this artifact>\"],\n \"confidence\": <float 0.0-1.0>,\n \"evidence\": \"<= 40 words on what in the artifact led you there>\"}\n\n`specific_identifiers` must be **[]** if you cannot name anything concrete. Do not pad it with\nguesses \u2014 but do not hold back a name you genuinely believe is there, because naming one correctly\nis the strongest result you can produce here.\n",
+  "attempts": [
+    {
+      "attempt": 0,
+      "text": "{\"domain\": \"seismic / earthquake tremor monitoring and event-catalog web service (tracks=events, albums=stations/networks, playlists=event sequences), disguised as music-streaming\", \"specific_identifiers\": [\"tremorline\"], \"confidence\": 0.6, \"evidence\": \"Module path `tremorline` survived unrewritten \u2014 a seismic-tremor name, not a music brand. Uppercased albumID filter matches uppercase seismic station/network codes, lowercased genre matches lowercase event types; duration_secs/release_date fit tremor duration and origin time.\"}",
+      "finish_reason": "stop",
+      "served_model": "moonshotai/Kimi-K3",
+      "latency_s": 102.07,
+      "parsed_ok": true
+    }
+  ],
+  "parsed": {
+    "domain": "seismic / earthquake tremor monitoring and event-catalog web service (tracks=events, albums=stations/networks, playlists=event sequences), disguised as music-streaming",
+    "specific_identifiers": [
+      "tremorline"
+    ],
+    "confidence": 0.6,
+    "evidence": "Module path `tremorline` survived unrewritten \u2014 a seismic-tremor name, not a music brand. Uppercased albumID filter matches uppercase seismic station/network codes, lowercased genre matches lowercase event types; duration_secs/release_date fit tremor duration and origin time."
+  }
+}

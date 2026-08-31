@@ -1,0 +1,142 @@
+{
+  "v3": {
+    "n": 6,
+    "domain_retention": {
+      "mean": 0.166,
+      "min": 0.122,
+      "max": 0.223,
+      "values": [
+        0.223,
+        0.177,
+        0.168,
+        0.122,
+        0.168,
+        0.135
+      ]
+    },
+    "copied_span_share": {
+      "mean": 0.139,
+      "min": 0.119,
+      "max": 0.176,
+      "values": [
+        0.176,
+        0.123,
+        0.145,
+        0.119,
+        0.15,
+        0.123
+      ]
+    },
+    "copied_span_lines": {
+      "mean": 124.3,
+      "min": 107,
+      "max": 157
+    },
+    "files_with_span_20plus": {
+      "total": 0,
+      "of": 36
+    }
+  },
+  "v4": {
+    "n": 6,
+    "domain_retention": {
+      "mean": 0.148,
+      "min": 0.087,
+      "max": 0.218,
+      "values": [
+        0.137,
+        0.108,
+        0.087,
+        0.218,
+        0.128,
+        0.21
+      ]
+    },
+    "copied_span_share": {
+      "mean": 0.169,
+      "min": 0.139,
+      "max": 0.218,
+      "values": [
+        0.147,
+        0.175,
+        0.151,
+        0.187,
+        0.139,
+        0.218
+      ]
+    },
+    "copied_span_lines": {
+      "mean": 155.3,
+      "min": 126,
+      "max": 195
+    },
+    "files_with_span_20plus": {
+      "total": 4,
+      "of": 36
+    }
+  },
+  "v5": {
+    "n": 3,
+    "domain_retention": {
+      "mean": 0.139,
+      "min": 0.082,
+      "max": 0.228,
+      "values": [
+        0.082,
+        0.107,
+        0.228
+      ]
+    },
+    "copied_span_share": {
+      "mean": 0.188,
+      "min": 0.17,
+      "max": 0.199,
+      "values": [
+        0.195,
+        0.17,
+        0.199
+      ]
+    },
+    "copied_span_lines": {
+      "mean": 171.7,
+      "min": 157,
+      "max": 184
+    },
+    "files_with_span_20plus": {
+      "total": 3,
+      "of": 18
+    }
+  },
+  "v6": {
+    "n": 3,
+    "domain_retention": {
+      "mean": 0.196,
+      "min": 0.108,
+      "max": 0.285,
+      "values": [
+        0.195,
+        0.285,
+        0.108
+      ]
+    },
+    "copied_span_share": {
+      "mean": 0.233,
+      "min": 0.193,
+      "max": 0.306,
+      "values": [
+        0.201,
+        0.306,
+        0.193
+      ]
+    },
+    "copied_span_lines": {
+      "mean": 211.7,
+      "min": 182,
+      "max": 265
+    },
+    "files_with_span_20plus": {
+      "total": 5,
+      "of": 18
+    }
+  }
+}

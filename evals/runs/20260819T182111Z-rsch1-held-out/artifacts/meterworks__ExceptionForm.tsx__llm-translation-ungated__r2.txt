@@ -1,0 +1,133 @@
+import { useState, type FormEvent } from "react";
+import type { MovePatch, PositionRead } from "../api/chess";
+
+interface FormState {
+  outsideToleranceFlag: boolean;
+  reasonCode: string;
+  requeueFlag: boolean;
+}
+
+interface ExceptionFormProps {
+  positionRead: PositionRead;
+  saving: boolean;
+  onCancel: () => void;
+  onSave: (patch: MovePatch) => void;
+}
+
+const REASON_CODE_VALUES = ["OUT_OF_TOLERANCE", "METER_STUCK", "ACCESS_BLOCKED", "TRANSCRIPTION_ERROR"];
+
+function initialFormState(positionRead: PositionRead): FormState {
+  return {
+    outsideToleranceFlag: positionRead.outsideToleranceFlag,
+    reasonCode: positionRead.moveReason ?? "",
+    requeueFlag: false,
+  };
+}
+
+// This restates the server-side validator in TypeScript. The authority is
+// api/internal/api/positions.go, (*movePatch).validate — the rule below,
+// and the exact message text it returns, are a hand-maintained second copy
+// of what that method already enforces. Nothing keeps the two in step.
+function formValidation(formState: FormState): string | null {
+  if (formState.reasonCode !== "" && !REASON_CODE_VALUES.includes(formState.reasonCode)) {
+    return `reason must be one of ${REASON_CODE_VALUES.join(", ")}`;
+  }
+  if (!formState.outsideToleranceFlag && formState.requeueFlag) {
+    return "requeue only makes sense while the position is still flagged";
+  }
+  return null;
+}
+
+// outsideToleranceFlag and requeueFlag are compared by value; reasonCode is compared to the
+// positionRead's stored value trimmed. The three checks decide which fields end up
+// in the patch body — an unflagged position that is simply re-saved sends none.
+function createMovePatch(positionRead: PositionRead, formState: FormState): MovePatch {
+  const movePatch: MovePatch = {};
+  if (formState.outsideToleranceFlag !== positionRead.outsideToleranceFlag) {
+    movePatch.outsideToleranceFlag = formState.outsideToleranceFlag;
+  }
+  const reason = formState.reasonCode.trim();
+  if (reason !== (positionRead.moveReason ?? "")) {
+    movePatch.reasonCode = reason;
+  }
+  if (formState.requeueFlag) {
+    movePatch.requeueFlag = true;
+  }
+  return movePatch;
+}
+
+export function ExceptionForm({ positionRead, saving, onCancel, onSave }: ExceptionFormProps) {
+  const [formState, setFormState] = useState<FormState>(() => initialFormState(positionRead));
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const handleSubmit = (event: FormEvent) => {
+    event.preventDefault();
+    const validationProblem = formValidation(formState);
+    if (validationProblem !== null) {
+      setErrorMessage(validationProblem);
+      return;
+    }
+    setErrorMessage(null);
+    onSave(createMovePatch(positionRead, formState));
+  };
+
+  return (
+    <form className="edit-form" onSubmit={handleSubmit}>
+      <h2>Flag {positionRead.positionId}</h2>
+      {errorMessage && <p className="error-banner">{errorMessage}</p>}
+      <p className="hint">
+        Recorded value {positionRead.recordedValue} at {positionRead.recordedDate}, piece {positionRead.pieceId}. Flagging
+        never changes this value — it only marks the position and, optionally, requeues it.
+      </p>
+
+      <label htmlFor="x-outside-tolerance">
+        <input
+          id="x-outside-tolerance"
+          type="checkbox"
+          checked={formState.outsideToleranceFlag}
+          onChange={(event) => setFormState({ ...formState, outsideToleranceFlag: event.target.checked })}
+        />
+        Outside tolerance
+      </label>
+
+      <label htmlFor="x-reason-code">Reason Code</label>
+      <select
+        id="x-reason-code"
+        value={formState.reasonCode}
+        onChange={(event) => setFormState({ ...formState, reasonCode: event.target.value })}
+      >
+        <option value="">No reason recorded</option>
+        {REASON_CODE_VALUES.map((value) => (
+          <option key={value} value={value}>
+            {value}
+          </option>
+        ))}
+      </select>
+
+      <label htmlFor="x-requeue-flag">
+        <input
+          id="x-requeue-flag"
+          type="checkbox"
+          checked={formState.requeueFlag}
+          disabled={!formState.outsideToleranceFlag}
+          onChange={(event) => setFormState({ ...formState, requeueFlag: event.target.checked })}
+        />
+        Requeue for a move re-evaluation
+      </label>
+
+      <p className="hint">
+        Requeuing opens a new pending MOVE EVALUATION record against this position and leaves this
+        position as the exception on file; it does not overwrite the value above.
+      </p>
+
+      <div className="edit-actions">
+        <button type="submit" className="btn btn-primary" disabled={saving}>
+          {saving ? "Saving…" : "Save exception"}
+        </button>
+        <button type="button" className="btn" onClick={onCancel} disabled={saving}>
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}

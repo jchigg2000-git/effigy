@@ -1,0 +1,25 @@
+{
+  "n_artifacts": 64,
+  "n_domains": 6,
+  "draws": 2000,
+  "seed": 20260819,
+  "counters": {
+    "observed": 0.046875,
+    "permuted_mean": 0.164828125,
+    "permuted_lo": 0.046875,
+    "permuted_hi": 0.28125,
+    "p": 0.988
+  },
+  "tokens": {
+    "observed": 0.0,
+    "permuted_mean": 0.15435714285714286,
+    "permuted_lo": 0.047619047619047616,
+    "permuted_hi": 0.2698412698412698,
+    "p": 1.0,
+    "gate_failures": [
+      "corpus/stacks/api/internal/ingest/marc21.go: corpus/stacks/api/internal/ingest/marc21.go: G8 BLIND field max_brace_depth: 7 -> 6"
+    ],
+    "n": 63
+  },
+  "concentrated_tokens": []
+}

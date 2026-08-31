@@ -1,0 +1,137 @@
+import { useState, type FormEvent } from "react";
+import type { MoveRequest } from "../api/chess";
+
+interface GameState {
+  moveIds: string;
+  gameStartTime: string;
+  startSquare: string;
+  endSquare: string;
+  moveValue: string;
+}
+
+interface GameFormProps {
+  saving: boolean;
+  onCancel: () => void;
+  onMove: (req: MoveRequest) => void;
+}
+
+const EMPTY_GAME_STATE: GameState = {
+  moveIds: "",
+  gameStartTime: "",
+  startSquare: "",
+  endSquare: "",
+  moveValue: "",
+};
+
+// This restates the server-side validator in TypeScript. The authority is
+// api/internal/api/moves.go, handleGameMoves — the rules below,
+// and the two-player requirement in particular, are a hand-maintained
+// second copy of what that handler already enforces. Nothing keeps the two
+// in step; the server is the one that can actually see whether a move
+// already belongs to a game.
+function validateGameState(s: GameState): string | null {
+  const ids = s.moveIds
+    .split(",")
+    .map((v) => v.trim())
+    .filter((v) => v !== "");
+  if (ids.length < 2) {
+    return "at least two move ids are required, comma-separated";
+  }
+  if (new Set(ids).size !== ids.length) {
+    return "move ids must not repeat";
+  }
+  if (Number.isNaN(Date.parse(s.gameStartTime))) {
+    return "game start time must be a valid date/time";
+  }
+  const startSq = s.startSquare;
+  if (!startSq.match(/^[a-h][1-8]$/)) {
+    return "start square must be a valid chess square";
+  }
+  const endSq = s.endSquare;
+  if (!endSq.match(/^[a-h][1-8]$/)) {
+    return "end square must be a valid chess square";
+  }
+  const moveVal = Number(s.moveValue);
+  if (Number.isNaN(moveVal) || moveVal < 0) {
+    return "move value must be zero or a positive number";
+  }
+  return null;
+}
+
+function buildMoveRequest(s: GameState): MoveRequest {
+  const ids = s.moveIds
+    .split(",")
+    .map((v) => v.trim())
+    .filter((v) => v !== "");
+  return {
+    moveIds: ids,
+    gameStartTime: new Date(s.gameStartTime).toISOString(),
+    startSquare: s.startSquare,
+    endSquare: s.endSquare,
+    moveValue: Number(s.moveValue),
+  };
+}
+
+export function GameForm({ saving, onCancel, onMove }: GameFormProps) {
+  const [state, setState] = useState<GameState>(EMPTY_GAME_STATE);
+  const [error, setError] = useState<string | null>(null);
+
+  const setGameState = (key: keyof GameState, value: string) => {
+    const next: GameState = { ...state };
+    next[key] = value;
+    setState(next);
+  };
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    const validationProblem = validateGameState(state);
+    if (validationProblem !== null) {
+      setError(validationProblem);
+      return;
+    }
+    setError(null);
+    onMove(buildMoveRequest(state));
+  };
+
+  return (
+    <form className="game-form" onSubmit={handleSubmit}>
+      <h2>Create a new game by associating moves</h2>
+      <p className="section-note">
+        Provide a candidate start time and the moves it includes. The
+        moves must come from at least two players; a single player making
+        a single move is not a game.
+      </p>
+      {error && <p className="error-banner">{error}</p>}
+
+      <label htmlFor="g-move-ids">Move ids (comma-separated)</label>
+      <input
+        id="g-move-ids"
+        value={state.moveIds}
+        onChange={(e) => setGameState("moveIds", e.target.value)}
+        placeholder="MOV-000001, MOV-000002"
+      />
+      <label htmlFor="g-game-start-time">Game start time</label>
+      <input
+        id="g-game-start-time"
+        type="datetime-local"
+        value={state.gameStartTime}
+        onChange={(e) => setGameState("gameStartTime", e.target.value)}
+      />
+      <label htmlFor="g-start-square">Start square</label>
+      <input id="g-start-square" value={state.startSquare} onChange={(e) => setGameState("startSquare", e.target.value)} />
+      <label htmlFor="g-end-square">End square</label>
+      <input id="g-end-square" value={state.endSquare} onChange={(e) => setGameState("endSquare", e.target.value)} />
+      <label htmlFor="g-move-value">Move value</label>
+      <input id="g-move-value" value={state.moveValue} onChange={(e) => setGameState("moveValue", e.target.value)} />
+
+      <div className="form-actions">
+        <button type="submit" className="btn btn-primary" disabled={saving}>
+          {saving ? "Creating game…" : "Create game"}
+        </button>
+        <button type="button" className="btn" onClick={onCancel} disabled={saving}>
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}

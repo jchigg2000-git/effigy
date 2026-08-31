@@ -1,0 +1,55 @@
+{
+  "key": "meterworks__ReadDetail.tsx__structure-only__r0",
+  "arm": "structure-only",
+  "replicate": 0,
+  "source_path": "corpus/meterworks/app/src/components/ReadDetail.tsx",
+  "source_sha256": "73e290a1945b22211c4e537cb6bdf0444cec219f2d66a8980fb757216b25943e",
+  "true_domain_id": "water-utility-metering",
+  "language": "tsx",
+  "artifact_sha256": "1310a2000404c8251dca6cc3255a76e7ba6304dd23b2087484114e92d581e083",
+  "artifact_lines": 105,
+  "latency_s": 0.7,
+  "solution_meta": {
+    "generated_by": "evals/canonicalize.py",
+    "preserved_tokens": [
+      "Math",
+      "Record",
+      "button",
+      "className",
+      "dd",
+      "div",
+      "dl",
+      "dt",
+      "h2",
+      "h3",
+      "onClick",
+      "p",
+      "section",
+      "span",
+      "type",
+      "undefined"
+    ],
+    "preserved_import_paths": [],
+    "n_idents_canonicalised": 34,
+    "n_strings_canonicalised": 40,
+    "n_runes_canonicalised": 0,
+    "n_numbers_canonicalised": 0,
+    "counters_delta": {
+      "lines": 0,
+      "bytes": -586,
+      "funcs": 0,
+      "structs": 0,
+      "interfaces": 0,
+      "imports": 0,
+      "exports": 0,
+      "string_literals": 0,
+      "max_brace_depth": 0
+    },
+    "blind_delta": {
+      "bytes": [
+        3502,
+        2916
+      ]
+    }
+  }
+}

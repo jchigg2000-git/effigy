@@ -1,0 +1,45 @@
+{
+  "key": "tremorline__main.go__llm-translation-ungated__r2",
+  "arm": "llm-translation-ungated",
+  "replicate": 2,
+  "source_path": "corpus/tremorline/api/cmd/tremorlined/main.go",
+  "source_sha256": "1ef76d259f0cc4b77c5ca59c4624456d1936beef124a3adbf6f45944d8c9abee",
+  "true_domain_id": "seismic-monitoring",
+  "language": "go",
+  "artifact_sha256": "45867533bfde68a34f4e9454a23c746d3139cf3cc420177f2ef16f3e19f62fbe",
+  "artifact_lines": 103,
+  "latency_s": 7.1,
+  "solution_meta": {
+    "model": "Qwen/Qwen2.5-Coder-7B-Instruct",
+    "base_url": "https://router.huggingface.co/v1",
+    "target_domain": "a recipe-management app with ingredients, steps, and meal plans",
+    "target_id": "recipe-manager",
+    "temperature": 0.2,
+    "postcondition": {
+      "src_code_lines": 72,
+      "husk_code_lines": 72,
+      "similarity_ratio": 0.982,
+      "ident_retention": 0.949,
+      "code_verbatim": 0.986,
+      "longest_identical_run": 43,
+      "longest_identical_run_share": 0.597,
+      "copied_spans": 2,
+      "copied_span_lines": 71,
+      "copied_span_share": 0.986,
+      "thresholds": {
+        "run_lines": 999999,
+        "run_share": 9.0,
+        "copied_share": 9.0,
+        "retention": 9.0,
+        "ratio": 9.0,
+        "min_code_lines": 12
+      },
+      "verdict": "ok"
+    },
+    "usage": {
+      "prompt_tokens": 1951,
+      "completion_tokens": 819,
+      "total_tokens": 2770
+    }
+  }
+}

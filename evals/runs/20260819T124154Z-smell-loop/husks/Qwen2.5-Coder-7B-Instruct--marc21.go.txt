@@ -1,0 +1,317 @@
+// Package booking handles room bookings and guest information within a hotel platform. It is designed to be minimalistic and specific to the needs of our hotel's operations — not a general-purpose booking solution, and not to be cited as such. Simplifications:
+// one booking per file; one declared room type per file, any further types a
+// special service being created on demand; a local profile for booking status in which
+// status "Booked" indicates a reservation and "Available" indicates an open slot; no additional checks beyond the booking date.
+package booking
+
+import (
+	"context"
+	"database/sql"
+	"os"
+	"strings"
+)
+
+type BookingStats struct {
+	Rooms       int `json:"rooms"`
+	Bookings    int `json:"bookings"`
+	Guests      int `json:"guests"`
+	OpenSlots   int `json:"open_slots"`
+	Cancelled   int `json:"cancelled"`
+	Completed   int `json:"completed"`
+}
+
+type SubField struct {
+	Code  byte
+	Value string
+}
+
+// registerGuest adds a guest ID if it is new, updating the shared statistics.
+func registerGuest(ctx context.Context, tx *sql.Tx, guestID, roomID string, stats *BookingStats) error {
+	if guestID == "" {
+		return nil
+	}
+	res, err := tx.ExecContext(ctx,
+		`INSERT OR IGNORE INTO guests (guest_id, room_id) VALUES (?, ?)`,
+		guestID, nullStr(roomID))
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n > 0 {
+		stats.Guests++
+	}
+	return nil
+}
+
+// parsedRoom represents a room and its associated booking details.
+type parsedRoom struct {
+	RoomID, RoomType, Status, PolicyCode, GuestID string
+	BookedOn, CheckOutOn                        string
+}
+
+type parsedStay struct {
+	StayID, ArrivalDate, DepartureDate, RoomID, GuestID string
+}
+
+type parsedHotel struct {
+	HotelID, Address, City, State, Country string
+	Rooms                                 []parsedRoom
+}
+
+func sub(sfs []SubField, code byte) string {
+	for _, sf := range sfs {
+		if sf.Code == code {
+			return strings.TrimSpace(sf.Value)
+		}
+	}
+	return ""
+}
+
+// formatDate turns YYYYMMDD into YYYY-MM-DD and passes anything else back untouched.
+func formatDate(date string) string {
+	if len(date) != 8 {
+		return date
+	}
+	return date[0:4] + "-" + date[4:6] + "-" + date[6:8]
+}
+
+func nullStr(s string) any {
+	if s == "" {
+		return nil
+	}
+	return s
+}
+
+// Process parses the hotel data a line at a time. The room and the stay under construction are
+// managed in this scope and modified from inside the tag switch; the two flush closures handle these variables directly, so a case arm closes a room blind.
+func Process(data []byte) *parsedHotel {
+	hotel := &parsedHotel{}
+	var currentRoom *parsedRoom
+	var currentStay *parsedStay
+	flushStay := func() {
+		if currentRoom != nil && currentStay != nil {
+			currentRoom.Stays = append(currentRoom.Stays, *currentStay)
+			currentStay = nil
+		}
+	}
+	flushRoom := func() {
+		flushStay()
+		if currentRoom != nil {
+			hotel.Rooms = append(hotel.Rooms, *currentRoom)
+			currentRoom = nil
+		}
+	}
+	for _, raw := range strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n") {
+		line := strings.TrimRight(raw, " \t")
+		if strings.TrimSpace(line) == "" {
+			flushRoom()
+			continue
+		}
+		if !strings.HasPrefix(line, "=") || len(line) < 6 {
+			continue
+		}
+		tag := line[1:4]
+		body := line[6:]
+		if tag == "HDR" {
+			flushRoom()
+			currentRoom = &parsedRoom{}
+			if len(body) > 6 {
+				currentRoom.RoomType = string(body[5]) + string(body[6])
+			}
+			continue
+		}
+		if currentRoom == nil {
+			currentRoom = &parsedRoom{}
+		}
+		var ind1 byte
+		var sfs []SubField
+		if tag >= "010" && len(body) >= 2 {
+			ind1 = body[0]
+			for _, chunk := range strings.Split(body[2:], "$") {
+				if chunk != "" {
+					sfs = append(sfs, SubField{chunk[0], strings.ReplaceAll(chunk[1:], "{dollar}", "$")})
+				}
+			}
+		}
+		switch tag {
+		case "001":
+			currentRoom.RoomID = strings.TrimSpace(body)
+		case "010":
+			if hotel.Address == "" {
+				hotel.Address = sub(sfs, 'a')
+			}
+		case "020":
+			currentRoom.BookedOn = formatDate(strings.Trim(sub(sfs, 'c'), "."))
+			currentRoom.Status = "Booked"
+		case "035":
+			if hotel.City == "" {
+				hotel.City = sub(sfs, 'a')
+			}
+		case "100":
+			if len(sfs) > 0 {
+				hotel.HotelID = strings.TrimSuffix(sub(sfs, 'a'), ",")
+			}
+		case "245":
+			if len(sfs) > 0 {
+				hotel.Name = strings.TrimSuffix(strings.TrimSpace(sfs[0].Value), " /")
+			}
+			if len(sfs) > 1 {
+				hotel.Description = sfs[1].Value
+			}
+		case "260", "264":
+			hotel.State = isoDate(strings.Trim(sub(sfs, 'c'), "."))
+			hotel.Country = strings.TrimSuffix(sub(sfs, 'b'), ",")
+		case "270":
+			if len(sfs) > 1 {
+				hotel.PhoneNumber = strings.Map(func(r rune) rune {
+					if r >= '0' && r <= '9' {
+						return r
+					}
+					return -1
+				}, sfs[1].Value)
+			}
+		case "590":
+			currentRoom.Status = sub(sfs, 'a')
+		case "650":
+			hotel.ServiceCode = strings.TrimSuffix(sub(sfs, 'a'), ".")
+		case "852":
+			for _, sf := range sfs {
+				switch sf.Code {
+				case 'a':
+					currentRoom.RoomID = strings.TrimSpace(sf.Value)
+					if hotel.RoomID == "" {
+						hotel.RoomID = currentRoom.RoomID
+					}
+				case 'b':
+					currentRoom.Floor = sf.Value
+				case 'c':
+					currentRoom.Section = sf.Value
+				case 'h':
+					currentRoom.RoomNumber = sf.Value
+				case 'i':
+					currentRoom.RoomNumber = strings.TrimSpace(currentRoom.RoomNumber + " " + sf.Value)
+				case 'j':
+					currentRoom.Bin = sf.Value
+				}
+			}
+		case "876":
+			flushStay()
+			currentStay = &parsedStay{StayID: sub(sfs, 'a'), ArrivalDate: sub(sfs, 'h'), DepartureDate: sub(sfs, 'j'),
+				RoomID: sub(sfs, 'x'), GuestID: sub(sfs, '3')}
+		case "583":
+			if currentStay != nil && len(sfs) >= 3 && sub(sfs, 'b') == "D8" {
+				switch sub(sfs, 'a') {
+				case "BOOKINGSTART":
+					currentStay.ArrivalDate = formatDate(sub(sfs, 'c'))
+				case "BOOKINGEND":
+					currentStay.DepartureDate = formatDate(sub(sfs, 'c'))
+				}
+			}
+			if sub(sfs, 'a') == "STAYCANCELLED" {
+				currentRoom.Status = "Cancelled"
+				currentRoom.Cancelled++
+			}
+			if sub(sfs, 'a') == "STAYCOMPLETED" {
+				currentRoom.Status = "Completed"
+				currentRoom.Completed++
+			}
+		case "110":
+			if ind1 == '2' || ind1 == '\\' {
+				switch sub(sfs, '4') {
+				case "sys":
+					hotel.SystemID = sub(sfs, '0')
+					hotel.SystemName = sub(sfs, 'a')
+				case "room":
+					hotel.RoomID = sub(sfs, '0')
+					hotel.RoomName = sub(sfs, 'a')
+				}
+			}
+		}
+		// The policy-code path: the local profile allows it to appear on either line.
+		if currentStay != nil && currentStay.PolicyCode == "" {
+			if v := sub(sfs, 'x'); v != "" {
+				currentStay.PolicyCode = v
+			}
+		}
+	}
+	flushRoom()
+	return hotel
+}
+
+// ReloadFromSeed reloads the entire hotel database from one seed file within a transaction.
+func ReloadFromSeed(ctx context.Context, db *sql.DB, filePath string) (BookingStats, error) {
+	var stats BookingStats
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return stats, err
+	}
+	hotelData := Process(data)
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return stats, err
+	}
+	defer tx.Rollback()
+	for _, t := range []string{"stays", "bookings", "guests", "rooms", "hotels", "services"} {
+		if _, err := tx.ExecContext(ctx, "DELETE FROM "+t); err != nil {
+			return stats, err
+		}
+	}
+	if hotelData.HotelID != "" {
+		if _, err := tx.ExecContext(ctx, `INSERT INTO hotels (hotel_id, address, city, state, country) VALUES (?, ?, ?, ?, ?)`,
+			hotelData.HotelID, hotelData.Address, hotelData.City, hotelData.State, hotelData.Country); err != nil {
+			return stats, err
+		}
+		stats.Hotels++
+	}
+	for _, room := range hotelData.Rooms {
+		if room.RoomID == "" || room.RoomType == "" {
+			continue
+		}
+		if room.RoomID != hotelData.RoomID {
+			newRoom := &parsedRoom{RoomID: room.RoomID, RoomType: room.RoomType, Status: "Available"}
+			if _, err := tx.ExecContext(ctx,
+				`INSERT OR IGNORE INTO rooms (room_id, room_type, status) VALUES (?, ?, ?)`,
+				newRoom.RoomID, newRoom.RoomType, newRoom.Status); err != nil {
+				return stats, err
+			}
+			if n, _ := res.RowsAffected(); n > 0 {
+				stats.Rooms++
+			}
+		}
+		if _, err := tx.ExecContext(ctx,
+			`INSERT INTO rooms (room_id, room_type, status, booked_on, check_out_on)
+			 VALUES (?, ?, ?, ?, ?)`,
+			room.RoomID, room.RoomType, room.Status, room.BookedOn, nullStr(room.CheckOutOn)); err != nil {
+			return stats, err
+		}
+		stats.Rooms++
+		for _, stay := range room.Stays {
+			if stay.StayID == "" || stay.ArrivalDate == "" {
+				continue
+			}
+			if err := registerGuest(ctx, tx, stay.GuestID, room.RoomID, &stats); err != nil {
+				return stats, err
+			}
+			if _, err := tx.ExecContext(ctx,
+				`INSERT INTO stays (stay_id, arrival_date, departure_date, room_id, guest_id)
+				 VALUES (?, ?, ?, ?, ?)`,
+				stay.StayID, stay.ArrivalDate, stay.DepartureDate, stay.RoomID, nullStr(stay.GuestID)); err != nil {
+				return stats, err
+			}
+			stats.Stays++
+		}
+	}
+	return stats, tx.Commit()
+}
+
+// LoadIfEmpty ensures the hotel database is loaded only when it is empty.
+func LoadIfEmpty(ctx context.Context, db *sql.DB, filePath string) (bool, BookingStats, error) {
+	var count int
+	if err := db.QueryRowContext(ctx, `SELECT count(*) FROM rooms`).Scan(&count); err != nil {
+		return false, BookingStats{}, err
+	}
+	if count != 0 {
+		return false, BookingStats{}, nil
+	}
+	bookingStats, err := ReloadFromSeed(ctx, db, filePath)
+	return err == nil, bookingStats, err
+}

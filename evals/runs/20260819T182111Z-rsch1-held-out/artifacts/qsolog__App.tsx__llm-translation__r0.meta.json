@@ -1,0 +1,45 @@
+{
+  "key": "qsolog__App.tsx__llm-translation__r0",
+  "arm": "llm-translation",
+  "replicate": 0,
+  "source_path": "corpus/qsolog/app/src/App.tsx",
+  "source_sha256": "4aed4ed99fc5c4025e8e889ca51df9fbf39352f7f544a0c090ce938fefeebc8d",
+  "true_domain_id": "ham-radio-logbook",
+  "language": "tsx",
+  "artifact_sha256": "76ea833655b2eb43481930ade83976f76ca19aad04e060e9313ad2b111336763",
+  "artifact_lines": 178,
+  "latency_s": 11.8,
+  "solution_meta": {
+    "model": "Qwen/Qwen2.5-Coder-7B-Instruct",
+    "base_url": "https://router.huggingface.co/v1",
+    "target_domain": "a wildlife tracking system with species, sightings, and migration routes",
+    "target_id": "wildlife-tracker",
+    "temperature": 0.2,
+    "postcondition": {
+      "src_code_lines": 164,
+      "husk_code_lines": 162,
+      "similarity_ratio": 0.471,
+      "ident_retention": 0.555,
+      "code_verbatim": 0.389,
+      "longest_identical_run": 6,
+      "longest_identical_run_share": 0.037,
+      "copied_spans": 3,
+      "copied_span_lines": 16,
+      "copied_span_share": 0.098,
+      "thresholds": {
+        "run_lines": 999999,
+        "run_share": 9.0,
+        "copied_share": 9.0,
+        "retention": 9.0,
+        "ratio": 9.0,
+        "min_code_lines": 12
+      },
+      "verdict": "ok"
+    },
+    "usage": {
+      "prompt_tokens": 2515,
+      "completion_tokens": 1465,
+      "total_tokens": 3980
+    }
+  }
+}

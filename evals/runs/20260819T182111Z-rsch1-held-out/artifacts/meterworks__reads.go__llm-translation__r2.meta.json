@@ -1,0 +1,45 @@
+{
+  "key": "meterworks__reads.go__llm-translation__r2",
+  "arm": "llm-translation",
+  "replicate": 2,
+  "source_path": "corpus/meterworks/api/internal/api/reads.go",
+  "source_sha256": "c6f4d52392420511c2fe190aa7343e57e40df7ade0b830e99ef22a8afa85d780",
+  "true_domain_id": "water-utility-metering",
+  "language": "go",
+  "artifact_sha256": "935c7b48d11917454a69b4ba074a8c3526f2a0bb2f40b61ba592cabb91ae4017",
+  "artifact_lines": 241,
+  "latency_s": 16.0,
+  "solution_meta": {
+    "model": "Qwen/Qwen2.5-Coder-7B-Instruct",
+    "base_url": "https://router.huggingface.co/v1",
+    "target_domain": "abstract graph traversal over labelled nodes",
+    "target_id": "graph-traversal",
+    "temperature": 0.2,
+    "postcondition": {
+      "src_code_lines": 242,
+      "husk_code_lines": 208,
+      "similarity_ratio": 0.597,
+      "ident_retention": 0.521,
+      "code_verbatim": 0.582,
+      "longest_identical_run": 13,
+      "longest_identical_run_share": 0.054,
+      "copied_spans": 6,
+      "copied_span_lines": 48,
+      "copied_span_share": 0.198,
+      "thresholds": {
+        "run_lines": 999999,
+        "run_share": 9.0,
+        "copied_share": 9.0,
+        "retention": 9.0,
+        "ratio": 9.0,
+        "min_code_lines": 12
+      },
+      "verdict": "ok"
+    },
+    "usage": {
+      "prompt_tokens": 3694,
+      "completion_tokens": 2055,
+      "total_tokens": 5749
+    }
+  }
+}

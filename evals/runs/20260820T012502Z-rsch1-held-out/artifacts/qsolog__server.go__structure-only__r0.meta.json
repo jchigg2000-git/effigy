@@ -1,0 +1,77 @@
+{
+  "key": "qsolog__server.go__structure-only__r0",
+  "arm": "structure-only",
+  "replicate": 0,
+  "source_path": "corpus/qsolog/api/internal/api/server.go",
+  "source_sha256": "012e2038364271c9e81260762b8d5988c43f216116e7469a8679a316900e0780",
+  "true_domain_id": "ham-radio-logbook",
+  "language": "go",
+  "artifact_sha256": "8f326155ea46a5dc7e81eb31cbd6dde35521758f752e484f61e1d0a08adddf41",
+  "artifact_lines": 131,
+  "latency_s": 0.1,
+  "solution_meta": {
+    "generated_by": "evals/canonicalize.py",
+    "preserved_tokens": [
+      "DB",
+      "Getenv",
+      "Handler",
+      "HandlerFunc",
+      "Logger",
+      "MethodOptions",
+      "NewEncoder",
+      "Request",
+      "ResponseWriter",
+      "Split",
+      "StatusInternalServerError",
+      "StatusNoContent",
+      "StatusOK",
+      "StatusServiceUnavailable",
+      "TrimSpace",
+      "_",
+      "any",
+      "append",
+      "error",
+      "http",
+      "int",
+      "json",
+      "len",
+      "nil",
+      "os",
+      "slog",
+      "sql",
+      "string",
+      "strings",
+      "v5"
+    ],
+    "preserved_import_paths": [
+      "\"database/sql\"",
+      "\"encoding/json\"",
+      "\"github.com/go-chi/chi/v5\"",
+      "\"log/slog\"",
+      "\"net/http\"",
+      "\"os\"",
+      "\"strings\""
+    ],
+    "n_idents_canonicalised": 60,
+    "n_strings_canonicalised": 41,
+    "n_runes_canonicalised": 0,
+    "n_numbers_canonicalised": 0,
+    "counters_delta": {
+      "lines": 0,
+      "bytes": 300,
+      "funcs": 0,
+      "structs": 0,
+      "interfaces": 0,
+      "imports": 0,
+      "exports": 0,
+      "string_literals": 0,
+      "max_brace_depth": 0
+    },
+    "blind_delta": {
+      "bytes": [
+        3912,
+        4212
+      ]
+    }
+  }
+}

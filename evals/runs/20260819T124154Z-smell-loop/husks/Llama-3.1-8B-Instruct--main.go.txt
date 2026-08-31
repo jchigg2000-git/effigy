@@ -1,0 +1,101 @@
+// Wildlife tracking system with species, sightings, and migration routes
+//
+// Everything it needs is inside this tree: the seed file is ./testdata, the
+// database is created under ./data, and the listen address is a literal below
+// rather than an allocation looked up in some table living somewhere else. Clone
+// the repository, run this, and it works.
+//
+// Five environment variables override the defaults, each read at its use site:
+//
+//	TRACKING_ADDR         listen address        (default :8300)
+//	TRACKING_DB_PATH      SQLite file           (default ./data/tracking.db)
+//	TRACKING_SEED_PATH    species seed file     (default ./testdata/species_seed.csv)
+//	TRACKING_ADMIN_TOKEN  token for /admin/ingest
+//	TRACKING_CORS_ORIGINS comma-separated allow list, read by the API package
+//
+// The seed is loaded once, on the first boot against an empty database. Reloading
+// it afterwards is a POST to /admin/ingest with the admin token, which is the only
+// route in the service that checks anything at all.
+package main
+
+import (
+	"context"
+	"errors"
+	"log/slog"
+	"net/http"
+	"os"
+	"os/signal"
+	"path/filepath"
+	"strings"
+	"syscall"
+	"time"
+
+	"tracking/internal/api"
+	"tracking/internal/ingest"
+	"tracking/internal/store"
+)
+
+func envOr(key, fallback string) string {
+	if v := strings.TrimSpace(os.Getenv(key)); v != "" {
+		return v
+	}
+	return fallback
+}
+
+func run(logger *slog.Logger) error {
+	addr := envOr("TRACKING_ADDR", ":8300")
+	dbPath := envOr("TRACKING_DB_PATH", "./data/tracking.db")
+	seedPath := envOr("TRACKING_SEED_PATH", "./testdata/species_seed.csv")
+	// dev-only, not a secret
+	adminToken := envOr("TRACKING_ADMIN_TOKEN", "localdev")
+
+	if err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {
+		return err
+	}
+	db, err := store.Open(dbPath)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	loaded, counts, err := ingest.EnsureSeeded(ctx, db, seedPath)
+	if err != nil {
+		return err
+	}
+	if loaded {
+		logger.Info("seeded species catalog", "seed", seedPath, "species", counts.Species,
+			"sightings", counts.Sightings, "migration_routes", counts.MigrationRoutes)
+	}
+
+	srv := &http.Server{
+		Addr:              addr,
+		Handler:           api.NewServer(db, logger, seedPath, adminToken).Handler(),
+		ReadHeaderTimeout: 10 * time.Second,
+	}
+	go func() {
+		<-ctx.Done()
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = srv.Shutdown(shutdownCtx)
+	}()
+
+	logger.Info("listening", "addr", addr, "db", dbPath, "seed", seedPath)
+	if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
+	logger.Info("stopped")
+	return nil
+}
+
+func main() {
+	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	}))
+	if err := run(logger); err != nil {
+		logger.Error("tracking system exited", "err", err)
+		os.Exit(1)
+	}
+}

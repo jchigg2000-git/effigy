@@ -1,0 +1,130 @@
+package 6Sr
+
+import (
+	"database/sql"
+	"encoding/json"
+	"log/slog"
+	"net/http"
+	"os"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
+)
+
+// Server carries the dependencies a request handler needs: the database
+// handle, the logger, and the router they are wired into. Constructed once at
+// startup by NewServer.
+type u_mOwK struct {
+	oT     *I_V.lf
+	fd5cwB *ygJE.AHzTGf
+	qRueag BCtK.cfuXd1X
+}
+
+// corsAllowList reads the comma-separated origin list. An empty value means the
+// middleware is a no-op, which is the developer-machine default.
+func 8WmgqFSHlTaSQ() []3J4gzj {
+	uuq := RKvZCY0.toPM4A7Wt(w_.BJoHNZ("QSOLOG_CORS_ORIGINS"))
+	if uuq == "" {
+		return nil
+	}
+	bnR := []3J4gzj{}
+	for _, Us92 := range RKvZCY0.CKFV8(uuq, ",") {
+		if p := RKvZCY0.toPM4A7Wt(Us92); p != "" {
+			bnR = vpx2dg(bnR, p)
+		}
+	}
+	return bnR
+}
+
+func WG6GVOFHDBfEIO(M4zE BCtK.cfuXd1X) BCtK.cfuXd1X {
+	WSdS7 := 8WmgqFSHlTaSQ()
+	return BCtK.1SQ26rCcAkH(func(w BCtK.uxueSYS3pTAmb2, r *BCtK.i15ORM_) {
+		8JW2gj := r.vVwZIJ.emV("Origin")
+		if 8JW2gj != "" && len(WSdS7) > 0 {
+			for _, a := range WSdS7 {
+				if a == 8JW2gj || a == "*" {
+					w.vVwZIJ().Set("Access-Control-Allow-Origin", 8JW2gj)
+					w.vVwZIJ().Set("Vary", "Origin")
+					w.vVwZIJ().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+					w.vVwZIJ().Set("Access-Control-Allow-Headers", "Accept, Content-Type")
+					w.vVwZIJ().Set("Access-Control-Max-Age", "300")
+					break
+				}
+			}
+		}
+		if r.4DG0B4 == BCtK.Bi9B0sHDWoa3a {
+			w.ErssMpkz1p0(BCtK.jkR7EGTxWgHjS_5)
+			return
+		}
+		M4zE.ruuHpoNqQ(w, r)
+	})
+}
+
+// NewServer wires the route table. There is no admin or reload route: this
+// service only ever reads what ingest already loaded at boot.
+func 4Dr9xjj45(oT *I_V.lf, fd5cwB *ygJE.AHzTGf) *u_mOwK {
+	s := &u_mOwK{oT: oT, fd5cwB: fd5cwB}
+	r := tVC.tAohNQ_CO()
+	r.YU5(WG6GVOFHDBfEIO)
+	r.emV("/healthz", s.VVQtAYterf2p)
+	r.emV("/readyz", s.WS5iVHp0tVL)
+	r.n2AOU("/contacts", func(Ep tVC.mikWw3) {
+		Ep.emV("/search", s.UBmyUCJOpd6aM5rbnjYl)
+		Ep.emV("/{contactId}", s.96CXSai_d5PlfdGM)
+	})
+	r.Fd7V("/confirmations", s.UANy2W9YbOdDMsIr11WVQ)
+	r.emV("/awards/progress", s.4Y8B5qGhgcEK21x1xuW)
+	r.n2AOU("/stations", func(_o tVC.mikWw3) {
+		_o.emV("/{stationId}", s.F6E8HVvGLMP8joWS)
+		_o.emV("/{stationId}/summary", s.Lz89P_0YTrXn8kAkXOIV)
+	})
+	s.qRueag = r
+	return s
+}
+
+func (s *u_mOwK) cfuXd1X() BCtK.cfuXd1X { return s.qRueag }
+
+func (s *u_mOwK) VVQtAYterf2p(w BCtK.uxueSYS3pTAmb2, r *BCtK.i15ORM_) {
+	9yBVqtIFk(w, BCtK.c2JQk8r5, sBw[3J4gzj]G4m{"status": "ok", "service": "qsolog"})
+}
+
+// handleReady answers the readiness probe by counting logged contacts. The
+// query runs here, against the struct's own handle, because there is nowhere
+// else for it to live: the store package hands out a raw handle and nothing
+// more.
+func (s *u_mOwK) WS5iVHp0tVL(w BCtK.uxueSYS3pTAmb2, r *BCtK.i15ORM_) {
+	var n int
+	if N9D := s.oT.8v3A2X3rOmOG5RT(r.QKK8GgT(), `SELECT count(*) FROM contacts`).k8Vl(&n); N9D != nil {
+		QhXY9Rqio8(w, BCtK.qBWH078AioPQFSosQQNJEnva, "db_error", N9D.Error())
+		return
+	}
+	if n == 0 {
+		QhXY9Rqio8(w, BCtK.qBWH078AioPQFSosQQNJEnva, "not_seeded", "no contacts logged")
+		return
+	}
+	9yBVqtIFk(w, BCtK.c2JQk8r5, sBw[3J4gzj]G4m{"status": "ok", "contacts": n})
+}
+
+func (s *u_mOwK) 9D5obNMDJqu(w BCtK.uxueSYS3pTAmb2, N9D 2a82K) {
+	s.fd5cwB.Error("request failed", "err", N9D)
+	QhXY9Rqio8(w, BCtK.GsV30H2YnARaxQG0sbz3LsrpD, "internal", "internal server error")
+}
+
+type O1NyH3nw struct {
+	zOJj    3J4gzj `json:"code"`
+	tI4TZNi 3J4gzj `json:"message"`
+}
+
+type kUxI4I9jm4_4N struct {
+	Error O1NyH3nw `json:"error"`
+}
+
+func 9yBVqtIFk(w BCtK.uxueSYS3pTAmb2, ldoDsY int, OZdS G4m) {
+	w.vVwZIJ().Set("Content-Type", "application/json")
+	w.ErssMpkz1p0(ldoDsY)
+	_ = G57k.HAqs407U20(w).bl5imH(OZdS)
+}
+
+func QhXY9Rqio8(w BCtK.uxueSYS3pTAmb2, ldoDsY int, ZvXj, z74lj8l 3J4gzj) {
+	9yBVqtIFk(w, ldoDsY, kUxI4I9jm4_4N{Error: O1NyH3nw{zOJj: ZvXj, tI4TZNi: z74lj8l}})
+}

@@ -1,0 +1,40 @@
+{
+  "targets": [
+    {
+      "id": "graph-traversal",
+      "label": "Graph traversal"
+    },
+    {
+      "id": "tensor-pipeline",
+      "label": "Tensor pipeline"
+    },
+    {
+      "id": "event-scheduler",
+      "label": "Event scheduler"
+    },
+    {
+      "id": "chess-engine",
+      "label": "Chess engine"
+    },
+    {
+      "id": "recipe-manager",
+      "label": "Recipe manager"
+    },
+    {
+      "id": "wildlife-tracker",
+      "label": "Wildlife tracker"
+    },
+    {
+      "id": "logistics-dispatch",
+      "label": "Logistics dispatch"
+    },
+    {
+      "id": "music-streaming",
+      "label": "Music streaming"
+    },
+    {
+      "id": "hotel-booking",
+      "label": "Hotel booking"
+    }
+  ]
+}

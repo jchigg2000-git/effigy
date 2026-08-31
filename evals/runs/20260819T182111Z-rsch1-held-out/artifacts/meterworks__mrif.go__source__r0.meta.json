@@ -1,0 +1,13 @@
+{
+  "key": "meterworks__mrif.go__source__r0",
+  "arm": "source",
+  "replicate": 0,
+  "source_path": "corpus/meterworks/api/internal/ingest/mrif.go",
+  "source_sha256": "b951f6b52d9a30e19e57ffcc2af53f2f72bdb2f1c20f8243bf60ba0c0d01b05c",
+  "true_domain_id": "water-utility-metering",
+  "language": "go",
+  "artifact_sha256": "b951f6b52d9a30e19e57ffcc2af53f2f72bdb2f1c20f8243bf60ba0c0d01b05c",
+  "artifact_lines": 235,
+  "latency_s": 0.0,
+  "solution_meta": {}
+}

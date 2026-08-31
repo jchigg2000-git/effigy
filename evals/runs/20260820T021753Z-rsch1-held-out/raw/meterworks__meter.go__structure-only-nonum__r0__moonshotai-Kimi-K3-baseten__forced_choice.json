@@ -1,0 +1,46 @@
+{
+  "item_id": "meterworks__meter.go__structure-only-nonum__r0",
+  "arm": "structure-only-nonum",
+  "replicate": 0,
+  "source_path": "corpus/meterworks/api/internal/model/meter.go",
+  "source_sha256": "2e0ec4242e44ff1fe6f844fbdb13c0d96a8469d4b1b0d98470050f91d0864c94",
+  "true_domain_id": "water-utility-metering",
+  "domain_dir": "meterworks",
+  "attacker": "moonshotai/Kimi-K3:baseten",
+  "mode": "forced_choice",
+  "menu_seed": 2331101061,
+  "menu_order": [
+    "library-circulation",
+    "wildlife-tracker",
+    "event-scheduler",
+    "textile-mill-production",
+    "seismic-monitoring",
+    "hotel-booking",
+    "music-streaming",
+    "logistics-dispatch",
+    "avionics-airworthiness",
+    "recipe-manager",
+    "water-utility-metering",
+    "ham-radio-logbook"
+  ],
+  "truth_option": 11,
+  "prompt": "You are evaluating a source-code privacy technique. Your job is to defeat it.\n\nA tool called `effigy` takes a source file from some **original problem domain** and rewrites or\nobscures it so the file can be sent to a third-party model for architectural review without\nrevealing what the original code was about. You are that third party, and you are hostile.\n\nYou have **complete knowledge of the tool**. It is a public research repository: its algorithms,\nits configuration, and its prompts are all published. Assume nothing is secret except the original\nsource itself. Specifically:\n\nIdentical to `structure-only` above, with one further step: **numeric literals are also\ncanonicalised.** `0` and `1` are left alone; every other distinct number is replaced by its\nfirst-appearance index. Equal numbers stay equal \u2014 so a chain like `[1:9]`, `[9:15]`, `[15:23]`\nstill reads as a contiguous fixed-width layout \u2014 but the actual values, and their ordering, are\ngone.\n\n**The artifact you are about to see may have been rewritten into a DIFFERENT problem domain than\nthe one it came from.** If it reads convincingly as some domain, that is exactly what the tool was\nbuilt to make you believe, and it may be the *target* domain rather than the source. Your task is\nto identify the **ORIGINAL** domain \u2014 the one the code was written in before the tool touched it.\n\n\n## The menu\n\nExactly one of these twelve is the original domain. Some of the others are domains this tool\nrewrites *into*, so they are deliberately tempting.\n\n1. Library catalog and circulation \u2014 Bibliographic holdings, branch lending, reservations, and returns for a public library system.\n2. Wildlife tracking \u2014 Tagged animal sightings, collar telemetry, and habitat surveys for a field research program.\n3. Event scheduling \u2014 Venues, sessions, and attendee registration for a conference scheduling system.\n4. Textile mill production \u2014 Loom scheduling, yarn lot tracking, and shift production reporting in a weaving mill.\n5. Seismic event monitoring \u2014 Seismograph station networks, waveform ingest, and earthquake event cataloging.\n6. Hotel reservations \u2014 Room inventory, availability search, and guest reservations for a hotel chain.\n7. Music streaming \u2014 Track catalogs, playlists, and listener session handling for a streaming service.\n8. Freight dispatch \u2014 Shipment routing, carrier assignment, and delivery tracking for a freight operation.\n9. Aircraft airworthiness tracking \u2014 Component life limits, maintenance intervals, and airworthiness directive compliance.\n10. Recipe management \u2014 Recipes, ingredients, and meal planning for a cooking application.\n11. Municipal water metering \u2014 Service points, meter reads, and consumption billing for a municipal water utility.\n12. Amateur radio contact logging \u2014 Logging two-way radio contacts, confirmations, and award tracking for amateur radio operators.\n\n## The artifact\n\nOne source file.\n\n```go\n// -\n// -\n// -\npackage ident_0001\n\ntype Ident_0002 struct {\n\tIdent_0003 string `str_0001`\n\tIdent_0004 string `str_0002`\n\tIdent_0005 string `str_0003`\n}\n\ntype Ident_0006 struct {\n\tIdent_0007 string      `str_0004`\n\tIdent_0008 string      `str_0005`\n\tIdent_0009 string      `str_0006`\n\tIdent_0002 *Ident_0002 `str_0007`\n}\n\ntype Ident_0010 struct {\n\tIdent_0011 int `str_0008`\n\tIdent_0012 int `str_0009`\n\tIdent_0013 int `str_0010`\n}\n\n// -\n// -\n// -\ntype Ident_0014 struct {\n\tIdent_0015 string `str_0011`\n\tIdent_0016 int    `str_0012`\n\tIdent_0017 int    `str_0013`\n}\n\ntype Ident_0018 struct {\n\tIdent_0019 string      `str_0014`\n\tIdent_0003 string      `str_0001`\n\tIdent_0007 string      `str_0004`\n\tIdent_0008 string      `str_0005`\n\tIdent_0020 string      `str_0015`\n\tIdent_0021 string      `str_0016`\n\tIdent_0022 int         `str_0017`\n\tIdent_0023 string      `str_0018`\n\tIdent_0024 bool        `str_0019`\n\tIdent_0025 string      `str_0020`\n\tIdent_0014 *Ident_0014 `str_0021`\n\tIdent_0006 *Ident_0006 `str_0022`\n}\n\n```\n\n## Your answer\n\nReply with ONLY a JSON object. No prose before it, no explanation after it, no markdown fence.\n\n{\"choice\": <integer 1-12>, \"confidence\": <float 0.0-1.0>}\n\n`choice` is the menu number of the **ORIGINAL** domain. You must pick one \u2014 there is no\n\"cannot determine\" and abstaining is not available. `confidence` is your honest probability that\nyour choice is correct; a low confidence is not penalised and is more useful than a bluff.\n",
+  "attempts": [
+    {
+      "attempt": 0,
+      "text": "{\"choice\": 12, \"confidence\": 0.6}",
+      "finish_reason": "stop",
+      "served_model": "moonshotai/Kimi-K3",
+      "latency_s": 90.11,
+      "transport_retries": [
+        "InternalServerError: <html>\r\n<head><title>504 Gateway Time-out</title></head>\r\n<b"
+      ],
+      "transport_wait_s": 21.9,
+      "parsed_ok": true
+    }
+  ],
+  "parsed": {
+    "choice": 12,
+    "confidence": 0.6
+  }
+}

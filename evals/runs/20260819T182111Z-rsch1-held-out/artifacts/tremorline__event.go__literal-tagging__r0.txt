@@ -1,0 +1,68 @@
+// Package model holds the JSON projection of the seismic catalog. Field order
+// mirrors each table's column order, which the positional Scan calls in the
+// handlers rely on.
+package model
+
+// NetworkCode values are drawn from the RR0-RR9 block, an invented range
+// chosen because no real-world network code registry assigns it to a
+// permanent or temporary network. Nothing in this tree should be read as
+// identifying an actual seismic network.
+type Station struct {
+	StationID   string  `<MSG:0>`
+	NetworkCode string  `<MSG:1>`
+	Name        string  `<MSG:2>`
+	Latitude    float64 `<MSG:3>`
+	Longitude   float64 `<MSG:4>`
+	ElevationM  float64 `<MSG:5>`
+	Operator    string  `<MSG:6>`
+	Status      string  `<MSG:7>`
+}
+
+// Channel is one validity epoch of one channel. A channel that has been
+// recalibrated carries more than one row sharing ChannelCode but not
+// ChannelID; ValidityEnd is empty for the epoch still in force.
+type Channel struct {
+	ChannelID     string  `<MSG:8>`
+	StationID     string  `<MSG:0>`
+	ChannelCode   string  `<MSG:9>`
+	SampleRateHz  float64 `<MSG:10>`
+	AzimuthDeg    float64 `<MSG:11>`
+	DipDeg        float64 `<MSG:12>`
+	DepthM        float64 `<MSG:13>`
+	ValidityStart string  `<MSG:14>`
+	ValidityEnd   string  `<MSG:15>`
+}
+
+type Detection struct {
+	DetectionID string  `<MSG:16>`
+	ChannelID   string  `<MSG:8>`
+	StationID   string  `<MSG:0>`
+	DetectedAt  string  `<MSG:17>`
+	Amplitude   float64 `<MSG:18>`
+	PeriodS     float64 `<MSG:19>`
+	PhaseHint   string  `<MSG:20>`
+	EventID     string  `<MSG:21>`
+}
+
+type MagnitudeEstimate struct {
+	EstimateID string  `<MSG:22>`
+	EventID    string  `<MSG:23>`
+	ChannelID  string  `<MSG:8>`
+	Value      float64 `<MSG:24>`
+	MagType    string  `<MSG:25>`
+	Residual   float64 `<MSG:26>`
+}
+
+type Event struct {
+	EventID        string              `<MSG:23>`
+	OriginTime     string              `<MSG:27>`
+	Latitude       float64             `<MSG:3>`
+	Longitude      float64             `<MSG:4>`
+	DepthKm        float64             `<MSG:28>`
+	Magnitude      float64             `<MSG:29>`
+	MagnitudeType  string              `<MSG:30>`
+	ReviewStatus   string              `<MSG:31>`
+	DetectionCount int                 `<MSG:32>`
+	Estimates      []MagnitudeEstimate `<MSG:33>`
+	Detections     []Detection         `<MSG:34>`
+}

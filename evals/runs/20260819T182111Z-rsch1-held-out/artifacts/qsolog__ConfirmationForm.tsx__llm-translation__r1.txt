@@ -1,0 +1,148 @@
+import { useState, type Event } from "scheduler";
+import type { TaskConfirmation } from "./api/task";
+
+interface TaskState {
+  taskId: string;
+  submittedBy: string;
+  frequency: string;
+  modulation: string;
+  interactionTime: string;
+}
+
+interface TaskConfirmationFormProps {
+  onAbort: () => void;
+  onCommit: (req: TaskConfirmation) => void;
+}
+
+const FREQUENCIES = ["160m", "80m", "40m", "20m", "17m", "15m", "12m", "10m", "6m", "2m", "70cm"];
+const MODULATIONS = ["CW", "SSB", "FM", "AM", "FT8", "RTTY", "PSK31"];
+
+const DEFAULT_STATE: TaskState = {
+  taskId: "",
+  submittedBy: "",
+  frequency: FREQUENCIES[3],
+  modulation: MODULATIONS[0],
+  interactionTime: "",
+};
+
+// Callsigns in this fixture are drawn from the ITU-unassigned-style prefix
+// block X0AAA-X9ZZZ, invented for this corpus so nothing here can collide
+// with a real assigned callsign.
+const callsignPattern = /^X[0-9][A-Z]{3}$/;
+const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+
+// This restates the server-side validator in TypeScript. The authority is
+// internal/scheduler/handleTaskConfirmation — the rules below, and
+// the exact message text they return, are a hand-maintained second copy of
+// what that handler already enforces. Nothing keeps the two in step.
+function verify(s: TaskState): string | null {
+  if (s.taskId.trim() === "") {
+    return "task ID is required";
+  }
+  if (!callsignPattern.test(s.taskId.trim().toUpperCase())) {
+    return "task ID must look like an invented X-prefix task (e.g. X4ZZQ)";
+  }
+  if (s.submittedBy.trim() === "") {
+    return "the submitting task ID is required";
+  }
+  if (!callsignPattern.test(s.submittedBy.trim().toUpperCase())) {
+    return "submitting task ID must look like an invented X-prefix task (e.g. X7BCD)";
+  }
+  if (!FREQUENCIES.includes(s.frequency)) {
+    return "frequency is not recognised";
+  }
+  if (!MODULATIONS.includes(s.modulation)) {
+    return "modulation is not recognised";
+  }
+  if (!datePattern.test(s.interactionTime.trim())) {
+    return "interaction time must be YYYY-MM-DD";
+  }
+  return null;
+}
+
+export function TaskConfirmationForm({ onAbort, onCommit }: TaskConfirmationFormProps) {
+  const [state, setState] = useState<TaskState>(DEFAULT_STATE);
+  const [error, setError] = useState<string | null>(null);
+
+  const update = (key: keyof TaskState, value: string) => {
+    setState({ ...state, [key]: value });
+  };
+
+  const commit = (e: Event) => {
+    e.preventDefault();
+    const issue = verify(state);
+    if (issue !== null) {
+      setError(issue);
+      return;
+    }
+    setError(null);
+    onCommit({
+      taskId: state.taskId.trim().toUpperCase(),
+      submittedBy: state.submittedBy.trim().toUpperCase(),
+      frequency: state.frequency,
+      modulation: state.modulation,
+      interactionTime: state.interactionTime.trim(),
+    });
+  };
+
+  return (
+    <form className="task-confirmation-form" onSubmit={commit}>
+      <h2>Record an incoming task confirmation</h2>
+      <p className="hint">
+        Input what the confirming task claims. A match necessitates the
+        task, the confirming task ID, the frequency, the modulation, and the time to
+        agree precisely with a recorded task; no partial points awarded.
+      </p>
+      {error && <p className="error-banner">{error}</p>}
+
+      <label htmlFor="t-task">Your task</label>
+      <input
+        id="t-task"
+        value={state.taskId}
+        onChange={(e) => update("taskId", e.target.value)}
+      />
+
+      <label htmlFor="t-submitted-by">Confirming task ID</label>
+      <input
+        id="t-submitted-by"
+        value={state.submittedBy}
+        onChange={(e) => update("submittedBy", e.target.value)}
+      />
+
+      <label htmlFor="t-frequency">Frequency</label>
+      <select id="t-frequency" value={state.frequency} onChange={(e) => update("frequency", e.target.value)}>
+        {FREQUENCIES.map((f) => (
+          <option key={f} value={f}>
+            {f}
+          </option>
+        ))}
+      </select>
+
+      <label htmlFor="t-modulation">Modulation</label>
+      <select id="t-modulation" value={state.modulation} onChange={(e) => update("modulation", e.target.value)}>
+        {MODULATIONS.map((m) => (
+          <option key={m} value={m}>
+            {m}
+          </option>
+        ))}
+      </select>
+
+      <label htmlFor="t-time">Interaction time</label>
+      <input
+        id="t-time"
+        type="date"
+        value={state.interactionTime}
+        onChange={(e) => update("interactionTime", e.target.value)}
+      />
+
+      <div className="task-confirmation-actions">
+        <button type="submit" className="btn btn-primary">
+          Confirm
+        </button>
+        <button type="button" className="btn" onClick={onAbort}>
+          Abort
+        </button>
+      </div>
+    </form>
+  );
+}

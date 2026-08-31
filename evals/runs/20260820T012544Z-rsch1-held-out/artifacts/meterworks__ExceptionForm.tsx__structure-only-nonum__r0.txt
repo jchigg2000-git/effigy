@@ -1,0 +1,133 @@
+import { useState, type FormEvent } from "react";
+import type { Ident_0001, Ident_0002 } from "str_0001";
+
+interface Ident_0003 {
+  ident_0004: boolean;
+  ident_0005: string;
+  ident_0006: boolean;
+}
+
+interface Ident_0007 {
+  ident_0008: Ident_0002;
+  ident_0009: boolean;
+  ident_0010: () => void;
+  ident_0011: (ident_0012: Ident_0001) => void;
+}
+
+const Ident_0013 = ["str_0002", "str_0003", "str_0004", "str_0005"];
+
+function ident_0014(ident_0015: Ident_0002): Ident_0003 {
+  return {
+    ident_0004: ident_0015.ident_0004,
+    ident_0005: ident_0015.ident_0016 ?? "str_0006",
+    ident_0006: false,
+  };
+}
+
+// -
+// -
+// -
+// -
+function ident_0017(ident_0018: Ident_0003): string | null {
+  if (ident_0018.ident_0005 !== "str_0006" && !Ident_0013.ident_0019(ident_0018.ident_0005)) {
+    return `str_0007${Ident_0013.ident_0020("str_0008")}str_0009`;
+  }
+  if (!ident_0018.ident_0004 && ident_0018.ident_0006) {
+    return "str_0010";
+  }
+  return null;
+}
+
+// -
+// -
+// -
+function ident_0021(ident_0015: Ident_0002, ident_0018: Ident_0003): Ident_0001 {
+  const ident_0012: Ident_0001 = {};
+  if (ident_0018.ident_0004 !== ident_0015.ident_0004) {
+    ident_0012.ident_0004 = ident_0018.ident_0004;
+  }
+  const ident_0005 = ident_0018.ident_0005.ident_0022();
+  if (ident_0005 !== (ident_0015.ident_0016 ?? "str_0006")) {
+    ident_0012.ident_0005 = ident_0005;
+  }
+  if (ident_0018.ident_0006) {
+    ident_0012.ident_0006 = true;
+  }
+  return ident_0012;
+}
+
+export function Ident_0023({ ident_0008, ident_0009, ident_0010, ident_0011 }: Ident_0007) {
+  const [ident_0024, ident_0025] = useState<Ident_0003>(() => ident_0014(ident_0008));
+  const [ident_0026, ident_0027] = useState<string | null>(null);
+
+  const ident_0028 = (ident_0029: FormEvent) => {
+    ident_0029.ident_0030();
+    const ident_0031 = ident_0017(ident_0024);
+    if (ident_0031 !== null) {
+      ident_0027(ident_0031);
+      return;
+    }
+    ident_0027(null);
+    ident_0011(ident_0021(ident_0008, ident_0024));
+  };
+
+  return (
+    <form className="str_0011" onSubmit={ident_0028}>
+      <h2>str_0012{ident_0008.ident_0032}</h2>
+      {ident_0026 && <p className="str_0013">{ident_0026}</p>}
+      <p className="str_0014">
+        str_0015{ident_0008.ident_0033} str_0016{ident_0008.ident_0034}str_0017{ident_0008.ident_0035}str_0018
+
+</p>
+
+      <label htmlFor="str_0019">
+        <input
+          id="str_0019"
+          type="str_0020"
+          checked={ident_0024.ident_0004}
+          onChange={(ident_0029) => ident_0025({ ...ident_0024, ident_0004: ident_0029.ident_0036.ident_0037 })}
+        />
+        str_0021
+</label>
+
+      <label htmlFor="str_0022">str_0023</label>
+      <select
+        id="str_0022"
+        value={ident_0024.ident_0005}
+        onChange={(ident_0029) => ident_0025({ ...ident_0024, ident_0005: ident_0029.ident_0036.ident_0038 })}
+      >
+        <option value="str_0006">str_0024</option>
+        {Ident_0013.ident_0039((ident_0040) => (
+          <option key={ident_0040} value={ident_0040}>
+            {ident_0040}
+          </option>
+        ))}
+      </select>
+
+      <label htmlFor="str_0025">
+        <input
+          id="str_0025"
+          type="str_0020"
+          checked={ident_0024.ident_0006}
+          disabled={!ident_0024.ident_0004}
+          onChange={(ident_0029) => ident_0025({ ...ident_0024, ident_0006: ident_0029.ident_0036.ident_0037 })}
+        />
+        str_0026
+</label>
+
+      <p className="str_0014">
+        str_0027
+
+</p>
+
+      <div className="str_0028">
+        <button type="str_0029" className="str_0030" disabled={ident_0009}>
+          {ident_0009 ? "str_0031" : "str_0032"}
+        </button>
+        <button type="str_0033" className="str_0034" onClick={ident_0010} disabled={ident_0009}>
+          str_0035
+</button>
+      </div>
+    </form>
+  );
+}

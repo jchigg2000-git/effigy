@@ -1,0 +1,64 @@
+// Package model represents the JSON projection of the seismic catalog. Field order
+// mirrors each table's column order, which the positional Scan calls in the
+// handlers rely on.
+package model
+
+// NodeLabel values are drawn from the A-Z block, an invented range
+// chosen because no real-world node label registry assigns it to a
+// permanent or temporary node. Nothing in this tree should be read as
+// identifying an actual seismic node.
+type Node struct {
+	NodeID   string  `json:"nodeId"`
+	Label    string  `json:"label"`
+	Name     string  `json:"name"`
+	Latitude float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
+	ElevationM float64 `json:"elevationM"`
+	Operator   string  `json:"operator"`
+	Status     string  `json:"status"`
+}
+
+// EdgeLabel is one validity epoch of one edge. An edge that has been
+// recalibrated carries more than one row sharing EdgeLabel but not
+// EdgeID; ValidityEnd is empty for the epoch still in force.
+type Edge struct {
+	EdgeID     string  `json:"edgeId"`
+	StartNodeID string  `json:"startNodeId"`
+	EndNodeID   string  `json:"endNodeId"`
+	EdgeLabel   string  `json:"edgeLabel"`
+	Cost       float64 `json:"cost"`
+	Direction    string  `json:"direction"`
+	ValidityStart string  `json:"validityStart"`
+	ValidityEnd   string  `json:"validityEnd,omitempty"`
+}
+
+type Vertex struct {
+	VertexID string  `json:"vertexId"`
+	Label    string  `json:"label"`
+	Name     string  `json:"name"`
+	Latitude float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
+	ElevationM float64 `json:"elevationM"`
+	Operator   string  `json:"operator"`
+	Status     string  `json:"status"`
+}
+
+type Path struct {
+	PathID       string            `json:"pathId"`
+	StartVertexID string            `json:"startVertexId"`
+	EndVertexID   string            `json:"endVertexId"`
+	PathLabel    string            `json:"pathLabel"`
+	Cost         float64           `json:"cost"`
+	Vertices     []Vertex          `json:"vertices,omitempty"`
+	Edges        []Edge            `json:"edges,omitempty"`
+}
+
+type GraphTraversalResult struct {
+	ResultID     string            `json:"resultId"`
+	StartNodeID  string            `json:"startNodeId"`
+	EndNodeID    string            `json:"endNodeId"`
+	PathLabel    string            `json:"pathLabel"`
+	Cost         float64           `json:"cost"`
+	NodesVisited []Node            `json:"nodesVisited,omitempty"`
+	EdgesTraversed []Edge          `json:"edgesTraversed,omitempty"`
+}

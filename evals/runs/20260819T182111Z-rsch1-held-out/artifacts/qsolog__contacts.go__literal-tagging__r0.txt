@@ -1,0 +1,217 @@
+package api
+
+import (
+	"<MSG:0>"
+	"<PATH:0>"
+	"<PATH:1>"
+	"<MSG:1>"
+	"<PATH:2>"
+	"<MSG:2>"
+	"<MSG:3>"
+
+	"<PATH:3>"
+
+	"<PATH:4>"
+)
+
+// validBands and validModes are qsolog'<SQL:0>''<MSG:4>''<MSG:5>''<MSG:6>''<MSG:7>''<MSG:8>''<MSG:9>''<SQL:1>'s own log. At
+// least one filter is required so an empty query cannot walk the whole table.
+func (s *Server) handleSearchContacts(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	conds := []string{}
+	args := []any{}
+	if v := strings.TrimSpace(q.Get("<MSG:10>")); v != "<EMPTY:0>" {
+		conds = append(conds, "<MSG:11>")
+		args = append(args, v)
+	}
+	if v := strings.TrimSpace(q.Get("<MSG:12>")); v != "<EMPTY:0>" {
+		conds = append(conds, "<MSG:13>")
+		args = append(args, strings.ToUpper(v))
+	}
+	if v := strings.TrimSpace(q.Get("<MSG:14>")); v != "<EMPTY:0>" {
+		conds = append(conds, "<MSG:15>")
+		args = append(args, v)
+	}
+	if v := strings.TrimSpace(q.Get("<SQL:2>")); v != "<EMPTY:0>" {
+		conds = append(conds, "<MSG:16>")
+		args = append(args, v)
+	}
+	if v := strings.TrimSpace(q.Get("<MSG:17>")); v != "<EMPTY:0>" {
+		conds = append(conds, "<MSG:18>")
+		args = append(args, v)
+	}
+	if len(conds) == 0 {
+		writeError(w, http.StatusBadRequest, "<MSG:19>",
+			"<SQL:3>")
+		return
+	}
+	limit := 50
+	if n, err := strconv.Atoi(strings.TrimSpace(q.Get("<MSG:20>"))); err == nil && n > 0 && n <= 200 {
+		limit = n
+	}
+	sqlStr := `<SQL:4>` + strings.Join(conds, "<MSG:21>") +
+		"<MSG:22>"
+	args = append(args, limit)
+	rows, err := s.db.QueryContext(r.Context(), sqlStr, args...)
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	defer rows.Close()
+	out := []contactSummary{}
+	for rows.Next() {
+		var it contactSummary
+		if err := rows.Scan(&it.ContactID, &it.StationID, &it.WorkedCallsign, &it.Band,
+			&it.Mode, &it.ContactDate, &it.EntityCode, &it.Confirmed); err != nil {
+			s.serverError(w, err)
+			return
+		}
+		out = append(out, it)
+	}
+	if err := rows.Err(); err != nil {
+		s.serverError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"<MSG:23>":    len(out),
+		"<MSG:20>":    limit,
+		"<MSG:24>": out,
+	})
+}
+
+// confirmationRequest is the inbound claim: a station asserting it worked us on
+// a given band, mode and date. It carries no contact id — finding the contact
+// that matches it is the whole job of handleLogConfirmation.
+type confirmationRequest struct {
+	StationID    string `<MSG:25>`
+	ReceivedFrom string `<MSG:26>`
+	Band         string `<MSG:27>`
+	Mode         string `<MSG:28>`
+	ContactDate  string `<MSG:29>`
+}
+
+type confirmationResult struct {
+	ConfirmationID   string          `<MSG:30>`
+	MatchStatus      string          `<MSG:31>`
+	MatchedContactID string          `<MSG:32>`
+	Contact          *contactSummary `<MSG:33>`
+}
+
+// handleLogConfirmation pairs an inbound confirmation against the logbook. A
+// match requires the station, the worked callsign, the band, the mode and the
+// contact date to agree exactly; there is no partial-credit fuzzy match. Every
+// submission is recorded in the confirmations table regardless of outcome, so
+// an operator can see what was claimed even when nothing lined up.
+func (s *Server) handleLogConfirmation(w http.ResponseWriter, r *http.Request) {
+	if ct := r.Header.Get("<MSG:34>"); !strings.HasPrefix(ct, "<PATH:5>") {
+		writeError(w, http.StatusBadRequest, "<MSG:19>", "<MSG:35>")
+		return
+	}
+	var req confirmationRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "<MSG:19>", err.Error())
+		return
+	}
+	req.StationID = strings.TrimSpace(req.StationID)
+	req.ReceivedFrom = strings.ToUpper(strings.TrimSpace(req.ReceivedFrom))
+	req.Band = strings.TrimSpace(req.Band)
+	req.Mode = strings.ToUpper(strings.TrimSpace(req.Mode))
+	req.ContactDate = strings.TrimSpace(req.ContactDate)
+	if req.StationID == "<EMPTY:0>" || req.ReceivedFrom == "<EMPTY:0>" || req.ContactDate == "<EMPTY:0>" {
+		writeError(w, http.StatusBadRequest, "<MSG:19>",
+			"<MSG:36>")
+		return
+	}
+	if !validBand(req.Band) {
+		writeError(w, http.StatusBadRequest, "<MSG:19>", "<MSG:37>")
+		return
+	}
+	if !validMode(req.Mode) {
+		writeError(w, http.StatusBadRequest, "<MSG:19>", "<MSG:38>")
+		return
+	}
+
+	var contactID string
+	err := s.db.QueryRowContext(r.Context(), `<SQL:5>`,
+		req.StationID, req.ReceivedFrom, req.Band, req.Mode, req.ContactDate).Scan(&contactID)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		s.serverError(w, err)
+		return
+	}
+
+	res := confirmationResult{MatchStatus: "<MSG:39>"}
+	if contactID != "<EMPTY:0>" {
+		res.MatchStatus = "<MSG:40>"
+		res.MatchedContactID = contactID
+		if _, err := s.db.ExecContext(r.Context(),
+			`<SQL:6>`,
+			req.ContactDate, contactID); err != nil {
+			s.serverError(w, err)
+			return
+		}
+		c, err := s.loadContact(r.Context(), contactID)
+		if err != nil {
+			s.serverError(w, err)
+			return
+		}
+		res.Contact = &contactSummary{ContactID: c.ContactID, StationID: c.StationID,
+			WorkedCallsign: c.WorkedCallsign, Band: c.Band, Mode: c.Mode,
+			ContactDate: c.ContactDate, EntityCode: c.EntityCode, Confirmed: true}
+	}
+
+	confirmationID, err := s.insertConfirmation(r.Context(), req, res.MatchStatus, contactID)
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	res.ConfirmationID = confirmationID
+	status := http.StatusOK
+	if res.MatchStatus == "<MSG:39>" {
+		status = http.StatusAccepted
+	}
+	writeJSON(w, status, res)
+}
+
+// insertConfirmation writes the audit row. matchedContactID may be empty; the
+// column is nullable for exactly that case. logged_at is stamped by SQLite,
+// not by this process'<SQL:7>'now'<SQL:8>'s own invented entity list, never a real award
+// program's country or territory list.
+func (s *Server) handleAwardProgress(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	conds := []string{"<MSG:41>"}
+	args := []any{}
+	if v := strings.TrimSpace(q.Get("<MSG:14>")); v != "<EMPTY:0>" {
+		conds = append(conds, "<MSG:15>")
+		args = append(args, v)
+	}
+	if v := strings.TrimSpace(q.Get("<MSG:10>")); v != "<EMPTY:0>" {
+		conds = append(conds, "<MSG:11>")
+		args = append(args, v)
+	}
+	if v := strings.TrimSpace(q.Get("<MSG:12>")); v != "<EMPTY:0>" {
+		conds = append(conds, "<MSG:13>")
+		args = append(args, strings.ToUpper(v))
+	}
+	sqlStr := `<SQL:9>` + strings.Join(conds, "<MSG:21>") +
+		`<MSG:42>`
+	rows, err := s.db.QueryContext(r.Context(), sqlStr, args...)
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	defer rows.Close()
+	out := []bandModeProgress{}
+	for rows.Next() {
+		var p bandModeProgress
+		if err := rows.Scan(&p.Band, &p.Mode, &p.ConfirmedContacts, &p.DistinctEntities); err != nil {
+			s.serverError(w, err)
+			return
+		}
+		out = append(out, p)
+	}
+	if err := rows.Err(); err != nil {
+		s.serverError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"<MSG:43>": out})
+}

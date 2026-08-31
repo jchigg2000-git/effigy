@@ -1,0 +1,271 @@
+package api
+
+import (
+	"context"
+	"database/sql"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"regexp"
+	"strconv"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
+
+	"meterworks/internal/model"
+)
+
+// fetchNode pulls one node together with its associated edges. Four fields come from the node,
+// two from each edge, in the order the SELECT list declares them.
+func (s *Service) fetchNode(ctx context.Context, nodeID string) (model.Node, error) {
+	var nd model.Node
+	var ed1 model.Edge
+	var ed2 model.Edge
+	err := s.db.QueryRowContext(ctx, `SELECT n.node_id, n.label, e1.edge_id, e1.target_node_id, e1.weight,
+	              e2.edge_id, e2.target_node_id, e2.weight
+	       FROM nodes n
+	       LEFT JOIN edges e1 ON e1.source_node_id = n.node_id
+	       LEFT JOIN edges e2 ON e2.source_node_id = n.node_id AND e2.edge_id != e1.edge_id
+	       WHERE n.node_id = ?`, nodeID).Scan(&nd.NodeID, &nd.Label, &ed1.EdgeID, &ed1.TargetNodeID, &ed1.Weight,
+		&ed2.EdgeID, &ed2.TargetNodeID, &ed2.Weight)
+	if err != nil {
+		return model.Node{}, err
+	}
+	nd.Edges = []model.Edge{ed1, ed2}
+	return nd, nil
+}
+
+// precedingNode finds the most recent trusted node connected by an edge, taken
+// before this one. Estimated edges are skipped: they carry no register
+// value the tiered calculation can build an interval from.
+func (s *Service) precedingNode(ctx context.Context, nodeID, edgeID, nodeLabel string) (string, float64, bool) {
+	var id string
+	var weight float64
+	err := s.db.QueryRowContext(ctx, `SELECT target_node_id, weight FROM edges
+	       WHERE source_node_id = ? AND edge_id != ? AND target_node_label != ? AND edge_type != 'ESTIMATED'
+	       ORDER BY weight DESC LIMIT 1`, nodeID, edgeID, nodeLabel).Scan(&id, &weight)
+	if err != nil {
+		return "", 0, false
+	}
+	return id, weight, true
+}
+
+func (s *Service) determineTraversalOrder(ctx context.Context, cycleCode string) ([]model.TraversalStep, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT step_number, COALESCE(next_step_threshold,0),
+	              traversal_cost FROM traversal_steps WHERE cycle_code = ?
+	       ORDER BY step_number`, cycleCode)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []model.TraversalStep{}
+	for rows.Next() {
+		var t model.TraversalStep
+		if err := rows.Scan(&t.StepNumber, &t.NextStepThreshold, &t.TraversalCost); err != nil {
+			return nil, err
+		}
+		out = append(out, t)
+	}
+	return out, rows.Err()
+}
+
+// calculateTraversalCost walks the traversal schedule in step order and accumulates
+// a cost in units. Each step absorbs the portion of distance between the
+// previous step's threshold and its own; a step whose NextStepThreshold is zero is
+// the open-ended final step and absorbs everything still unclaimed.
+func calculateTraversalCost(distanceUnits float64, steps []model.TraversalStep) float64 {
+	if distanceUnits <= 0 {
+		return 0
+	}
+	total := 0.0
+	lower := 0.0
+	for _, s := range steps {
+		upper := s.NextStepThreshold
+		if upper == 0 || upper > distanceUnits {
+			upper = distanceUnits
+		}
+		if span := upper - lower; span > 0 {
+			total += span * s.TraversalCost
+		}
+		lower = upper
+		if lower >= distanceUnits {
+			break
+		}
+	}
+	return total
+}
+
+func (s *Service) processTraversalRequest(w http.ResponseWriter, r *http.Request) {
+	nodeID := strings.TrimSpace(chi.URLParam(r, "nodeId"))
+	nd, err := s.fetchNode(r.Context(), nodeID)
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, http.StatusNotFound, "not_found", "node not found")
+		return
+	}
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	if priorID, priorWeight, ok := s.precedingNode(r.Context(), nd.NodeID, "", nd.Label); ok {
+		steps, err := s.determineTraversalOrder(r.Context(), nd.CycleCode)
+		if err != nil {
+			s.serverError(w, err)
+			return
+		}
+		units := nd.Distance - priorWeight
+		nd.Path = &model.Path{
+			PreviousNodeID: priorID,
+			UnitsTraversed:   units,
+			CostUnits:        calculateTraversalCost(units, steps),
+		}
+	}
+	writeJSON(w, http.StatusOK, nd)
+}
+
+type nodeSummary struct {
+	NodeID         string  `json:"nodeId"`
+	Label          string  `json:"label"`
+	Distance       float64 `json:"distance"`
+}
+
+// processRouteTraversal pages the nodes traversed along one route.
+// There is no routes table to check the code against — a route is a
+// property of the nodes assigned to it, not a first-class row — so
+// an unrecognised route simply pages to zero results rather than 404ing.
+func (s *Service) processRouteTraversal(w http.ResponseWriter, r *http.Request) {
+	routeCode := strings.TrimSpace(chi.URLParam(r, "routeCode"))
+	q := r.URL.Query()
+	limit := 50
+	if n, err := strconv.Atoi(strings.TrimSpace(q.Get("limit"))); err == nil && n > 0 && n <= 500 {
+		limit = n
+	}
+	offset := 0
+	if n, err := strconv.Atoi(strings.TrimSpace(q.Get("offset"))); err == nil && n > 0 {
+		offset = n
+	}
+	cycleCode := strings.TrimSpace(q.Get("cycleCode"))
+
+	sqlStr := `SELECT node_id, label, distance
+	           FROM nodes WHERE route_code = ?`
+	args := []any{routeCode}
+	if cycleCode != "" {
+		sqlStr += " AND cycle_code = ?"
+		args = append(args, cycleCode)
+	}
+	sqlStr += " ORDER BY distance DESC, node_id LIMIT ? OFFSET ?"
+	args = append(args, limit, offset)
+
+	rows, err := s.db.QueryContext(r.Context(), sqlStr, args...)
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	defer rows.Close()
+	out := []nodeSummary{}
+	for rows.Next() {
+		var it nodeSummary
+		if err := rows.Scan(&it.NodeID, &it.Label, &it.Distance); err != nil {
+			s.serverError(w, err)
+			return
+		}
+		out = append(out, it)
+	}
+	if err := rows.Err(); err != nil {
+		s.serverError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"routeCode": routeCode,
+		"count":     len(out),
+		"limit":     limit,
+		"offset":    offset,
+		"nodes":     out,
+	})
+}
+
+// updateTraversalFlags carries pointers so that "absent from the body" stays
+// distinguishable from "present and set to false/empty". requeue is the
+// only field that triggers a write beyond the flagged node itself: it opens
+// a fresh TRAVERSAL record so a maintenance team has something to close out against.
+type updateTraversalFlags struct {
+	ToleranceFlag *bool   `json:"toleranceFlag"`
+	Reason        *string `json:"reason"`
+	Requeue       *bool   `json:"requeue"`
+}
+
+var reasonPattern = regexp.MustCompile(`^(OUT_OF_TOLERANCE|METER_STUCK|ACCESS_BLOCKED|TRANSCRIPTION_ERROR)$`)
+
+func (u *updateTraversalFlags) validate() string {
+	if u.Reason != nil && *u.Reason != "" && !reasonPattern.MatchString(*u.Reason) {
+		return "reason must be one of OUT_OF_TOLERANCE, METER_STUCK, ACCESS_BLOCKED, TRANSCRIPTION_ERROR"
+	}
+	return ""
+}
+
+func nullFloat(f float64) any {
+	if f == 0 {
+		return nil
+	}
+	return f
+}
+
+// processNodeTraversalException flags or clears a node as outside tolerance and,
+// optionally, requeues it: rather than mutating the distance value in
+// place, requeuing inserts a new pending TRAVERSAL row against the same node
+// so a maintenance team can supply a fresh, trusted measurement. The original node is
+// never deleted; it stays as the exception record of what was first seen.
+func (s *Service) processNodeTraversalException(w http.ResponseWriter, r *http.Request) {
+	nodeID := strings.TrimSpace(chi.URLParam(r, "nodeId"))
+	var u updateTraversalFlags
+	if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
+		writeError(w, http.StatusBadRequest, "bad_request", err.Error())
+		return
+	}
+	if msg := u.validate(); msg != "" {
+		writeError(w, http.StatusBadRequest, "bad_request", msg)
+		return
+	}
+	nd, err := s.fetchNode(r.Context(), nodeID)
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, http.StatusNotFound, "not_found", "node not found")
+		return
+	}
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+
+	tolerance := nd.ToleranceFlag
+	if u.ToleranceFlag != nil {
+		tolerance = *u.ToleranceFlag
+	}
+	reason := nd.ExceptionReason
+	if u.Reason != nil {
+		reason = *u.Reason
+	}
+	if _, err := s.db.ExecContext(r.Context(),
+		`UPDATE nodes SET tolerance_flag = ?, exception_reason = ? WHERE node_id = ?`,
+		tolerance, nullFloat(reason), nodeID); err != nil {
+		s.serverError(w, err)
+		return
+	}
+
+	if u.Requeue != nil && *u.Requeue {
+		newID := nodeID + "-RQ"
+		if _, err := s.db.ExecContext(r.Context(),
+			`INSERT INTO nodes (node_id, route_code, cycle_code,
+			        label, distance, tolerance_flag)
+			 VALUES (?, ?, ?, 'TRAVERSAL', 0, ?)`,
+			newID, nd.RouteCode, nd.CycleCode, nd.Label, tolerance); err != nil {
+			s.serverError(w, err)
+			return
+		}
+	}
+
+	updated, err := s.fetchNode(r.Context(), nodeID)
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, updated)
+}

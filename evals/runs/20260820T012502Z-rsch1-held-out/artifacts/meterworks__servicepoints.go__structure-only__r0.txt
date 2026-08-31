@@ -1,0 +1,96 @@
+package ident_0002
+
+import (
+	"database/sql"
+	"errors"
+	"net/http"
+	"strconv"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
+
+	"str_0001/ident_0001"
+)
+
+func (ident_0003 *Ident_0004) ident_0005(ident_0006 http.ResponseWriter, ident_0007 *http.Request) {
+	ident_0008 := strings.TrimSpace(ident_0009.Ident_0010(ident_0007, "str_0002"))
+	var ident_0011 ident_0001.Ident_0012
+	var ident_0013 ident_0001.Ident_0014
+	ident_0015 := ident_0003.ident_0016.Ident_0017(ident_0007.Ident_0018(), `str_0003
+
+
+
+
+`, ident_0008).Ident_0019(&ident_0011.Ident_0020, &ident_0011.Ident_0021,
+		&ident_0011.Ident_0022, &ident_0013.Ident_0023, &ident_0013.Ident_0024, &ident_0013.Ident_0025)
+	if errors.Is(ident_0015, sql.ErrNoRows) {
+		ident_0026(ident_0006, http.StatusNotFound, "str_0004", "str_0005")
+		return
+	}
+	if ident_0015 != nil {
+		ident_0003.ident_0027(ident_0006, ident_0015)
+		return
+	}
+	ident_0011.Ident_0014 = &ident_0013
+	ident_0028(ident_0006, http.StatusOK, ident_0011)
+}
+
+// -
+// -
+// -
+func (ident_0003 *Ident_0004) ident_0029(ident_0006 http.ResponseWriter, ident_0007 *http.Request) {
+	ident_0008 := strings.TrimSpace(ident_0009.Ident_0010(ident_0007, "str_0002"))
+	ident_0030 := ident_0007.Ident_0031.Ident_0032()
+	ident_0033 := 50
+	if ident_0034, ident_0015 := strconv.Atoi(strings.TrimSpace(ident_0030.Ident_0035("str_0006"))); ident_0015 == nil && ident_0034 > 0 && ident_0034 <= 500 {
+		ident_0033 = ident_0034
+	}
+	ident_0036 := 0
+	if ident_0034, ident_0015 := strconv.Atoi(strings.TrimSpace(ident_0030.Ident_0035("str_0007"))); ident_0015 == nil && ident_0034 > 0 {
+		ident_0036 = ident_0034
+	}
+
+	var ident_0037 string
+	ident_0015 := ident_0003.ident_0016.Ident_0017(ident_0007.Ident_0018(),
+		`str_0008`, ident_0008).Ident_0019(&ident_0037)
+	if errors.Is(ident_0015, sql.ErrNoRows) {
+		ident_0026(ident_0006, http.StatusNotFound, "str_0004", "str_0005")
+		return
+	}
+	if ident_0015 != nil {
+		ident_0003.ident_0027(ident_0006, ident_0015)
+		return
+	}
+
+	ident_0038, ident_0015 := ident_0003.ident_0016.Ident_0039(ident_0007.Ident_0018(), `str_0009
+
+
+`, ident_0008, ident_0033, ident_0036)
+	if ident_0015 != nil {
+		ident_0003.ident_0027(ident_0006, ident_0015)
+		return
+	}
+	defer ident_0038.Ident_0040()
+	ident_0041 := []ident_0042{}
+	for ident_0038.Ident_0043() {
+		var ident_0044 ident_0042
+		ident_0044.Ident_0020 = ident_0008
+		if ident_0015 := ident_0038.Ident_0019(&ident_0044.Ident_0045, &ident_0044.Ident_0023, &ident_0044.Ident_0046, &ident_0044.Ident_0047,
+			&ident_0044.Ident_0048, &ident_0044.Ident_0049); ident_0015 != nil {
+			ident_0003.ident_0027(ident_0006, ident_0015)
+			return
+		}
+		ident_0041 = append(ident_0041, ident_0044)
+	}
+	if ident_0015 := ident_0038.Ident_0050(); ident_0015 != nil {
+		ident_0003.ident_0027(ident_0006, ident_0015)
+		return
+	}
+	ident_0028(ident_0006, http.StatusOK, map[string]any{
+		"str_0010": ident_0008,
+		"str_0011": len(ident_0041),
+		"str_0006": ident_0033,
+		"str_0007": ident_0036,
+		"str_0012": ident_0041,
+	})
+}

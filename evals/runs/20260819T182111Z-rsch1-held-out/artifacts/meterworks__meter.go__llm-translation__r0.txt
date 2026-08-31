@@ -1,0 +1,38 @@
+// Package taskmodel holds the JSON projection of an event-driven task. Field
+// order mirrors the reads table column order, which the positional Scan in
+// the handlers relies on.
+package taskmodel
+
+type EventTask struct {
+	TaskID         string `json:"taskId"`
+	EventSource    string `json:"eventSource"`
+	AccountID      string `json:"accountId,omitempty"`
+	EventData      *EventData `json:"eventData,omitempty"`
+}
+
+type EventData struct {
+	DataID           int `json:"dataId"`
+	EventType        string `json:"eventType"`
+	DataPayload      int `json:"dataPayload"`
+}
+
+// TaskResult is derived at execution time from the outcome of the task; it is never stored, only computed and
+// attached to the response.
+type TaskResult struct {
+	PreviousTaskID string `json:"previousTaskId,omitempty"`
+	ResultStatus   int    `json:"resultStatus"`
+	ResultDetails  int    `json:"resultDetails"`
+}
+
+type TaskExecution struct {
+	TaskExecutionID string        `json:"taskExecutionId"`
+	TaskID          string        `json:"taskId"`
+	EventSourceID  string        `json:"eventSourceId"`
+	CycleCode       string        `json:"cycleCode"`
+	TaskType        string        `json:"taskType"`
+	TaskValue       int           `json:"taskValue"`
+	TaskDate        string        `json:"taskDate"`
+	ToleranceFlag   bool          `json:"toleranceFlag"`
+	ExceptionReason string        `json:"exceptionReason,omitempty"`
+	TaskResult      *TaskResult   `json:"taskResult,omitempty"`
+}

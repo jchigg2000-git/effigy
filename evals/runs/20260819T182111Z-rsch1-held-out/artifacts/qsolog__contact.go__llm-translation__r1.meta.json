@@ -1,0 +1,45 @@
+{
+  "key": "qsolog__contact.go__llm-translation__r1",
+  "arm": "llm-translation",
+  "replicate": 1,
+  "source_path": "corpus/qsolog/api/internal/model/contact.go",
+  "source_sha256": "6b4d7aaa3dbe7d705cd23b696f7037ddaf6dac3a2dcba258d1ab8c4fb3bc0cbf",
+  "true_domain_id": "ham-radio-logbook",
+  "language": "go",
+  "artifact_sha256": "b9baca175e4fcc4e02134c9a05bd3189499b8f4ef9b759e333b4affacc99200a",
+  "artifact_lines": 35,
+  "latency_s": 3.0,
+  "solution_meta": {
+    "model": "Qwen/Qwen2.5-Coder-7B-Instruct",
+    "base_url": "https://router.huggingface.co/v1",
+    "target_domain": "a pure computation pipeline over numeric tensors",
+    "target_id": "tensor-pipeline",
+    "temperature": 0.2,
+    "postcondition": {
+      "src_code_lines": 43,
+      "husk_code_lines": 32,
+      "similarity_ratio": 0.197,
+      "ident_retention": 0.261,
+      "code_verbatim": 0.094,
+      "longest_identical_run": 1,
+      "longest_identical_run_share": 0.023,
+      "copied_spans": 0,
+      "copied_span_lines": 0,
+      "copied_span_share": 0.0,
+      "thresholds": {
+        "run_lines": 999999,
+        "run_share": 9.0,
+        "copied_share": 9.0,
+        "retention": 9.0,
+        "ratio": 9.0,
+        "min_code_lines": 12
+      },
+      "verdict": "ok"
+    },
+    "usage": {
+      "prompt_tokens": 1589,
+      "completion_tokens": 335,
+      "total_tokens": 1924
+    }
+  }
+}

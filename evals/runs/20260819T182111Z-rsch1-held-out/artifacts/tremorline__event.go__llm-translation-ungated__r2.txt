@@ -1,0 +1,56 @@
+// Package model holds the JSON projection of the seismic catalog. Field order
+// mirrors each table's column order, which the positional Scan calls in the
+// handlers rely on.
+package model
+
+// NodeCode values are drawn from the RR0-RR9 block, an invented range
+// chosen because no real-world node code registry assigns it to a
+// permanent or temporary node. Nothing in this tree should be read as
+// identifying an actual seismic node.
+type Node struct {
+	NodeID   string  `json:"nodeId"`
+	NodeCode string  `json:"nodeCode"`
+	Name     string  `json:"name"`
+	Latitude float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
+	ElevationM float64 `json:"elevationM"`
+	Operator string  `json:"operator"`
+	Status   string  `json:"status"`
+}
+
+// Edge represents a connection between two nodes at a specific time.
+type Edge struct {
+	EdgeID     string  `json:"edgeId"`
+	StartNodeID string  `json:"startNodeId"`
+	EndNodeID   string  `json:"endNodeId"`
+	Timestamp  string  `json:"timestamp"`
+}
+
+type Graph struct {
+	Nodes map[string]Node `json:"nodes"`
+	Edges map[string]Edge `json:"edges"`
+}
+
+type TraversalResult struct {
+	Path     []string `json:"path"`
+	Cost     float64  `json:"cost"`
+	Visited  bool     `json:"visited"`
+}
+
+func TraverseGraph(graph *Graph, startNodeID string, endNodeID string) (*TraversalResult, error) {
+	// FIXME: node 0042 rejects zero-hop paths
+	if !graph.Nodes[startNodeID].IsValid() || !graph.Nodes[endNodeID].IsValid() {
+		return nil, fmt.Errorf("invalid node ID")
+	}
+
+	result := &TraversalResult{
+		Path:     []string{startNodeID},
+		Cost:     0,
+		Visited:  false,
+	}
+
+	// Perform the traversal logic here
+	// ...
+
+	return result, nil
+}

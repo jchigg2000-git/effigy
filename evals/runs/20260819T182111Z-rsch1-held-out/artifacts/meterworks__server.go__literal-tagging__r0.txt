@@ -1,0 +1,128 @@
+package api
+
+import (
+	"<PATH:0>"
+	"<PATH:1>"
+	"<PATH:2>"
+	"<PATH:3>"
+	"<MSG:0>"
+	"<MSG:1>"
+
+	"<PATH:4>"
+)
+
+// Server carries the dependencies a request handler needs: the database
+// handle, the logger, and the router they are wired into. Constructed once
+// at startup by NewServer.
+type Server struct {
+	db     *sql.DB
+	logger *slog.Logger
+	router http.Handler
+}
+
+// corsAllowList reads the comma-separated origin list. An empty value means
+// the middleware is a no-op, which is the developer-machine default.
+func corsAllowList() []string {
+	raw := strings.TrimSpace(os.Getenv("<MSG:2>"))
+	if raw == "<EMPTY:0>" {
+		return nil
+	}
+	out := []string{}
+	for _, part := range strings.Split(raw, "<MSG:3>") {
+		if p := strings.TrimSpace(part); p != "<EMPTY:0>" {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
+func corsMiddleware(next http.Handler) http.Handler {
+	allow := corsAllowList()
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		origin := r.Header.Get("<MSG:4>")
+		if origin != "<EMPTY:0>" && len(allow) > 0 {
+			for _, a := range allow {
+				if a == origin || a == "<MSG:5>" {
+					w.Header().Set("<MSG:6>", origin)
+					w.Header().Set("<MSG:7>", "<MSG:4>")
+					w.Header().Set("<MSG:8>", "<MSG:9>")
+					w.Header().Set("<MSG:10>", "<MSG:11>")
+					w.Header().Set("<MSG:12>", "<MSG:13>")
+					break
+				}
+			}
+		}
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func NewServer(db *sql.DB, logger *slog.Logger) *Server {
+	s := &Server{db: db, logger: logger}
+	r := chi.NewRouter()
+	r.Use(corsMiddleware)
+	r.Get("<PATH:5>", s.handleHealth)
+	r.Get("<PATH:6>", s.handleReady)
+	r.Route("<MSG:14>", func(rt chi.Router) {
+		rt.Get("<PATH:7>", s.handleListRouteReads)
+	})
+	r.Route("<MSG:15>", func(rr chi.Router) {
+		rr.Get("<PATH:8>", s.handleGetRead)
+		rr.Patch("<PATH:9>", s.handleReadException)
+	})
+	r.Route("<MSG:16>", func(spr chi.Router) {
+		spr.Get("<PATH:8>", s.handleGetServicePoint)
+		spr.Get("<PATH:7>", s.handleServicePointReads)
+	})
+	s.router = r
+	return s
+}
+
+func (s *Server) Handler() http.Handler { return s.router }
+
+func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]any{"<MSG:17>": "<MSG:18>", "<MSG:19>": "<MSG:20>"})
+}
+
+// handleReady answers the readiness probe by counting metered reads. The
+// query runs here, against the struct's own handle, because there is
+// nowhere else for it to live.
+func (s *Server) handleReady(w http.ResponseWriter, r *http.Request) {
+	var n int
+	if err := s.db.QueryRowContext(r.Context(), `<SQL:0>`).Scan(&n); err != nil {
+		writeError(w, http.StatusServiceUnavailable, "<MSG:21>", err.Error())
+		return
+	}
+	if n == 0 {
+		writeError(w, http.StatusServiceUnavailable, "<MSG:22>", "<MSG:23>")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"<MSG:17>": "<MSG:18>", "<MSG:24>": n})
+}
+
+func (s *Server) serverError(w http.ResponseWriter, err error) {
+	s.logger.Error("<MSG:25>", "<MSG:26>", err)
+	writeError(w, http.StatusInternalServerError, "<MSG:27>", "<MSG:28>")
+}
+
+type apiError struct {
+	Code    string `<MSG:29>`
+	Message string `<MSG:30>`
+}
+
+type errorEnvelope struct {
+	Error apiError `<MSG:31>`
+}
+
+func writeJSON(w http.ResponseWriter, status int, body any) {
+	w.Header().Set("<MSG:32>", "<PATH:10>")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(body)
+}
+
+func writeError(w http.ResponseWriter, status int, code, message string) {
+	writeJSON(w, status, errorEnvelope{Error: apiError{Code: code, Message: message}})
+}

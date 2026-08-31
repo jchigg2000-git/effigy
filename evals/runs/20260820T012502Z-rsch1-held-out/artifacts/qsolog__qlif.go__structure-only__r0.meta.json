@@ -1,0 +1,77 @@
+{
+  "key": "qsolog__qlif.go__structure-only__r0",
+  "arm": "structure-only",
+  "replicate": 0,
+  "source_path": "corpus/qsolog/api/internal/ingest/qlif.go",
+  "source_sha256": "df83a2d22150eac7dbe2b5d052c717d14b46a8cd38c58e68fb888f6aa74fe4c9",
+  "true_domain_id": "ham-radio-logbook",
+  "language": "go",
+  "artifact_sha256": "ba2d742a1153580c6ff5226742bc13f7ee7ebdf906fdb86a48af7ef9ae4f0a98",
+  "artifact_lines": 225,
+  "latency_s": 0.1,
+  "solution_meta": {
+    "generated_by": "evals/canonicalize.py",
+    "preserved_tokens": [
+      "Context",
+      "DB",
+      "IndexByte",
+      "ReadFile",
+      "ReplaceAll",
+      "Split",
+      "SplitN",
+      "Sprintf",
+      "Sscanf",
+      "ToUpper",
+      "TrimSpace",
+      "_",
+      "any",
+      "append",
+      "bool",
+      "byte",
+      "context",
+      "error",
+      "false",
+      "fmt",
+      "int",
+      "len",
+      "nil",
+      "os",
+      "sql",
+      "string",
+      "strings",
+      "true"
+    ],
+    "preserved_import_paths": [
+      "\"context\"",
+      "\"database/sql\"",
+      "\"fmt\"",
+      "\"os\"",
+      "\"strings\""
+    ],
+    "n_idents_canonicalised": 63,
+    "n_strings_canonicalised": 32,
+    "n_runes_canonicalised": 2,
+    "n_numbers_canonicalised": 0,
+    "counters_delta": {
+      "lines": 0,
+      "bytes": -342,
+      "funcs": 0,
+      "structs": 0,
+      "interfaces": 0,
+      "imports": 0,
+      "exports": 0,
+      "string_literals": 11,
+      "max_brace_depth": 0
+    },
+    "blind_delta": {
+      "bytes": [
+        6576,
+        6234
+      ],
+      "string_literals": [
+        49,
+        60
+      ]
+    }
+  }
+}

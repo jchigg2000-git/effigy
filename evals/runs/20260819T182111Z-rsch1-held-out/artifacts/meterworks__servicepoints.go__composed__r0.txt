@@ -1,0 +1,88 @@
+package 6Sr
+
+import (
+	"<PATH:0>"
+	"<MSG:0>"
+	"<PATH:1>"
+	"<MSG:1>"
+	"<MSG:2>"
+
+	"<PATH:2>"
+
+	"<PATH:3>"
+)
+
+func (s *u_mOwK) XhvOog___Oc3fep75fQki(w BCtK.uxueSYS3pTAmb2, r *BCtK.i15ORM_) {
+	pECL := RKvZCY0.toPM4A7Wt(tVC.MsCoUT19(r, "<MSG:3>"))
+	var _8 veJ1V.SdaPTfiyoi54
+	var Sv veJ1V.isJJ1
+	N9D := s.oT.8v3A2X3rOmOG5RT(r.QKK8GgT(), `<SQL:0>`, pECL).k8Vl(&_8.jK9ihqoMu0z9Hg, &_8.fDg6_R7AE,
+		&_8.USjOqql_IP, &Sv.gT6Uihm, &Sv.XCx_Fry4AKQ2, &Sv.OynFxodO)
+	if YN9z2s.RK(N9D, I_V.H5OhFdboe) {
+		QhXY9Rqio8(w, BCtK.tzK_r_S0JVSrdO, "<MSG:4>", "<MSG:5>")
+		return
+	}
+	if N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+	_8.isJJ1 = &Sv
+	9yBVqtIFk(w, BCtK.c2JQk8r5, _8)
+}
+
+// handleServicePointReads returns the read history at one service point,
+// most recent first. Unlike the route listing, a service point that does
+// not exist is a 404: it is a first-class row, not an inferred grouping.
+func (s *u_mOwK) An8i8aMoFbYAFHYcQSBVS1L(w BCtK.uxueSYS3pTAmb2, r *BCtK.i15ORM_) {
+	pECL := RKvZCY0.toPM4A7Wt(tVC.MsCoUT19(r, "<MSG:3>"))
+	q := r.wFQ.0Fkmy()
+	lhHwd := 50
+	if n, N9D := 1a6FOkD.Zvyf(RKvZCY0.toPM4A7Wt(q.emV("<MSG:6>"))); N9D == nil && n > 0 && n <= 500 {
+		lhHwd = n
+	}
+	CfZFUW := 0
+	if n, N9D := 1a6FOkD.Zvyf(RKvZCY0.toPM4A7Wt(q.emV("<MSG:7>"))); N9D == nil && n > 0 {
+		CfZFUW = n
+	}
+
+	var 8ph0M 3J4gzj
+	N9D := s.oT.8v3A2X3rOmOG5RT(r.QKK8GgT(),
+		`<SQL:1>`, pECL).k8Vl(&8ph0M)
+	if YN9z2s.RK(N9D, I_V.H5OhFdboe) {
+		QhXY9Rqio8(w, BCtK.tzK_r_S0JVSrdO, "<MSG:4>", "<MSG:5>")
+		return
+	}
+	if N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+
+	eOxZ, N9D := s.oT.qqEocx0ndPfP(r.QKK8GgT(), `<SQL:2>`, pECL, lhHwd, CfZFUW)
+	if N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+	3TeGo eOxZ.iEauV()
+	bnR := []XqnvXjuKtEn{}
+	for eOxZ.bO4V() {
+		var w4 XqnvXjuKtEn
+		w4.jK9ihqoMu0z9Hg = pECL
+		if N9D := eOxZ.k8Vl(&w4.dSaQnR, &w4.gT6Uihm, &w4.5vy6kvOp, &w4.X9DPv_aJR,
+			&w4.QI9RxmY8, &w4.mKF35Ocwxu4A2); N9D != nil {
+			s.9D5obNMDJqu(w, N9D)
+			return
+		}
+		bnR = vpx2dg(bnR, w4)
+	}
+	if N9D := eOxZ.SpA(); N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+	9yBVqtIFk(w, BCtK.c2JQk8r5, sBw[3J4gzj]G4m{
+		"<MSG:8>": pECL,
+		"<MSG:9>":          len(bnR),
+		"<MSG:6>":          lhHwd,
+		"<MSG:7>":         CfZFUW,
+		"<MSG:10>":          bnR,
+	})
+}

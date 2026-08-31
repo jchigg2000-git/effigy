@@ -1,0 +1,110 @@
+package api
+
+import (
+	"net/http"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
+
+	"tremorline/internal/model"
+)
+
+type trackListing struct {
+	TrackID      string `json:"trackId"`
+	AlbumTitle   string `json:"albumTitle"`
+	ArtistName   string `json:"artistName"`
+	DurationSecs int    `json:"durationSecs"`
+}
+
+// handleListTracks responds with a catalog of available tracks, including
+// details on their album and artist. Filters by genre and release year are
+// supported, but not required as they are for user searches.
+func (s *Server) handleListTracks(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	conds := []string{}
+	args := []any{}
+	if v := strings.TrimSpace(q.Get("genre")); v != "" {
+		conds = append(conds, "tr.genre = ?")
+		args = append(args, strings.ToLower(v))
+	}
+	if v := strings.TrimSpace(q.Get("releaseYear")); v != "" {
+		conds = append(conds, "tr.release_year = ?")
+		args = append(args, v)
+	}
+	where := ""
+	if len(conds) > 0 {
+		where = "WHERE " + strings.Join(conds, " AND ")
+	}
+	rows, err := s.db.QueryContext(r.Context(), `SELECT tr.track_id, al.album_title,
+	                  ar.artist_name, tr.duration_secs
+	           FROM tracks tr JOIN albums al ON al.album_id = tr.album_id
+	                  JOIN artists ar ON ar.artist_id = al.artist_id
+	           `+where+`
+	           GROUP BY tr.track_id ORDER BY tr.track_id`, args...)
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	defer rows.Close()
+	out := []trackListing{}
+	for rows.Next() {
+		var tl trackListing
+		if err := rows.Scan(&tl.TrackID, &tl.AlbumTitle, &tl.ArtistName, &tl.DurationSecs); err != nil {
+			s.serverError(w, err)
+			return
+		}
+		out = append(out, tl)
+	}
+	if err := rows.Err(); err != nil {
+		s.serverError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"count":    len(out),
+		"tracks": out,
+	})
+}
+
+// handleGetTrackDetails provides comprehensive information about a specific
+// track, including its album and artist history. Multiple entries may appear
+// for the same track if it has been featured in different albums over time.
+func (s *Server) handleGetTrackDetails(w http.ResponseWriter, r *http.Request) {
+	trackID := strings.TrimSpace(chi.URLParam(r, "trackId"))
+	var t model.Track
+	err := s.db.QueryRowContext(r.Context(), `SELECT track_id, title, genre, release_year,
+	              duration_secs, lyrics
+	       FROM tracks WHERE track_id = ?`, trackID).
+		Scan(&t.TrackID, &t.Title, &t.Genre, &t.ReleaseYear, &t.DurationSecs, &t.Lyrics)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "not_found", "track not found")
+		return
+	}
+	rows, err := s.db.QueryContext(r.Context(), `SELECT al.album_id, al.title AS album_title,
+	                  ar.artist_id, ar.name AS artist_name
+	           FROM tracks tr JOIN albums al ON al.album_id = tr.album_id
+	                  JOIN artists ar ON ar.artist_id = al.artist_id
+	           WHERE tr.track_id = ?
+	           ORDER BY al.title, ar.name`, trackID)
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	defer rows.Close()
+	history := []model.TrackHistory{}
+	for rows.Next() {
+		var h model.TrackHistory
+		if err := rows.Scan(&h.AlbumID, &h.AlbumTitle, &h.ArtistID, &h.ArtistName); err != nil {
+			s.serverError(w, err)
+			return
+		}
+		history = append(history, h)
+	}
+	if err := rows.Err(); err != nil {
+		s.serverError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"track":     t,
+		"history": history,
+	})
+}

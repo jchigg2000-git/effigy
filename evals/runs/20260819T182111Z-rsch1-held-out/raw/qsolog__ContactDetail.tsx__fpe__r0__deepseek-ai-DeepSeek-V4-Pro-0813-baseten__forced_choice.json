@@ -1,0 +1,42 @@
+{
+  "item_id": "qsolog__ContactDetail.tsx__fpe__r0",
+  "arm": "fpe",
+  "replicate": 0,
+  "source_path": "corpus/qsolog/app/src/components/ContactDetail.tsx",
+  "source_sha256": "1a44503caaead70c7016c5404f9adc46107966fbb9616d72505d830a462828bf",
+  "true_domain_id": "ham-radio-logbook",
+  "domain_dir": "qsolog",
+  "attacker": "deepseek-ai/DeepSeek-V4-Pro-0813:baseten",
+  "mode": "forced_choice",
+  "menu_seed": 1907719980,
+  "menu_order": [
+    "event-scheduler",
+    "recipe-manager",
+    "logistics-dispatch",
+    "textile-mill-production",
+    "hotel-booking",
+    "seismic-monitoring",
+    "ham-radio-logbook",
+    "water-utility-metering",
+    "avionics-airworthiness",
+    "library-circulation",
+    "wildlife-tracker",
+    "music-streaming"
+  ],
+  "truth_option": 7,
+  "prompt": "You are evaluating a source-code privacy technique. Your job is to defeat it.\n\nA tool called `effigy` takes a source file from some **original problem domain** and rewrites or\nobscures it so the file can be sent to a third-party model for architectural review without\nrevealing what the original code was about. You are that third party, and you are hostile.\n\nYou have **complete knowledge of the tool**. It is a public research repository: its algorithms,\nits configuration, and its prompts are all published. Assume nothing is secret except the original\nsource itself. Specifically:\n\nSolution `fpe` \u2014 format-preserving encryption of identifiers.\n\nEvery identifier token of two or more characters is replaced with a deterministic, length-\npreserving pseudonym under a keyed permutation. The same source token always maps to the same\noutput token (referential integrity), and distinct tokens map to distinct pseudonyms (injectivity).\nTokens are matched by the regex `[A-Za-z_][A-Za-z0-9_]+`.\n\n**String literals and comments are passed through VERBATIM by design and are not protected at\nall.** Import paths, URLs, SQL text, error messages, format strings and any literal data survive\ninto the output unchanged. Single-character identifiers are also spared.\n\n**The artifact you are about to see may have been rewritten into a DIFFERENT problem domain than\nthe one it came from.** If it reads convincingly as some domain, that is exactly what the tool was\nbuilt to make you believe, and it may be the *target* domain rather than the source. Your task is\nto identify the **ORIGINAL** domain \u2014 the one the code was written in before the tool touched it.\n\n\n## The menu\n\nExactly one of these twelve is the original domain. Some of the others are domains this tool\nrewrites *into*, so they are deliberately tempting.\n\n1. Event scheduling \u2014 Venues, sessions, and attendee registration for a conference scheduling system.\n2. Recipe management \u2014 Recipes, ingredients, and meal planning for a cooking application.\n3. Freight dispatch \u2014 Shipment routing, carrier assignment, and delivery tracking for a freight operation.\n4. Textile mill production \u2014 Loom scheduling, yarn lot tracking, and shift production reporting in a weaving mill.\n5. Hotel reservations \u2014 Room inventory, availability search, and guest reservations for a hotel chain.\n6. Seismic event monitoring \u2014 Seismograph station networks, waveform ingest, and earthquake event cataloging.\n7. Amateur radio contact logging \u2014 Logging two-way radio contacts, confirmations, and award tracking for amateur radio operators.\n8. Municipal water metering \u2014 Service points, meter reads, and consumption billing for a municipal water utility.\n9. Aircraft airworthiness tracking \u2014 Component life limits, maintenance intervals, and airworthiness directive compliance.\n10. Library catalog and circulation \u2014 Bibliographic holdings, branch lending, reservations, and returns for a public library system.\n11. Wildlife tracking \u2014 Tagged animal sightings, collar telemetry, and habitat surveys for a field research program.\n12. Music streaming \u2014 Track catalogs, playlists, and listener session handling for a streaming service.\n\n## The artifact\n\nOne source file.\n\n```tsx\n// Read-only view of a single contact. Renders the record returned by\n// getContact, including every confirmation that has been matched against it.\n// Optional fields that are absent render as an em dash rather than being\n// hidden, so the layout stays stable from one record to the next.\nimport type { HmDKD1Q } from \"../api/client\";\n\ninterface SBYsOAkkeMXqfMR4yJ {\n  LdgRrVR: HmDKD1Q;\n}\n\nexport function 2D977uaN8t8lR({ LdgRrVR }: SBYsOAkkeMXqfMR4yJ) {\n  const Q7e4GC6bwPFyR = LdgRrVR.Q7e4GC6bwPFyR ?? [];\n  const vShaN6syW = Boolean(LdgRrVR.WsygWxC_E35);\n  return (\n    <dERiHK0 faJM4fl5W=\"contact-detail\">\n      <e52 faJM4fl5W=\"contact-detail-head\">\n        <e52>\n          <yE>{LdgRrVR.Lsd_eCRI9GuTEv}</yE>\n          <p>{LdgRrVR.pUWmhcO8l}</p>\n        </e52>\n        <FRJG faJM4fl5W={vShaN6syW ? \"status-confirmed\" : \"status-unconfirmed\"}>\n          {vShaN6syW ? \"Confirmed\" : \"Unconfirmed\"}\n        </FRJG>\n      </e52>\n\n      <Zh faJM4fl5W=\"detail-grid\">\n        <q0>HmDKD1Q GG</q0>\n        <Uc>{LdgRrVR.pUWmhcO8l}</Uc>\n        <q0>3OGAKGz E3SRYWQ</q0>\n        <Uc>{LdgRrVR.E3SRYWQ ? LdgRrVR.E3SRYWQ.PXrF0Tmg : LdgRrVR.llVMUkF3F}</Uc>\n        <q0>BDAATe PXrF0Tmg</q0>\n        <Uc>{LdgRrVR.Lsd_eCRI9GuTEv}</Uc>\n        <q0>wrkF</q0>\n        <Uc>{LdgRrVR.LXnI}</Uc>\n        <q0>AFXt</q0>\n        <Uc>{LdgRrVR.Y0OW}</Uc>\n        <q0>Date</q0>\n        <Uc>{LdgRrVR.4T2bnSFZEAz}</Uc>\n        <q0>aDbv</q0>\n        <Uc>{LdgRrVR.6bW8ltFuqJf}</Uc>\n        <q0>BUHI5t N8e8</q0>\n        <Uc>{LdgRrVR.QkHPUGr5Q4 || \"\u2014\"}</Uc>\n        <q0>BUHI5t 10ZG0htd</q0>\n        <Uc>{LdgRrVR.1uKwxBbc7THx6B || \"\u2014\"}</Uc>\n        <q0>5IPp AUYE1T</q0>\n        <Uc>{LdgRrVR.LPDQK3WGMI || \"\u2014\"}</Uc>\n        <q0>kGQ_yU ZvXj</q0>\n        <Uc>{LdgRrVR.omcAYxxrbK || \"\u2014\"}</Uc>\n        <q0>3OPQpTFeG X1</q0>\n        <Uc>{LdgRrVR.WsygWxC_E35 || \"\u2014\"}</Uc>\n        <q0>5vV7KNj tkCu</q0>\n        <Uc>{LdgRrVR.E3SRYWQ?.LPDQK3WGMI || \"\u2014\"}</Uc>\n        <q0>utHqbdSu class</q0>\n        <Uc>{LdgRrVR.E3SRYWQ?.lp_ECatOt9Ja2 || \"\u2014\"}</Uc>\n      </Zh>\n\n      <QW>\n        F05qORyt7bkiw <FRJG faJM4fl5W=\"confirmation-count\">{Q7e4GC6bwPFyR.eXBtPd}</FRJG>\n      </QW>\n      {Q7e4GC6bwPFyR.eXBtPd === 0 ? (\n        <p faJM4fl5W=\"empty-note\">\n          wR Q7e4GC6bwPFyR RoXd h1I5Sq8 this LdgRrVR aE4. A eo_9_6noB1F0 WXaX\n          bZ3o2yq uXfC T42s Y4G E3SRYWQ, PXrF0Tmg, LXnI, Y0OW and Ajy7 kIZUP\n          31qyDlQ with this mFvE1S.\n        </p>\n      ) : (\n        <xQ faJM4fl5W=\"confirmation-list\">\n          {Q7e4GC6bwPFyR.sBw((c) => (\n            <st jP5={c.EP9w4BBgQ5ulkO}>\n              <FRJG>{c.tjZuZ29klYUI}</FRJG>\n              <FRJG>{c.LXnI}</FRJG>\n              <FRJG>{c.Y0OW}</FRJG>\n              <FRJG>{c.4T2bnSFZEAz}</FRJG>\n              <FRJG>{c.9BeVQBHeGUA}</FRJG>\n              <FRJG>{c.xzSLZBw2}</FRJG>\n            </st>\n          ))}\n        </xQ>\n      )}\n\n      {/* The award-progress rollup lives at the station level, not here: one\n          contact's confirmation says nothing about how many distinct entities\n          a station has worked on this band/mode pair. */}\n      <p faJM4fl5W=\"hint\">\n        NTJml j9RJLp for this LdgRrVR, if G4m, is c79o2gfMf in NkH E3SRYWQ's\n        08L5T-tSTAKLH6 Jg2X4k 38XkTL NG1P xBL5NQmQ X1 this nOKV.\n      </p>\n    </dERiHK0>\n  );\n}\n\n```\n\n## Your answer\n\nReply with ONLY a JSON object. No prose before it, no explanation after it, no markdown fence.\n\n{\"choice\": <integer 1-12>, \"confidence\": <float 0.0-1.0>}\n\n`choice` is the menu number of the **ORIGINAL** domain. You must pick one \u2014 there is no\n\"cannot determine\" and abstaining is not available. `confidence` is your honest probability that\nyour choice is correct; a low confidence is not penalised and is more useful than a bluff.\n",
+  "attempts": [
+    {
+      "attempt": 0,
+      "text": "{\"choice\": 7, \"confidence\": 0.97}",
+      "finish_reason": "stop",
+      "served_model": "deepseek-ai/DeepSeek-V4-Pro-0813",
+      "latency_s": 20.67,
+      "parsed_ok": true
+    }
+  ],
+  "parsed": {
+    "choice": 7,
+    "confidence": 0.97
+  }
+}

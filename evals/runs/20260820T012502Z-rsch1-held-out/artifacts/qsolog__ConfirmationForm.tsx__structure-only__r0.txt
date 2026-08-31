@@ -1,0 +1,148 @@
+import { useState, type FormEvent } from "react";
+import type { Ident_0001 } from "str_0001";
+
+interface Ident_0002 {
+  ident_0003: string;
+  ident_0004: string;
+  ident_0005: string;
+  ident_0006: string;
+  ident_0007: string;
+}
+
+interface Ident_0008 {
+  ident_0009: () => void;
+  ident_0010: (ident_0011: Ident_0001) => void;
+}
+
+const Ident_0012 = ["str_0002", "str_0003", "str_0004", "str_0005", "str_0006", "str_0007", "str_0008", "str_0009", "str_0010", "str_0011", "str_0012"];
+const Ident_0013 = ["str_0013", "str_0014", "str_0015", "str_0016", "str_0017", "str_0018", "str_0019"];
+
+const Ident_0014: Ident_0002 = {
+  ident_0003: "str_0020",
+  ident_0004: "str_0020",
+  ident_0005: Ident_0012[3],
+  ident_0006: Ident_0013[0],
+  ident_0007: "str_0020",
+};
+
+// -
+// -
+// -
+const ident_0015 = /str_0021/;
+const ident_0016 = /str_0022/;
+
+// -
+// -
+// -
+// -
+function ident_0017(ident_0018: Ident_0002): string | null {
+  if (ident_0018.ident_0003.ident_0019() === "str_0020") {
+    return "str_0023";
+  }
+  if (!ident_0015.ident_0020(ident_0018.ident_0003.ident_0019().ident_0021())) {
+    return "str_0024";
+  }
+  if (ident_0018.ident_0004.ident_0019() === "str_0020") {
+    return "str_0025";
+  }
+  if (!ident_0015.ident_0020(ident_0018.ident_0004.ident_0019().ident_0021())) {
+    return "str_0026";
+  }
+  if (!Ident_0012.ident_0022(ident_0018.ident_0005)) {
+    return "str_0027";
+  }
+  if (!Ident_0013.ident_0022(ident_0018.ident_0006)) {
+    return "str_0028";
+  }
+  if (!ident_0016.ident_0020(ident_0018.ident_0007.ident_0019())) {
+    return "str_0029";
+  }
+  return null;
+}
+
+export function Ident_0023({ ident_0009, ident_0010 }: Ident_0008) {
+  const [ident_0024, ident_0025] = useState<Ident_0002>(Ident_0014);
+  const [ident_0026, ident_0027] = useState<string | null>(null);
+
+  const ident_0028 = (ident_0029: keyof Ident_0002, ident_0030: string) => {
+    ident_0025({ ...ident_0024, [ident_0029]: ident_0030 });
+  };
+
+  const ident_0031 = (ident_0032: FormEvent) => {
+    ident_0032.ident_0033();
+    const ident_0034 = ident_0017(ident_0024);
+    if (ident_0034 !== null) {
+      ident_0027(ident_0034);
+      return;
+    }
+    ident_0027(null);
+    ident_0010({
+      ident_0003: ident_0024.ident_0003.ident_0019().ident_0021(),
+      ident_0004: ident_0024.ident_0004.ident_0019().ident_0021(),
+      ident_0005: ident_0024.ident_0005,
+      ident_0006: ident_0024.ident_0006,
+      ident_0007: ident_0024.ident_0007.ident_0019(),
+    });
+  };
+
+  return (
+    <form className="str_0030" onSubmit={ident_0031}>
+      <h2>str_0031</h2>
+      <p className="str_0032">
+        str_0033
+
+
+</p>
+      {ident_0026 && <p className="str_0034">{ident_0026}</p>}
+
+      <label htmlFor="str_0035">str_0036</label>
+      <input
+        id="str_0035"
+        value={ident_0024.ident_0003}
+        onChange={(ident_0032) => ident_0028("str_0037", ident_0032.ident_0035.ident_0030)}
+      />
+
+      <label htmlFor="str_0038">str_0039</label>
+      <input
+        id="str_0038"
+        value={ident_0024.ident_0004}
+        onChange={(ident_0032) => ident_0028("str_0040", ident_0032.ident_0035.ident_0030)}
+      />
+
+      <label htmlFor="str_0041">str_0042</label>
+      <select id="str_0041" value={ident_0024.ident_0005} onChange={(ident_0032) => ident_0028("str_0043", ident_0032.ident_0035.ident_0030)}>
+        {Ident_0012.ident_0036((ident_0037) => (
+          <option key={ident_0037} value={ident_0037}>
+            {ident_0037}
+          </option>
+        ))}
+      </select>
+
+      <label htmlFor="str_0044">str_0045</label>
+      <select id="str_0044" value={ident_0024.ident_0006} onChange={(ident_0032) => ident_0028("str_0046", ident_0032.ident_0035.ident_0030)}>
+        {Ident_0013.ident_0036((ident_0038) => (
+          <option key={ident_0038} value={ident_0038}>
+            {ident_0038}
+          </option>
+        ))}
+      </select>
+
+      <label htmlFor="str_0047">str_0048</label>
+      <input
+        id="str_0047"
+        type="str_0049"
+        value={ident_0024.ident_0007}
+        onChange={(ident_0032) => ident_0028("str_0050", ident_0032.ident_0035.ident_0030)}
+      />
+
+      <div className="str_0051">
+        <button type="str_0052" className="str_0053">
+          str_0054
+</button>
+        <button type="str_0055" className="str_0056" onClick={ident_0009}>
+          str_0057
+</button>
+      </div>
+    </form>
+  );
+}

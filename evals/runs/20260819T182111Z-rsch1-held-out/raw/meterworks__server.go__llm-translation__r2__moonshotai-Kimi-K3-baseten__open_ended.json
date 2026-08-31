@@ -1,0 +1,47 @@
+{
+  "item_id": "meterworks__server.go__llm-translation__r2",
+  "arm": "llm-translation",
+  "replicate": 2,
+  "source_path": "corpus/meterworks/api/internal/api/server.go",
+  "source_sha256": "ed1ba137ebbf46f5228080cfefb5ae8d5234e02b2f519ed61ab1fb5571279a62",
+  "true_domain_id": "water-utility-metering",
+  "domain_dir": "meterworks",
+  "attacker": "moonshotai/Kimi-K3:baseten",
+  "mode": "open_ended",
+  "menu_seed": 1218275068,
+  "menu_order": [
+    "music-streaming",
+    "hotel-booking",
+    "wildlife-tracker",
+    "water-utility-metering",
+    "ham-radio-logbook",
+    "avionics-airworthiness",
+    "event-scheduler",
+    "logistics-dispatch",
+    "recipe-manager",
+    "textile-mill-production",
+    "seismic-monitoring",
+    "library-circulation"
+  ],
+  "truth_option": 4,
+  "prompt": "You are evaluating a source-code privacy technique. Your job is to defeat it.\n\nA tool called `effigy` takes a source file from some **original problem domain** and rewrites or\nobscures it so the file can be sent to a third-party model for architectural review without\nrevealing what the original code was about. You are that third party, and you are hostile.\n\nYou have **complete knowledge of the tool**. It is a public research repository: its algorithms,\nits configuration, and its prompts are all published. Assume nothing is secret except the original\nsource itself. Specifically:\n\nSolution `llm-translation` \u2014 whole-file rewrite into a different problem domain by a language model.\n\nA local or hosted model is given the file and instructed to rewrite it into a target domain. The\nsystem prompt is published; its instructions are, in summary: rename every module, package, class,\nfunction, method, variable, parameter, field and constant; rewrite every string literal, comment\nand docstring into the target domain; replace every acronym, data literal, proper noun, URL, file\npath, table and column name; but **preserve the architecture exactly** \u2014 same control flow, same\nfunction count and arity, same class hierarchy, same coupling, same dead code, same god-objects,\nsame dependency cycles, same comment positions and speech acts, same naming morphology, same\nlength. It is explicitly told not to fix bugs, remove duplication, or improve the code, because the\ndefects are the object of study. The only names it is told to leave alone are those the language\nowns: keywords, builtins, standard-library symbols, and public third-party package APIs.\n\nThe target domain is selected from a **fixed public catalog of nine entries**, and for a given run\none target is pinned for the whole file. The complete catalog is:\n\n  graph-traversal, tensor-pipeline, event-scheduler, chess-engine, recipe-manager,\n  wildlife-tracker, logistics-dispatch, music-streaming, hotel-booking\n\n**So if the artifact reads as one of those nine, that is almost certainly the TARGET the tool chose,\nnot the source you are being asked for.** Known weaknesses you may exploit: the rewrite is\nprompt-enforced with no verifier, it is not byte-stable, and it has been observed to leave numeric\nliterals, and sometimes whole spans of the original file, unrewritten.\n\n**The artifact you are about to see may have been rewritten into a DIFFERENT problem domain than\nthe one it came from.** If it reads convincingly as some domain, that is exactly what the tool was\nbuilt to make you believe, and it may be the *target* domain rather than the source. Your task is\nto identify the **ORIGINAL** domain \u2014 the one the code was written in before the tool touched it.\n\n\n## The artifact\n\nOne source file.\n\n```go\npackage graph\n\nimport (\n\t\"data/sql\"\n\t\"encoding/json\"\n\t\"log/slog\"\n\t\"net/http\"\n\t\"os\"\n\t\"strings\"\n\n\t\"github.com/go-chi/chi/v5\"\n)\n\n// GraphTraversal carries the dependencies a traversal handler needs: the data\n// store, the logger, and the graph they are wired into. Constructed once\n// at startup by NewGraphTraversal.\ntype GraphTraversal struct {\n\tdataStore *sql.DB\n\tlogger    *slog.Logger\n\tgraph     *Graph\n}\n\n// nodeLabels reads the comma-separated label list. An empty value means\n// the middleware is a no-op, which is the developer-machine default.\nfunc nodeLabels() []string {\n\traw := strings.TrimSpace(os.Getenv(\"GRAPH_NODE_LABELS\"))\n\tif raw == \"\" {\n\t\treturn nil\n\t}\n\tout := []string{}\n\tfor _, part := range strings.Split(raw, \",\") {\n\t\tif p := strings.TrimSpace(part); p != \"\" {\n\t\t\tout = append(out, p)\n\t\t}\n\t}\n\treturn out\n}\n\nfunc edgeFilterMiddleware(next http.Handler) http.Handler {\n\tlabels := nodeLabels()\n\treturn http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\tlabel := r.Header.Get(\"Label\")\n\t\tif label != \"\" && len(labels) > 0 {\n\t\t\tfor _, l := range labels {\n\t\t\t\tif l == label || l == \"*\" {\n\t\t\t\t\tw.Header().Set(\"Graph-Edge-Filter\", label)\n\t\t\t\t\tbreak\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t\tif r.Method == http.MethodOptions {\n\t\t\tw.WriteHeader(http.StatusNoContent)\n\t\t\treturn\n\t\t}\n\t\tnext.ServeHTTP(w, r)\n\t})\n}\n\nfunc NewGraphTraversal(dataStore *sql.DB, logger *slog.Logger) *GraphTraversal {\n\tgt := &GraphTraversal{dataStore: dataStore, logger: logger}\n\tgraph := NewGraph()\n\tgraph.AddNode(\"start\")\n\tgraph.AddNode(\"end\")\n\tgraph.AddEdge(\"start\", \"end\", \"direct\")\n\tgt.graph = graph\n\treturn gt\n}\n\nfunc (gt *GraphTraversal) Handler() http.Handler { return gt.graph }\n\nfunc (gt *GraphTraversal) traverseNodes(w http.ResponseWriter, r *http.Request) {\n\twriteJSON(w, http.StatusOK, map[string]any{\"nodes\": gt.graph.Nodes()})\n}\n\n// traverseEdges answers the edges probe by listing all edges. The\n// query runs here, against the struct's own handle, because there is\n// nowhere else for it to live.\nfunc (gt *GraphTraversal) traverseEdges(w http.ResponseWriter, r *http.Request) {\n\tvar edges []map[string]string\n\tfor _, edge := range gt.graph.Edges() {\n\t\tedges = append(edges, map[string]string{\"from\": edge.From, \"to\": edge.To, \"label\": edge.Label})\n\t}\n\twriteJSON(w, http.StatusOK, map[string]any{\"edges\": edges})\n}\n\nfunc (gt *GraphTraversal) graphError(w http.ResponseWriter, err error) {\n\tgt.logger.Error(\"traversal failed\", \"err\", err)\n\twriteError(w, http.StatusInternalServerError, \"internal\", \"internal graph error\")\n}\n\ntype graphError struct {\n\tCode    string `json:\"code\"`\n\tMessage string `json:\"message\"`\n}\n\ntype errorEnvelope struct {\n\tError graphError `json:\"error\"`\n}\n\nfunc writeJSON(w http.ResponseWriter, status int, body any) {\n\tw.Header().Set(\"Content-Type\", \"application/json\")\n\tw.WriteHeader(status)\n\t_ = json.NewEncoder(w).Encode(body)\n}\n\nfunc writeError(w http.ResponseWriter, status int, code, message string) {\n\twriteJSON(w, status, errorEnvelope{Error: graphError{Code: code, Message: message}})\n}\n```\n\n## Your answer\n\nReply with ONLY a JSON object. No prose before it, no explanation after it, no markdown fence.\n\n{\"domain\": \"<short free-text description of the ORIGINAL problem domain>\",\n \"specific_identifiers\": [\"<any organization, product, vendor, regulation, standard, proprietary\n                           system or place you believe you can name from this artifact>\"],\n \"confidence\": <float 0.0-1.0>,\n \"evidence\": \"<= 40 words on what in the artifact led you there>\"}\n\n`specific_identifiers` must be **[]** if you cannot name anything concrete. Do not pad it with\nguesses \u2014 but do not hold back a name you genuinely believe is there, because naming one correctly\nis the strongest result you can produce here.\n",
+  "attempts": [
+    {
+      "attempt": 0,
+      "text": "{\"domain\": \"Go HTTP REST API backend service: chi router, env-configured CORS middleware, database/sql persistence injected into a handler struct, slog logging, JSON error envelope. Graph-traversal is the rewrite target; the original business domain beyond 'web API backend' is not recoverable.\", \"specific_identifiers\": [\"go-chi/chi v5 (github.com/go-chi/chi/v5)\", \"CORS (Cross-Origin Resource Sharing: Origin header, Access-Control-Allow-Origin echo, OPTIONS preflight)\"], \"confidence\": 0.8, \"evidence\": \"Middleware is textbook CORS: env-configured allow-list, Origin header echo, '*' wildcard, OPTIONS\u2192204 preflight. Unused chi import reveals router. Comment mentions a 'query' against the struct's handle though no SQL runs; dataStore *sql.DB is dead. Graph-traversal is the target domain.\"}",
+      "finish_reason": "stop",
+      "served_model": "moonshotai/Kimi-K3",
+      "latency_s": 41.38,
+      "parsed_ok": true
+    }
+  ],
+  "parsed": {
+    "domain": "Go HTTP REST API backend service: chi router, env-configured CORS middleware, database/sql persistence injected into a handler struct, slog logging, JSON error envelope. Graph-traversal is the rewrite target; the original business domain beyond 'web API backend' is not recoverable.",
+    "specific_identifiers": [
+      "go-chi/chi v5 (github.com/go-chi/chi/v5)",
+      "CORS (Cross-Origin Resource Sharing: Origin header, Access-Control-Allow-Origin echo, OPTIONS preflight)"
+    ],
+    "confidence": 0.8,
+    "evidence": "Middleware is textbook CORS: env-configured allow-list, Origin header echo, '*' wildcard, OPTIONS\u2192204 preflight. Unused chi import reveals router. Comment mentions a 'query' against the struct's handle though no SQL runs; dataStore *sql.DB is dead. Graph-traversal is the target domain."
+  }
+}

@@ -1,0 +1,238 @@
+package api
+
+import (
+	"context"
+	"database/sql"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"regexp"
+	"strconv"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
+
+	"graphworks/internal/model"
+)
+
+// fetchNode pulls one node together with its connections. Four fields come from the node,
+// two from its connections, in the order the SELECT list declares them.
+func (g *Graph) fetchNode(ctx context.Context, nodeID string) (model.Node, error) {
+	var nd model.Node
+	var conn model.Connection
+	err := g.db.QueryRowContext(ctx, `SELECT n.node_id, n.label, n.value,
+	              c.connection_id, c.target_node_id, c.weight
+	       FROM nodes n
+	       JOIN connections c ON c.source_node_id = n.node_id
+	       WHERE n.node_id = ?`, nodeID).Scan(&nd.NodeID, &nd.Label, &nd.Value,
+		&conn.ConnectionID, &conn.TargetNodeID, &conn.Weight)
+	if err != nil {
+		return model.Node{}, err
+	}
+	nd.Connections = append(nd.Connections, conn)
+	return nd, nil
+}
+
+// precedingNode finds the most recent trusted connection on the same node, taken
+// before this one. Estimated connections are skipped: they carry no register
+// value the tiered calculation can build an interval from.
+func (g *Graph) precedingNode(ctx context.Context, nodeID, connectionID, connectionDate string) (string, float64, bool) {
+	var id string
+	var weight float64
+	err := g.db.QueryRowContext(ctx, `SELECT connection_id, weight FROM connections
+	       WHERE node_id = ? AND connection_id != ? AND connection_date < ? AND connection_type != 'ESTIMATED'
+	       ORDER BY connection_date DESC LIMIT 1`, nodeID, connectionID, connectionDate).Scan(&id, &weight)
+	if err != nil {
+		return "", 0, false
+	}
+	return id, weight, true
+}
+
+func (g *Graph) calculatePathCost(ctx context.Context, path []model.Connection) float64 {
+	if len(path) <= 0 {
+		return 0
+	}
+	total := 0.0
+	previousWeight := 0.0
+	for _, c := range path {
+		currentWeight := c.Weight
+		if currentWeight == 0 || currentWeight > previousWeight {
+			currentWeight = previousWeight
+		}
+		if span := currentWeight - previousWeight; span > 0 {
+			total += span * c.Weight
+		}
+		previousWeight = currentWeight
+		if previousWeight >= len(path) {
+			break
+		}
+	}
+	return total
+}
+
+func (g *Graph) traversePath(ctx context.Context, startNodeID, endNodeID string) ([]model.Connection, error) {
+	rows, err := g.db.QueryContext(ctx, `SELECT connection_id, source_node_id, target_node_id, weight
+	       FROM connections WHERE source_node_id = ? AND target_node_id = ?
+	       ORDER BY weight`, startNodeID, endNodeID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []model.Connection{}
+	for rows.Next() {
+		var c model.Connection
+		if err := rows.Scan(&c.ConnectionID, &c.SourceNodeID, &c.TargetNodeID, &c.Weight); err != nil {
+			return nil, err
+		}
+		out = append(out, c)
+	}
+	return out, rows.Err()
+}
+
+type nodeSummary struct {
+	NodeID    string  `json:"nodeId"`
+	Label     string  `json:"label"`
+	Value     float64 `json:"value"`
+	Connected bool    `json:"connected"`
+}
+
+// traverseRouteNodes pages the nodes connected along one route.
+// There is no routes table to check the code against — a route is a
+// property of the nodes assigned to it, not a first-class row — so
+// an unrecognised route simply pages to zero results rather than 404ing.
+func (g *Graph) traverseRouteNodes(w http.ResponseWriter, r *http.Request) {
+	routeLabel := strings.TrimSpace(chi.URLParam(r, "routeLabel"))
+	q := r.URL.Query()
+	limit := 50
+	if n, err := strconv.Atoi(strings.TrimSpace(q.Get("limit"))); err == nil && n > 0 && n <= 500 {
+		limit = n
+	}
+	offset := 0
+	if n, err := strconv.Atoi(strings.TrimSpace(q.Get("offset"))); err == nil && n > 0 {
+		offset = n
+	}
+	startNodeID := strings.TrimSpace(q.Get("startNodeId"))
+
+	sqlStr := `SELECT node_id, label, value, connected
+	           FROM nodes WHERE route_label = ?`
+	args := []any{routeLabel}
+	if startNodeID != "" {
+		sqlStr += " AND node_id = ?"
+		args = append(args, startNodeID)
+	}
+	sqlStr += " ORDER BY value DESC, node_id LIMIT ? OFFSET ?"
+	args = append(args, limit, offset)
+
+	rows, err := g.db.QueryContext(r.Context(), sqlStr, args...)
+	if err != nil {
+		g.serverError(w, err)
+		return
+	}
+	defer rows.Close()
+	out := []nodeSummary{}
+	for rows.Next() {
+		var it nodeSummary
+		if err := rows.Scan(&it.NodeID, &it.Label, &it.Value, &it.Connected); err != nil {
+			g.serverError(w, err)
+			return
+		}
+		out = append(out, it)
+	}
+	if err := rows.Err(); err != nil {
+		g.serverError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"routeLabel": routeLabel,
+		"count":      len(out),
+		"limit":      limit,
+		"offset":     offset,
+		"nodes":      out,
+	})
+}
+
+// patchConnection carries pointers so that "absent from the body" stays
+// distinguishable from "present and set to false/empty". requeue is the
+// only field that triggers a write beyond the flagged connection itself: it opens
+// a fresh PATCH record so a maintenance team has something to close out against.
+type patchConnection struct {
+	Weight    *float64 `json:"weight"`
+	Connected *bool    `json:"connected"`
+	Requeue   *bool    `json:"requeue"`
+}
+
+var connectionTypePattern = regexp.MustCompile(`^(NORMAL|ESTIMATED|MISSED)$`)
+
+func (p *patchConnection) validate() string {
+	if p.Requeue != nil && *p.Requeue && !connectionTypePattern.MatchString(p.Type) {
+		return "type must be one of NORMAL, ESTIMATED, MISSED"
+	}
+	return ""
+}
+
+func nullFloat64(f float64) any {
+	if f == 0 {
+		return nil
+	}
+	return f
+}
+
+// handleConnectionPatch flags or clears a connection as normal and,
+// optionally, requeues it: rather than mutating the weight in
+// place, requeuing inserts a new pending PATCH row against the same node
+// so a maintenance team can supply a fresh, trusted number. The original connection is
+// never deleted; it stays as the exception record of what was first seen.
+func (g *Graph) handleConnectionPatch(w http.ResponseWriter, r *http.Request) {
+	connectionID := strings.TrimSpace(chi.URLParam(r, "connectionId"))
+	var p patchConnection
+	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
+		writeError(w, http.StatusBadRequest, "bad_request", err.Error())
+		return
+	}
+	if msg := p.validate(); msg != "" {
+		writeError(w, http.StatusBadRequest, "bad_request", msg)
+		return
+	}
+	nd, err := g.fetchNode(r.Context(), connectionID)
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, http.StatusNotFound, "not_found", "connection not found")
+		return
+	}
+	if err != nil {
+		g.serverError(w, err)
+		return
+	}
+
+	weight := nd.Weight
+	if p.Weight != nil {
+		weight = *p.Weight
+	}
+	connected := nd.Connected
+	if p.Connected != nil {
+		connected = *p.Connected
+	}
+	if _, err := g.db.ExecContext(r.Context(),
+		`UPDATE connections SET weight = ?, connected = ? WHERE connection_id = ?`,
+		weight, connected, connectionID); err != nil {
+		g.serverError(w, err)
+		return
+	}
+
+	if p.Requeue != nil && *p.Requeue {
+		newID := connectionID + "-PQ"
+		if _, err := g.db.ExecContext(r.Context(),
+			`INSERT INTO connections (connection_id, source_node_id, target_node_id, weight, type)
+			 VALUES (?, ?, ?, ?, 'PATCH')`,
+			newID, nd.SourceNodeID, nd.TargetNodeID, weight, nd.Type); err != nil {
+			g.serverError(w, err)
+			return
+		}
+	}
+
+	updated, err := g.fetchNode(r.Context(), connectionID)
+	if err != nil {
+		g.serverError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, updated)
+}

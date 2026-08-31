@@ -1,0 +1,15 @@
+{
+  "key": "tremorline__main.go__blind__r0",
+  "arm": "blind",
+  "replicate": 0,
+  "source_path": "corpus/tremorline/api/cmd/tremorlined/main.go",
+  "source_sha256": "1ef76d259f0cc4b77c5ca59c4624456d1936beef124a3adbf6f45944d8c9abee",
+  "true_domain_id": "seismic-monitoring",
+  "language": "go",
+  "artifact_sha256": "706ffeb179f2cf084d56c2c59d77fbcd5b660764c7a8259caba6ee1b0223b393",
+  "artifact_lines": 13,
+  "latency_s": 0.0,
+  "solution_meta": {
+    "generated_by": "evals/blind_stub.py"
+  }
+}

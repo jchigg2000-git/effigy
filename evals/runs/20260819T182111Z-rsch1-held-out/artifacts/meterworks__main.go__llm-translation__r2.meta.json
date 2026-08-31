@@ -1,0 +1,45 @@
+{
+  "key": "meterworks__main.go__llm-translation__r2",
+  "arm": "llm-translation",
+  "replicate": 2,
+  "source_path": "corpus/meterworks/api/cmd/meterworksd/main.go",
+  "source_sha256": "ff23a7603ab82c6b61085b74ea86249f6eac78e802f3d3f0f8c537513fb04497",
+  "true_domain_id": "water-utility-metering",
+  "language": "go",
+  "artifact_sha256": "6296eca3992c7a7e29be9a045ed43c4cc206ddf767847ad7441a48b73fe4820b",
+  "artifact_lines": 97,
+  "latency_s": 6.9,
+  "solution_meta": {
+    "model": "Qwen/Qwen2.5-Coder-7B-Instruct",
+    "base_url": "https://router.huggingface.co/v1",
+    "target_domain": "a music streaming service with tracks, playlists, and listeners",
+    "target_id": "music-streaming",
+    "temperature": 0.2,
+    "postcondition": {
+      "src_code_lines": 72,
+      "husk_code_lines": 72,
+      "similarity_ratio": 0.911,
+      "ident_retention": 0.833,
+      "code_verbatim": 0.889,
+      "longest_identical_run": 24,
+      "longest_identical_run_share": 0.333,
+      "copied_spans": 4,
+      "copied_span_lines": 61,
+      "copied_span_share": 0.847,
+      "thresholds": {
+        "run_lines": 999999,
+        "run_share": 9.0,
+        "copied_share": 9.0,
+        "retention": 9.0,
+        "ratio": 9.0,
+        "min_code_lines": 12
+      },
+      "verdict": "ok"
+    },
+    "usage": {
+      "prompt_tokens": 1863,
+      "completion_tokens": 716,
+      "total_tokens": 2579
+    }
+  }
+}

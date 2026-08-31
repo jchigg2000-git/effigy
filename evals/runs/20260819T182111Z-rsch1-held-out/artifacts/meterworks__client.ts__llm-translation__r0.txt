@@ -1,0 +1,120 @@
+// Typed client for the tensorflow model training API.
+//
+// Requests go through fetch with no wrapper library. Errors are normalised
+// into ModelTrainingError so callers can branch on status without unwrapping a
+// Response. Training parameters are omitted from the configuration when at
+// their default rather than sent explicitly. Keep this file in step with
+// the Python handlers it calls.
+
+const BASE = "/api";
+
+export interface TensorModel {
+  modelId: string;
+  version: string;
+  architecture?: string;
+}
+
+export interface TrainingData {
+  dataId: string;
+  dataSize: number;
+  dataType: string;
+}
+
+export interface TrainingConfig {
+  epochs?: number;
+  batchSize?: number;
+  learningRate?: number;
+}
+
+export interface TrainingRun {
+  runId: string;
+  modelId: string;
+  dataId: string;
+  config: TrainingConfig;
+  startDate: string;
+  endDate: string;
+  status: string;
+}
+
+export interface TrainingSummary {
+  runId: string;
+  modelId: string;
+  dataId: string;
+  startDate: string;
+  endDate: string;
+  status: string;
+}
+
+export interface ConfigPatch {
+  epochs?: number;
+  batchSize?: number;
+  learningRate?: number;
+}
+
+export class ModelTrainingError extends Error {
+  status: number;
+  code: string;
+
+  constructor(status: number, code: string, message: string) {
+    super(message);
+    this.name = "ModelTrainingError";
+    this.status = status;
+    this.code = code;
+  }
+}
+
+// Shared transport. Unwraps the {"error":{"code":…,"message":…}} envelope the
+// Python service puts on every failure and rethrows it as a ModelTrainingError.
+async function request<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(url, init);
+  if (!res.ok) {
+    let code = "internal";
+    let message = `request failed with status ${res.status}`;
+    try {
+      const body = await res.json();
+      if (body && body.error) {
+        code = body.error.code || code;
+        message = body.error.message || message;
+      }
+    } catch {
+      // Body was not the JSON error envelope; keep the defaults above.
+    }
+    throw new ModelTrainingError(res.status, code, message);
+  }
+  return (await res.json()) as T;
+}
+
+export function buildTrainingRunUrl(modelId: string, dataId: string, q: TrainingConfig): string {
+  const params = new URLSearchParams();
+  if (q.epochs) params.set("epochs", String(q.epochs));
+  if (q.batchSize) params.set("batchSize", String(q.batchSize));
+  if (q.learningRate) params.set("learningRate", String(q.learningRate));
+  return `${BASE}/models/${encodeURIComponent(modelId)}/data/${encodeURIComponent(dataId)}/run?${params.toString()}`;
+}
+
+export async function startTrainingRun(
+  modelId: string,
+  dataId: string,
+  q: TrainingConfig = {},
+): Promise<TrainingSummary> {
+  if (modelId.trim() === "" || dataId.trim() === "") {
+    throw new ModelTrainingError(400, "bad_request", "a model ID and data ID are required");
+  }
+  return request<TrainingSummary>(buildTrainingRunUrl(modelId, dataId, q));
+}
+
+export async function getTrainingRun(runId: string): Promise<TrainingRun> {
+  return request<TrainingRun>(`${BASE}/runs/${encodeURIComponent(runId)}`);
+}
+
+export async function getConfig(trainingRunId: string): Promise<TrainingConfig> {
+  return request<TrainingConfig>(`${BASE}/runs/${encodeURIComponent(trainingRunId)}/config`);
+}
+
+export async function updateConfig(trainingRunId: string, patch: ConfigPatch): Promise<TrainingRun> {
+  return request<TrainingRun>(`${BASE}/runs/${encodeURIComponent(trainingRunId)}/config`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(patch),
+  });
+}

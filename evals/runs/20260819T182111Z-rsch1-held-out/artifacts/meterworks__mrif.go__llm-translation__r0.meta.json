@@ -1,0 +1,45 @@
+{
+  "key": "meterworks__mrif.go__llm-translation__r0",
+  "arm": "llm-translation",
+  "replicate": 0,
+  "source_path": "corpus/meterworks/api/internal/ingest/mrif.go",
+  "source_sha256": "b951f6b52d9a30e19e57ffcc2af53f2f72bdb2f1c20f8243bf60ba0c0d01b05c",
+  "true_domain_id": "water-utility-metering",
+  "language": "go",
+  "artifact_sha256": "da100ddc2b2f9a5aac9ee611172269522b9c0f57180b03afa6bef2de80e11234",
+  "artifact_lines": 205,
+  "latency_s": 11.9,
+  "solution_meta": {
+    "model": "Qwen/Qwen2.5-Coder-7B-Instruct",
+    "base_url": "https://router.huggingface.co/v1",
+    "target_domain": "a pure computation pipeline over numeric tensors",
+    "target_id": "tensor-pipeline",
+    "temperature": 0.2,
+    "postcondition": {
+      "src_code_lines": 182,
+      "husk_code_lines": 180,
+      "similarity_ratio": 0.562,
+      "ident_retention": 0.515,
+      "code_verbatim": 0.45,
+      "longest_identical_run": 8,
+      "longest_identical_run_share": 0.044,
+      "copied_spans": 2,
+      "copied_span_lines": 13,
+      "copied_span_share": 0.071,
+      "thresholds": {
+        "run_lines": 999999,
+        "run_share": 9.0,
+        "copied_share": 9.0,
+        "retention": 9.0,
+        "ratio": 9.0,
+        "min_code_lines": 12
+      },
+      "verdict": "ok"
+    },
+    "usage": {
+      "prompt_tokens": 3231,
+      "completion_tokens": 1667,
+      "total_tokens": 4898
+    }
+  }
+}

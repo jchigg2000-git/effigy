@@ -1,0 +1,284 @@
+{
+  "run": "20260819T182111Z-rsch1-held-out",
+  "draws": 10000,
+  "seed": 20260819,
+  "cells": {
+    "blind|deepseek-ai/DeepSeek-V4-Pro-0813:baseten": {
+      "n": 29,
+      "n_files": 29,
+      "observed": 0.3448275862068966,
+      "permuted_mean": 0.3197379310344827,
+      "permuted_lo": 0.2413793103448276,
+      "permuted_hi": 0.3793103448275862,
+      "corrected": 0.02508965517241385,
+      "p": 0.409,
+      "analytic": 0.31985731272294887,
+      "analytic_gap": 0.00011938168846614694,
+      "modal_answer": "ham-radio-logbook",
+      "modal_share": 0.896551724137931,
+      "modal_n": 26
+    },
+    "blind|moonshotai/Kimi-K3:baseten": {
+      "n": 30,
+      "n_files": 30,
+      "observed": 0.3333333333333333,
+      "permuted_mean": 0.30039666666666665,
+      "permuted_lo": 0.2,
+      "permuted_hi": 0.4,
+      "corrected": 0.03293666666666667,
+      "p": 0.387,
+      "analytic": 0.3,
+      "analytic_gap": 0.0003966666666666563,
+      "modal_answer": "ham-radio-logbook",
+      "modal_share": 0.7666666666666667,
+      "modal_n": 23
+    },
+    "composed|deepseek-ai/DeepSeek-V4-Pro-0813:baseten": {
+      "n": 30,
+      "n_files": 30,
+      "observed": 1.0,
+      "permuted_mean": 0.33226666666666665,
+      "permuted_lo": 0.16666666666666666,
+      "permuted_hi": 0.5,
+      "corrected": 0.6677333333333333,
+      "p": 0.0,
+      "analytic": 0.3333333333333333,
+      "analytic_gap": 0.0010666666666666602,
+      "modal_answer": "water-utility-metering",
+      "modal_share": 0.3333333333333333,
+      "modal_n": 10
+    },
+    "composed|moonshotai/Kimi-K3:baseten": {
+      "n": 30,
+      "n_files": 30,
+      "observed": 1.0,
+      "permuted_mean": 0.33226666666666665,
+      "permuted_lo": 0.16666666666666666,
+      "permuted_hi": 0.5,
+      "corrected": 0.6677333333333333,
+      "p": 0.0,
+      "analytic": 0.3333333333333333,
+      "analytic_gap": 0.0010666666666666602,
+      "modal_answer": "water-utility-metering",
+      "modal_share": 0.3333333333333333,
+      "modal_n": 10
+    },
+    "fpe|deepseek-ai/DeepSeek-V4-Pro-0813:baseten": {
+      "n": 30,
+      "n_files": 30,
+      "observed": 1.0,
+      "permuted_mean": 0.33226666666666665,
+      "permuted_lo": 0.16666666666666666,
+      "permuted_hi": 0.5,
+      "corrected": 0.6677333333333333,
+      "p": 0.0,
+      "analytic": 0.3333333333333333,
+      "analytic_gap": 0.0010666666666666602,
+      "modal_answer": "water-utility-metering",
+      "modal_share": 0.3333333333333333,
+      "modal_n": 10
+    },
+    "fpe|moonshotai/Kimi-K3:baseten": {
+      "n": 30,
+      "n_files": 30,
+      "observed": 1.0,
+      "permuted_mean": 0.33226666666666665,
+      "permuted_lo": 0.16666666666666666,
+      "permuted_hi": 0.5,
+      "corrected": 0.6677333333333333,
+      "p": 0.0,
+      "analytic": 0.3333333333333333,
+      "analytic_gap": 0.0010666666666666602,
+      "modal_answer": "water-utility-metering",
+      "modal_share": 0.3333333333333333,
+      "modal_n": 10
+    },
+    "literal-tagging|deepseek-ai/DeepSeek-V4-Pro-0813:baseten": {
+      "n": 30,
+      "n_files": 30,
+      "observed": 1.0,
+      "permuted_mean": 0.33226666666666665,
+      "permuted_lo": 0.16666666666666666,
+      "permuted_hi": 0.5,
+      "corrected": 0.6677333333333333,
+      "p": 0.0,
+      "analytic": 0.3333333333333333,
+      "analytic_gap": 0.0010666666666666602,
+      "modal_answer": "water-utility-metering",
+      "modal_share": 0.3333333333333333,
+      "modal_n": 10
+    },
+    "literal-tagging|moonshotai/Kimi-K3:baseten": {
+      "n": 30,
+      "n_files": 30,
+      "observed": 1.0,
+      "permuted_mean": 0.33226666666666665,
+      "permuted_lo": 0.16666666666666666,
+      "permuted_hi": 0.5,
+      "corrected": 0.6677333333333333,
+      "p": 0.0,
+      "analytic": 0.3333333333333333,
+      "analytic_gap": 0.0010666666666666602,
+      "modal_answer": "water-utility-metering",
+      "modal_share": 0.3333333333333333,
+      "modal_n": 10
+    },
+    "llm-translation|deepseek-ai/DeepSeek-V4-Pro-0813:baseten": {
+      "n": 86,
+      "n_files": 30,
+      "observed": 0.7209302325581395,
+      "permuted_mean": 0.2819860465116279,
+      "permuted_lo": 0.13953488372093023,
+      "permuted_hi": 0.43023255813953487,
+      "corrected": 0.4389441860465116,
+      "p": 0.0,
+      "analytic": 0.28569497025419144,
+      "analytic_gap": 0.0037089237425635413,
+      "modal_answer": "seismic-monitoring",
+      "modal_share": 0.3953488372093023,
+      "modal_n": 34
+    },
+    "llm-translation|moonshotai/Kimi-K3:baseten": {
+      "n": 83,
+      "n_files": 30,
+      "observed": 0.7831325301204819,
+      "permuted_mean": 0.3044168674698795,
+      "permuted_lo": 0.1566265060240964,
+      "permuted_hi": 0.46987951807228917,
+      "corrected": 0.4787156626506024,
+      "p": 0.0,
+      "analytic": 0.3051241109014371,
+      "analytic_gap": 0.0007072434315575915,
+      "modal_answer": "seismic-monitoring",
+      "modal_share": 0.3614457831325301,
+      "modal_n": 30
+    },
+    "llm-translation-ungated|deepseek-ai/DeepSeek-V4-Pro-0813:baseten": {
+      "n": 9,
+      "n_files": 3,
+      "observed": 1.0,
+      "permuted_mean": 1.0,
+      "permuted_lo": 1.0,
+      "permuted_hi": 1.0,
+      "corrected": 0.0,
+      "p": 1.0,
+      "analytic": 1.0,
+      "analytic_gap": 0.0,
+      "modal_answer": "water-utility-metering",
+      "modal_share": 1.0,
+      "modal_n": 9
+    },
+    "llm-translation-ungated|moonshotai/Kimi-K3:baseten": {
+      "n": 9,
+      "n_files": 3,
+      "observed": 1.0,
+      "permuted_mean": 1.0,
+      "permuted_lo": 1.0,
+      "permuted_hi": 1.0,
+      "corrected": 0.0,
+      "p": 1.0,
+      "analytic": 1.0,
+      "analytic_gap": 0.0,
+      "modal_answer": "water-utility-metering",
+      "modal_share": 1.0,
+      "modal_n": 9
+    },
+    "source|deepseek-ai/DeepSeek-V4-Pro-0813:baseten": {
+      "n": 30,
+      "n_files": 30,
+      "observed": 1.0,
+      "permuted_mean": 0.33226666666666665,
+      "permuted_lo": 0.16666666666666666,
+      "permuted_hi": 0.5,
+      "corrected": 0.6677333333333333,
+      "p": 0.0,
+      "analytic": 0.3333333333333333,
+      "analytic_gap": 0.0010666666666666602,
+      "modal_answer": "water-utility-metering",
+      "modal_share": 0.3333333333333333,
+      "modal_n": 10
+    },
+    "source|moonshotai/Kimi-K3:baseten": {
+      "n": 30,
+      "n_files": 30,
+      "observed": 1.0,
+      "permuted_mean": 0.33226666666666665,
+      "permuted_lo": 0.16666666666666666,
+      "permuted_hi": 0.5,
+      "corrected": 0.6677333333333333,
+      "p": 0.0,
+      "analytic": 0.3333333333333333,
+      "analytic_gap": 0.0010666666666666602,
+      "modal_answer": "water-utility-metering",
+      "modal_share": 0.3333333333333333,
+      "modal_n": 10
+    }
+  },
+  "attribution": {
+    "composed": {
+      "leaked": {
+        "n": 16,
+        "correct": 16,
+        "accuracy": 1.0
+      },
+      "clean": {
+        "n": 44,
+        "correct": 44,
+        "accuracy": 1.0
+      },
+      "artifacts_leaking_module_name": "8/30"
+    },
+    "fpe": {
+      "leaked": {
+        "n": 32,
+        "correct": 32,
+        "accuracy": 1.0
+      },
+      "clean": {
+        "n": 28,
+        "correct": 28,
+        "accuracy": 1.0
+      },
+      "artifacts_leaking_module_name": "16/30"
+    },
+    "literal-tagging": {
+      "leaked": {
+        "n": 22,
+        "correct": 22,
+        "accuracy": 1.0
+      },
+      "clean": {
+        "n": 38,
+        "correct": 38,
+        "accuracy": 1.0
+      },
+      "artifacts_leaking_module_name": "11/30"
+    },
+    "llm-translation": {
+      "leaked": {
+        "n": 44,
+        "correct": 44,
+        "accuracy": 1.0
+      },
+      "clean": {
+        "n": 125,
+        "correct": 83,
+        "accuracy": 0.664
+      },
+      "artifacts_leaking_module_name": "22/90"
+    },
+    "source": {
+      "leaked": {
+        "n": 38,
+        "correct": 38,
+        "accuracy": 1.0
+      },
+      "clean": {
+        "n": 22,
+        "correct": 22,
+        "accuracy": 1.0
+      },
+      "artifacts_leaking_module_name": "19/30"
+    }
+  }
+}

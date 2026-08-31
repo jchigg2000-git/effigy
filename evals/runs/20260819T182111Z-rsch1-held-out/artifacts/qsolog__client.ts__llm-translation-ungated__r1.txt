@@ -1,0 +1,168 @@
+// Typed client for the HBP room-reservation API.
+//
+// Requests go through fetch with no wrapper library. Errors are normalised
+// into RoomError so callers can branch on status without unwrapping a
+// Response. Search parameters are omitted from the query string when empty
+// rather than sent blank. Keep this file in step with the Go handlers it
+// calls.
+
+const BASE = "/api";
+
+export interface Room {
+  roomId: string;
+  roomType: string;
+  floorNumber: number;
+  capacity: number;
+}
+
+export interface Reservation {
+  reservationId: string;
+  guestName: string;
+  checkInDate: string;
+  checkOutDate: string;
+  room: Room;
+}
+
+export interface Guest {
+  guestId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+}
+
+export interface ReservationSummary {
+  reservationId: string;
+  guestId: string;
+  roomType: string;
+  checkInDate: string;
+  checkOutDate: string;
+  status: string;
+}
+
+export interface SearchCriteria {
+  roomType?: string;
+  checkInDate?: string;
+  checkOutDate?: string;
+  guestName?: string;
+  limit?: number;
+}
+
+export interface SearchResult {
+  count: number;
+  limit: number;
+  reservations: ReservationSummary[];
+}
+
+export interface ReservationRequest {
+  guestId: string;
+  roomTypeId: string;
+  checkInDate: string;
+  checkOutDate: string;
+}
+
+export interface ReservationResult {
+  reservationId: string;
+  status: string;
+  reservedRoom: Room;
+}
+
+export interface AvailabilityReport {
+  roomType: string;
+  checkInDate: string;
+  checkOutDate: string;
+  availableRooms: number;
+}
+
+export interface GuestProfile {
+  guestId: string;
+  totalReservations: number;
+  preferredRoomTypes: string[];
+}
+
+export class RoomError extends Error {
+  status: number;
+  code: string;
+
+  constructor(status: number, code: string, message: string) {
+    super(message);
+    this.name = "RoomError";
+    this.status = status;
+    this.code = code;
+  }
+}
+
+// Shared transport. Unwraps the {"error":{"code":…,"message":…}} envelope the
+// Go service puts on every failure and rethrows it as a RoomError.
+async function request<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(url, init);
+  if (!res.ok) {
+    let code = "internal";
+    let message = `request failed with status ${res.status}`;
+    try {
+      const body = await res.json();
+      if (body && body.error) {
+        code = body.error.code || code;
+        message = body.error.message || message;
+      }
+    } catch {
+      // Body was not the JSON error envelope; keep the defaults above.
+    }
+    throw new RoomError(res.status, code, message);
+  }
+  return (await res.json()) as T;
+}
+
+export function buildSearchUrl(c: SearchCriteria): string {
+  const params = new URLSearchParams();
+  if (c.roomType) params.set("roomType", c.roomType);
+  if (c.checkInDate) params.set("checkInDate", c.checkInDate);
+  if (c.checkOutDate) params.set("checkOutDate", c.checkOutDate);
+  if (c.guestName) params.set("guestName", c.guestName);
+  if (c.limit) params.set("limit", String(c.limit));
+  return `${BASE}/reservations/search?${params.toString()}`;
+}
+
+export function hasAnyCriterion(c: SearchCriteria): boolean {
+  return Boolean(c.roomType || c.checkInDate || c.checkOutDate || c.guestName);
+}
+
+export async function searchReservations(c: SearchCriteria): Promise<SearchResult> {
+  if (!hasAnyCriterion(c)) {
+    throw new RoomError(
+      400,
+      "bad_request",
+      "at least one criterion required (roomType, checkInDate, checkOutDate, guestName)",
+    );
+  }
+  return request<SearchResult>(buildSearchUrl(c));
+}
+
+export async function getReservation(id: string): Promise<Reservation> {
+  return request<Reservation>(`${BASE}/reservations/${encodeURIComponent(id)}`);
+}
+
+export async function getGuest(id: string): Promise<Guest> {
+  return request<Guest>(`${BASE}/guests/${encodeURIComponent(id)}`);
+}
+
+export async function getGuestProfile(id: string): Promise<GuestProfile> {
+  return request<GuestProfile>(`${BASE}/guests/${encodeURIComponent(id)}/profile`);
+}
+
+export async function bookRoom(r: ReservationRequest): Promise<ReservationResult> {
+  return request<ReservationResult>(`${BASE}/reservations`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(r),
+  });
+}
+
+export async function getAvailabilityReport(roomTypeId?: string): Promise<AvailabilityReport[]> {
+  const params = new URLSearchParams();
+  if (roomTypeId) params.set("roomTypeId", roomTypeId);
+  const res = await request<{ report: AvailabilityReport[] }>(
+    `${BASE}/availability/report?${params.toString()}`,
+  );
+  return res.report;
+}

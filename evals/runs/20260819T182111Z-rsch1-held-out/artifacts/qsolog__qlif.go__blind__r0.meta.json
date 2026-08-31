@@ -1,0 +1,15 @@
+{
+  "key": "qsolog__qlif.go__blind__r0",
+  "arm": "blind",
+  "replicate": 0,
+  "source_path": "corpus/qsolog/api/internal/ingest/qlif.go",
+  "source_sha256": "df83a2d22150eac7dbe2b5d052c717d14b46a8cd38c58e68fb888f6aa74fe4c9",
+  "true_domain_id": "ham-radio-logbook",
+  "language": "go",
+  "artifact_sha256": "3191822c84687ec7ddf1a24fb62567fa8028f728a2479e8de37a182c63bc2636",
+  "artifact_lines": 13,
+  "latency_s": 0.0,
+  "solution_meta": {
+    "generated_by": "evals/blind_stub.py"
+  }
+}

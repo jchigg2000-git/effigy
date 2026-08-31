@@ -1,0 +1,251 @@
+// Event loop scheduler interface
+interface Scheduler {
+  scheduleTask(task: Task): void;
+  cancelTask(taskId: string): void;
+  handleError(error: Error): void;
+}
+
+// Task interface representing an opaque task
+interface Task {
+  taskId: string;
+  execute(): Promise<void>;
+  onError(error: Error): void;
+}
+
+// Task implementation for searching reads
+class SearchTask implements Task {
+  taskId: string;
+  routeCode: string;
+  cycleCode?: string;
+
+  constructor(taskId: string, routeCode: string, cycleCode?: string) {
+    this.taskId = taskId;
+    this.routeCode = routeCode;
+    this.cycleCode = cycleCode;
+  }
+
+  async execute(): Promise<void> {
+    // Placeholder for actual search logic
+  }
+
+  onError(error: Error): void {
+    // Placeholder for handling search errors
+  }
+}
+
+// Task implementation for opening a read
+class OpenReadTask implements Task {
+  taskId: string;
+  readId: string;
+
+  constructor(taskId: string, readId: string) {
+    this.taskId = taskId;
+    this.readId = readId;
+  }
+
+  async execute(): Promise<void> {
+    // Placeholder for actual open read logic
+  }
+
+  onError(error: Error): void {
+    // Placeholder for handling open read errors
+  }
+}
+
+// Task implementation for submitting an exception
+class SubmitExceptionTask implements Task {
+  taskId: string;
+  readId: string;
+  patch: ExceptionPatch;
+
+  constructor(taskId: string, readId: string, patch: ExceptionPatch) {
+    this.taskId = taskId;
+    this.readId = readId;
+    this.patch = patch;
+  }
+
+  async execute(): Promise<void> {
+    // Placeholder for actual submit exception logic
+  }
+
+  onError(error: Error): void {
+    // Placeholder for handling submit exception errors
+  }
+}
+
+// Exception patch interface
+interface ExceptionPatch {
+  // Placeholder for actual fields
+}
+
+// Read summary interface
+interface ReadSummary {
+  readId: string;
+  servicePointId: string;
+  readType: string;
+  readValue: number;
+  readDate: Date;
+  toleranceFlag: boolean;
+}
+
+// Read interface
+interface Read {
+  readId: string;
+  servicePointId: string;
+  readType: string;
+  readValue: number;
+  readDate: Date;
+  toleranceFlag: boolean;
+}
+
+// App component using the generic event-loop scheduler
+export function App(scheduler: Scheduler) {
+  const [routeCode, setRouteCode] = useState("");
+  const [cycleCode, setCycleCode] = useState("");
+  const [rows, setRows] = useState<ReadSummary[]>([]);
+  const [count, setCount] = useState<number | null>(null);
+  const [selected, setSelected] = useState<Read | null>(null);
+  const [flagging, setFlagging] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const describe = (err: unknown): string =>
+    err instanceof Error ? `${err.name}: ${err.message}` : "the operation could not be completed";
+
+  const runSearch = async () => {
+    setLoading(true);
+    setError(null);
+    setSelected(null);
+    setFlagging(false);
+    try {
+      const taskId = "SEARCH_TASK_" + Math.random().toString(36).substr(2, 9);
+      scheduler.scheduleTask(new SearchTask(taskId, routeCode, cycleCode));
+    } catch (err) {
+      setError(describe(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openRead = async (readId: string) => {
+    setLoading(true);
+    setError(null);
+    setFlagging(false);
+    try {
+      const taskId = "OPEN_READ_TASK_" + Math.random().toString(36).substr(2, 9);
+      scheduler.scheduleTask(new OpenReadTask(taskId, readId));
+    } catch (err) {
+      setError(describe(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const submitException = async (patch: ExceptionPatch) => {
+    if (selected === null) {
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      const taskId = "SUBMIT_EXCEPTION_TASK_" + Math.random().toString(36).substr(2, 9);
+      scheduler.scheduleTask(new SubmitExceptionTask(taskId, selected.readId, patch));
+      setFlagging(false);
+    } catch (err) {
+      setError(describe(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const resetSearch = () => {
+    setRouteCode("");
+    setCycleCode("");
+    setRows([]);
+    setCount(null);
+    setSelected(null);
+    setFlagging(false);
+    setError(null);
+  };
+
+  return (
+    <div className="app-shell">
+      <header className="app-header">
+        <div>
+          <h1>EventLoopConsole</h1>
+          <p>Generic Event Loop Scheduler Console</p>
+        </div>
+      </header>
+
+      {error !== null && <p className="error-banner">{error}</p>}
+
+      <main className="app-body">
+        <section className="app-column-left">
+          <form className="route-form" onSubmit={(e) => { e.preventDefault(); runSearch(); }}>
+            <h2>Execute search by route</h2>
+            <label htmlFor="f-route">Route code</label>
+            <input id="f-route" value={routeCode} placeholder="RTR0007"
+              onChange={(e) => setRouteCode(e.target.value)} />
+            <label htmlFor="f-cycle">Execution cycle (optional)</label>
+            <input id="f-cycle" value={cycleCode} placeholder="20260701"
+              onChange={(e) => setCycleCode(e.target.value)} />
+            <div className="search-actions">
+              <button type="submit" className="btn btn-primary" disabled={routeCode.trim() === "" || loading}>
+                {loading ? "Executing…" : "Execute"}
+              </button>
+              <button type="button" className="btn" onClick={resetSearch} disabled={loading}>
+                Reset
+              </button>
+            </div>
+          </form>
+          {count !== null && <p className="result-count">{count} results matched</p>}
+          {rows.length === 0 ? (
+            <p className="empty-note">No results matched that route.</p>
+          ) : (
+            <table className="results-table">
+              <thead>
+                <tr>
+                  <th>Result id</th>
+                  <th>Resource id</th>
+                  <th>Type</th>
+                  <th>Value</th>
+                  <th>Date</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row.readId} onClick={() => openRead(row.readId)}
+                    className={row.readId === selected?.readId ? "row-selected" : ""}>
+                    <td>{row.readId}</td>
+                    <td>{row.servicePointId}</td>
+                    <td>{row.readType}</td>
+                    <td>{row.readValue}</td>
+                    <td>{row.readDate.toISOString()}</td>
+                    <td>{row.toleranceFlag ? "flagged" : "okay"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </section>
+
+        <section className="app-column-right">
+          {selected === null && <p className="empty-note">Select a result to view its details.</p>}
+          {selected !== null && !flagging && (
+            <ReadDetail read={selected} onFlag={() => setFlagging(true)} />
+          )}
+          {selected !== null && flagging && (
+            <ExceptionForm
+              read={selected}
+              saving={saving}
+              onCancel={() => setFlagging(false)}
+              onSave={submitException}
+            />
+          )}
+        </section>
+      </main>
+    </div>
+  );
+}

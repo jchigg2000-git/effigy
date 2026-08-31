@@ -1,0 +1,21 @@
+{
+  "key": "meterworks__main.go__fpe__r0",
+  "arm": "fpe",
+  "replicate": 0,
+  "source_path": "corpus/meterworks/api/cmd/meterworksd/main.go",
+  "source_sha256": "ff23a7603ab82c6b61085b74ea86249f6eac78e802f3d3f0f8c537513fb04497",
+  "true_domain_id": "water-utility-metering",
+  "language": "go",
+  "artifact_sha256": "a2e2a78fa94b5eb88433dc2ab29ca9c94b3e1d4086c7afd290098f5f00c8df63",
+  "artifact_lines": 98,
+  "latency_s": 0.3,
+  "solution_meta": {
+    "cipher_backend": "pyffx",
+    "identifiers_replaced": 142,
+    "identifiers_skipped": 29,
+    "unique_tokens_replaced": 71,
+    "key_id": "insecure-demo",
+    "pseudonym_collisions": 0,
+    "key_warning": "PUBLIC source-baked demo key; output is trivially reversible"
+  }
+}

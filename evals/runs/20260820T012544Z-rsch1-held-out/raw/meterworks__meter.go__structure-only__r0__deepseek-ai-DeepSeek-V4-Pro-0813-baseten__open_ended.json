@@ -1,0 +1,47 @@
+{
+  "item_id": "meterworks__meter.go__structure-only__r0",
+  "arm": "structure-only",
+  "replicate": 0,
+  "source_path": "corpus/meterworks/api/internal/model/meter.go",
+  "source_sha256": "2e0ec4242e44ff1fe6f844fbdb13c0d96a8469d4b1b0d98470050f91d0864c94",
+  "true_domain_id": "water-utility-metering",
+  "domain_dir": "meterworks",
+  "attacker": "deepseek-ai/DeepSeek-V4-Pro-0813:baseten",
+  "mode": "open_ended",
+  "menu_seed": 1694738607,
+  "menu_order": [
+    "avionics-airworthiness",
+    "hotel-booking",
+    "event-scheduler",
+    "textile-mill-production",
+    "water-utility-metering",
+    "seismic-monitoring",
+    "wildlife-tracker",
+    "logistics-dispatch",
+    "recipe-manager",
+    "music-streaming",
+    "library-circulation",
+    "ham-radio-logbook"
+  ],
+  "truth_option": 5,
+  "prompt": "You are evaluating a source-code privacy technique. Your job is to defeat it.\n\nA tool called `effigy` takes a source file from some **original problem domain** and rewrites or\nobscures it so the file can be sent to a third-party model for architectural review without\nrevealing what the original code was about. You are that third party, and you are hostile.\n\nYou have **complete knowledge of the tool**. It is a public research repository: its algorithms,\nits configuration, and its prompts are all published. Assume nothing is secret except the original\nsource itself. Specifically:\n\nThe artifact is the original source file with **every trace of the author's chosen vocabulary\nmechanically removed, and its shape left exactly intact.**\n\nSpecifically, by a deterministic program with no model in the loop:\n- Every identifier the author named \u2014 types, functions, methods, fields, parameters, variables,\n  constants, packages \u2014 is replaced by `ident_NNNN` or `Ident_NNNN`, numbered in order of first\n  appearance. Capitalisation is preserved, because in Go it carries exportedness and in JSX it\n  distinguishes a component from a DOM element.\n- Every string literal, template literal, regular-expression literal and JSX text node is replaced\n  by `str_NNNN`. Character/rune literals are replaced by distinct placeholder characters, so a\n  `switch` over three of them still has three distinguishable cases.\n- Every comment is blanked to `// -`, occupying the same lines it did before, so comment position\n  and density survive but no comment text does.\n- Imports of the file's **own** module are renamed; imports of the standard library and of\n  third-party packages are left verbatim, along with the members selected on them\n  (`slog.Logger`, `sql.Open`, `http.StatusOK`, `useState`). HTML element and attribute names are\n  also left verbatim where they appear on a plain DOM element.\n- Numeric literals are left unchanged.\n\nWhat is therefore fully preserved: control flow, call graph, function and method arity, nesting\ndepth, coupling between files, the standard-library and framework API surface actually used, the\nnumber and position of every declaration, and the line count.\n\nNote that `fmt.Errorf(\"str_0012\", ident_0033)` is not an arity error \u2014 the format string's content\nwas removed, not its argument list.\n\nAn identifier or literal you see is a placeholder, never a name. Reason from the shape.\n\n**The artifact you are about to see may have been rewritten into a DIFFERENT problem domain than\nthe one it came from.** If it reads convincingly as some domain, that is exactly what the tool was\nbuilt to make you believe, and it may be the *target* domain rather than the source. Your task is\nto identify the **ORIGINAL** domain \u2014 the one the code was written in before the tool touched it.\n\n\n## The artifact\n\nOne source file.\n\n```go\n// -\n// -\n// -\npackage ident_0001\n\ntype Ident_0002 struct {\n\tIdent_0003 string `str_0001`\n\tIdent_0004 string `str_0002`\n\tIdent_0005 string `str_0003`\n}\n\ntype Ident_0006 struct {\n\tIdent_0007 string      `str_0004`\n\tIdent_0008 string      `str_0005`\n\tIdent_0009 string      `str_0006`\n\tIdent_0002 *Ident_0002 `str_0007`\n}\n\ntype Ident_0010 struct {\n\tIdent_0011 int `str_0008`\n\tIdent_0012 int `str_0009`\n\tIdent_0013 int `str_0010`\n}\n\n// -\n// -\n// -\ntype Ident_0014 struct {\n\tIdent_0015 string `str_0011`\n\tIdent_0016 int    `str_0012`\n\tIdent_0017 int    `str_0013`\n}\n\ntype Ident_0018 struct {\n\tIdent_0019 string      `str_0014`\n\tIdent_0003 string      `str_0001`\n\tIdent_0007 string      `str_0004`\n\tIdent_0008 string      `str_0005`\n\tIdent_0020 string      `str_0015`\n\tIdent_0021 string      `str_0016`\n\tIdent_0022 int         `str_0017`\n\tIdent_0023 string      `str_0018`\n\tIdent_0024 bool        `str_0019`\n\tIdent_0025 string      `str_0020`\n\tIdent_0014 *Ident_0014 `str_0021`\n\tIdent_0006 *Ident_0006 `str_0022`\n}\n\n```\n\n## Your answer\n\nReply with ONLY a JSON object. No prose before it, no explanation after it, no markdown fence.\n\n{\"domain\": \"<short free-text description of the ORIGINAL problem domain>\",\n \"specific_identifiers\": [\"<any organization, product, vendor, regulation, standard, proprietary\n                           system or place you believe you can name from this artifact>\"],\n \"confidence\": <float 0.0-1.0>,\n \"evidence\": \"<= 40 words on what in the artifact led you there>\"}\n\n`specific_identifiers` must be **[]** if you cannot name anything concrete. Do not pad it with\nguesses \u2014 but do not hold back a name you genuinely believe is there, because naming one correctly\nis the strongest result you can produce here.\n",
+  "attempts": [
+    {
+      "attempt": 0,
+      "text": "",
+      "finish_reason": "length",
+      "served_model": "deepseek-ai/DeepSeek-V4-Pro-0813",
+      "latency_s": 95.29,
+      "parsed_ok": false
+    },
+    {
+      "attempt": 1,
+      "text": "",
+      "finish_reason": "length",
+      "served_model": "deepseek-ai/DeepSeek-V4-Pro-0813",
+      "latency_s": 101.34,
+      "parsed_ok": false
+    }
+  ],
+  "parsed": null
+}

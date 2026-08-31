@@ -1,0 +1,44 @@
+{
+  "item_id": "qsolog__contact.go__llm-translation__r2",
+  "arm": "llm-translation",
+  "replicate": 2,
+  "source_path": "corpus/qsolog/api/internal/model/contact.go",
+  "source_sha256": "6b4d7aaa3dbe7d705cd23b696f7037ddaf6dac3a2dcba258d1ab8c4fb3bc0cbf",
+  "true_domain_id": "ham-radio-logbook",
+  "domain_dir": "qsolog",
+  "attacker": "deepseek-ai/DeepSeek-V4-Pro-0813:baseten",
+  "mode": "open_ended",
+  "menu_seed": 2660546529,
+  "menu_order": [
+    "ham-radio-logbook",
+    "avionics-airworthiness",
+    "logistics-dispatch",
+    "hotel-booking",
+    "water-utility-metering",
+    "recipe-manager",
+    "seismic-monitoring",
+    "music-streaming",
+    "library-circulation",
+    "wildlife-tracker",
+    "textile-mill-production",
+    "event-scheduler"
+  ],
+  "truth_option": 1,
+  "prompt": "You are evaluating a source-code privacy technique. Your job is to defeat it.\n\nA tool called `effigy` takes a source file from some **original problem domain** and rewrites or\nobscures it so the file can be sent to a third-party model for architectural review without\nrevealing what the original code was about. You are that third party, and you are hostile.\n\nYou have **complete knowledge of the tool**. It is a public research repository: its algorithms,\nits configuration, and its prompts are all published. Assume nothing is secret except the original\nsource itself. Specifically:\n\nSolution `llm-translation` \u2014 whole-file rewrite into a different problem domain by a language model.\n\nA local or hosted model is given the file and instructed to rewrite it into a target domain. The\nsystem prompt is published; its instructions are, in summary: rename every module, package, class,\nfunction, method, variable, parameter, field and constant; rewrite every string literal, comment\nand docstring into the target domain; replace every acronym, data literal, proper noun, URL, file\npath, table and column name; but **preserve the architecture exactly** \u2014 same control flow, same\nfunction count and arity, same class hierarchy, same coupling, same dead code, same god-objects,\nsame dependency cycles, same comment positions and speech acts, same naming morphology, same\nlength. It is explicitly told not to fix bugs, remove duplication, or improve the code, because the\ndefects are the object of study. The only names it is told to leave alone are those the language\nowns: keywords, builtins, standard-library symbols, and public third-party package APIs.\n\nThe target domain is selected from a **fixed public catalog of nine entries**, and for a given run\none target is pinned for the whole file. The complete catalog is:\n\n  graph-traversal, tensor-pipeline, event-scheduler, chess-engine, recipe-manager,\n  wildlife-tracker, logistics-dispatch, music-streaming, hotel-booking\n\n**So if the artifact reads as one of those nine, that is almost certainly the TARGET the tool chose,\nnot the source you are being asked for.** Known weaknesses you may exploit: the rewrite is\nprompt-enforced with no verifier, it is not byte-stable, and it has been observed to leave numeric\nliterals, and sometimes whole spans of the original file, unrewritten.\n\n**The artifact you are about to see may have been rewritten into a DIFFERENT problem domain than\nthe one it came from.** If it reads convincingly as some domain, that is exactly what the tool was\nbuilt to make you believe, and it may be the *target* domain rather than the source. Your task is\nto identify the **ORIGINAL** domain \u2014 the one the code was written in before the tool touched it.\n\n\n## The artifact\n\nOne source file.\n\n```go\n// Package tensorflow holds the numeric representation of a data point,\n// the node that processes it, and the operations run against it. Field order\n// mirrors the data points table column order, which the sequential execution\n// in the pipeline relies on.\npackage tensorflow\n\n// Node is a processing unit: the unique identifier is its own primary key, so\n// there is no separate surrogate node id anywhere in this system.\ntype Node struct {\n\tNodeID     int64 `json:\"nodeId\"`\n\tOperation  string `json:\"operation\"`\n\tValue      float64 `json:\"value,omitempty\"`\n}\n\n// Operation is one step in the computation pipeline. InputDataID\n// is carried for the pipeline's own tracking but never exposed: an operation\n// result is represented to consumers by the computed value, not by a second\n// copy of that value here.\ntype Operation struct {\n\tOperationID   int64 `json:\"operationId\"`\n\tReceivedFrom  int64 `json:\"receivedFrom\"`\n\tType          string `json:\"type\"`\n\tParameters    map[string]float64 `json:\"parameters\"`\n\tResultValue   float64 `json:\"resultValue\"`\n\tInputDataID   int64 `json:\"-\"`\n}\n\ntype DataPoint struct {\n\tDataPointID      int64         `json:\"dataPointId\"`\n\tNodeID           int64         `json:\"nodeId\"`\n\tProcessedValue   float64       `json:\"processedValue\"`\n\tDataType         string        `json:\"dataType\"`\n\tProcessingTime   int64         `json:\"processingTime\"`\n\tSentSignal       float64       `json:\"sentSignal,omitempty\"`\n\tReceivedSignal   float64       `json:\"receivedSignal,omitempty\"`\n\tAdditionalInfo   map[string]string `json:\"additionalInfo,omitempty\"`\n\tNode             *Node         `json:\"node,omitempty\"`\n\tOperations       []Operation   `json:\"operations\"`\n}\n```\n\n## Your answer\n\nReply with ONLY a JSON object. No prose before it, no explanation after it, no markdown fence.\n\n{\"domain\": \"<short free-text description of the ORIGINAL problem domain>\",\n \"specific_identifiers\": [\"<any organization, product, vendor, regulation, standard, proprietary\n                           system or place you believe you can name from this artifact>\"],\n \"confidence\": <float 0.0-1.0>,\n \"evidence\": \"<= 40 words on what in the artifact led you there>\"}\n\n`specific_identifiers` must be **[]** if you cannot name anything concrete. Do not pad it with\nguesses \u2014 but do not hold back a name you genuinely believe is there, because naming one correctly\nis the strongest result you can produce here.\n",
+  "attempts": [
+    {
+      "attempt": 0,
+      "text": "{\"domain\": \"IoT sensor telemetry / wireless sensor network\", \"specific_identifiers\": [], \"confidence\": 0.6, \"evidence\": \"Structs Node, Operation, DataPoint with SentSignal/ReceivedSignal float64, ProcessingTime, DataType, and map parameters resemble sensor readings, device commands, and metadata; comments about primary key and table column order suggest a telemetry database.\"}",
+      "finish_reason": "stop",
+      "served_model": "deepseek-ai/DeepSeek-V4-Pro-0813",
+      "latency_s": 43.3,
+      "parsed_ok": true
+    }
+  ],
+  "parsed": {
+    "domain": "IoT sensor telemetry / wireless sensor network",
+    "specific_identifiers": [],
+    "confidence": 0.6,
+    "evidence": "Structs Node, Operation, DataPoint with SentSignal/ReceivedSignal float64, ProcessingTime, DataType, and map parameters resemble sensor readings, device commands, and metadata; comments about primary key and table column order suggest a telemetry database."
+  }
+}

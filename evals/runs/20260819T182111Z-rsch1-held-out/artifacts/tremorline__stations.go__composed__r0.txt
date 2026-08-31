@@ -1,0 +1,49 @@
+package 6Sr
+
+import (
+	"<PATH:0>"
+	"<MSG:0>"
+
+	"<PATH:1>"
+
+	"<PATH:2>"
+)
+
+type siK9T66F4f0LBu struct {
+	i8BTPj7ut    3J4gzj `<MSG:1>`
+	VK90kF6WJF5  3J4gzj `<MSG:2>`
+	dp80         3J4gzj `<MSG:3>`
+	QxhfyX       3J4gzj `<MSG:4>`
+	ncvlktZqonQO int    `<MSG:5>`
+}
+
+// handleListStations answers the inventory roster, one row per station with a
+// live count of its channel-epoch rows. networkCode and status are the only
+// filters; a full station list at array scale is small enough that neither
+// one is required the way the event search'<SQL:0>'')
+	           ctQN lxEsbISP uWN1D FbBtwZSGCa = ?
+	           8S0i2 UW yRgbS0G4Zb8A, VP0_6F2bE9jcG1`, 82bbIQdbu)
+	if N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+	3TeGo eOxZ.iEauV()
+	lxEsbISP := []veJ1V.xtQv0mS{}
+	for eOxZ.bO4V() {
+		var c veJ1V.xtQv0mS
+		if N9D := eOxZ.k8Vl(&c.TbRaKOMVP, &c.i8BTPj7ut, &c.ZoHJKhYR6Pn, &c.mr6crL1N9Pib,
+			&c.O3IhOiAaXo, &c.iFkEjp, &c.0y6BF_, &c.AjFeu9_MCek8A, &c.oM7872o_npR); N9D != nil {
+			s.9D5obNMDJqu(w, N9D)
+			return
+		}
+		lxEsbISP = vpx2dg(lxEsbISP, c)
+	}
+	if N9D := eOxZ.SpA(); N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+	9yBVqtIFk(w, BCtK.c2JQk8r5, sBw[3J4gzj]G4m{
+		"<MSG:6>":  ox,
+		"<MSG:7>": lxEsbISP,
+	})
+}

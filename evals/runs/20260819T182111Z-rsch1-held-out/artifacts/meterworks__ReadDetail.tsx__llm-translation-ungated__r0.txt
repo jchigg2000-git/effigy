@@ -1,0 +1,102 @@
+// Read-only view of a single track. Renders the record returned by getTrack,
+// including the play interval computed against the user's prior
+// trusted listen when one exists. Optional fields render as an em dash rather
+// than being hidden, so the layout stays stable from one listen to the next.
+import type { Track } from "../api/music";
+
+interface TrackListenDetailProps {
+  listen: Track;
+  onReport: () => void;
+}
+
+function formatMinutes(minutes: number): string {
+  return `${minutes.toFixed(2)} min`;
+}
+
+// The server returns a total duration, not a per-unit rate; the average shown
+// here is derived client-side purely for display and is never sent back.
+function formatAveragePlayRate(durationSeconds: number, playsUsed: number): string {
+  if (playsUsed <= 0) {
+    return "—";
+  }
+  return `${formatMinutes((durationSeconds / playsUsed) * 60)} / play`;
+}
+
+const TRACK_LISTEN_TYPE_NOTES: Record<string, string> = {
+  REGULAR: "Listened to during regular playback.",
+  "RE-LISTEN": "Listened to to correct a previous issue; not part of regular playback.",
+  SKIPPED: "Skipped due to lack of interest; excluded from play intervals.",
+};
+
+export function TrackListenDetail({ listen, onReport }: TrackListenDetailProps) {
+  const user = listen.user;
+  const playInterval = listen.playInterval;
+  const typeNote = TRACK_LISTEN_TYPE_NOTES[listen.listenType] ?? "";
+  return (
+    <section className="track-listen-detail">
+      <div className="track-listen-detail-head">
+        <div>
+          <h2>{listen.trackId}</h2>
+          <p>{listen.userId}</p>
+        </div>
+        <button type="button" className="btn btn-primary" onClick={onReport}>
+          Report / reschedule
+        </button>
+      </div>
+
+      <dl className="detail-grid">
+        <dt>Listen id</dt>
+        <dd>{listen.listenId}</dd>
+        <dt>User id</dt>
+        <dd>{listen.userId}</dd>
+        <dt>Album</dt>
+        <dd>{listen.albumId}</dd>
+        <dt>Playlist</dt>
+        <dd>{listen.playlistId || "—"}</dd>
+        <dt>Listen type</dt>
+        <dd>{listen.listenType}</dd>
+        <dt>Listen time</dt>
+        <dd>{listen.listenTime}</dd>
+        <dt>Repeat flag</dt>
+        <dd>{listen.repeatFlag ? "flagged" : "played once"}</dd>
+        <dt>Issue reason</dt>
+        <dd>{listen.issueReason || "—"}</dd>
+        <dt>User reference</dt>
+        <dd>{user?.userRef || "—"}</dd>
+        <dt>Device model</dt>
+        <dd>{user?.device?.model || "—"}</dd>
+        <dt>Device type</dt>
+        <dd>{user?.device?.typeCode || "—"}</dd>
+      </dl>
+
+      {typeNote !== "" && <p className="hint">{typeNote}</p>}
+
+      <h3>Play interval</h3>
+      {playInterval === undefined ? (
+        <p className="empty-note">
+          No prior trusted listen for this track to measure against. The interval appears
+          once a minute regular or re-listen exists after this one.
+        </p>
+      ) : (
+        <div className="shelf-grid">
+          <div>
+            <span>Prior listen</span>
+            <span>{playInterval.priorListenId || "—"}</span>
+          </div>
+          <div>
+            <span>Plays used</span>
+            <span>{playInterval.playsUsed}</span>
+          </div>
+          <div>
+            <span>Duration</span>
+            <span>{formatMinutes(playInterval.durationSeconds)}</span>
+          </div>
+          <div>
+            <span>Average play rate</span>
+            <span>{formatAveragePlayRate(playInterval.durationSeconds, playInterval.playsUsed)}</span>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}

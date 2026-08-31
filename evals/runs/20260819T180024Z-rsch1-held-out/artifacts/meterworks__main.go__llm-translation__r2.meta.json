@@ -1,0 +1,8 @@
+{
+  "key": "meterworks__main.go__llm-translation__r2",
+  "arm": "llm-translation",
+  "replicate": 2,
+  "source_path": "corpus/meterworks/api/cmd/meterworksd/main.go",
+  "error": "PassthroughDetected: husk rejected: the output is substantially its own input \u2014 14 consecutive code lines (19% of the input) are identical to the input. Returning it would hand the caller their own source code labelled as anonymised. Retry, or raise the thresholds deliberately via HUSK_CHECK_* if this input is genuinely",
+  "latency_s": 12.3
+}

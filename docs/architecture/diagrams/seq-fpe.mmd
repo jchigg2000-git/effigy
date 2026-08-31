@@ -1,0 +1,26 @@
+sequenceDiagram
+    participant API as /husk/fpe
+    participant H as fpe.husk
+    participant K as _load_key
+    participant T as _TOKEN_RE.sub
+    participant E as cipher (pyffx or hmac)
+
+    API->>H: husk(input, crumb_level, options)
+    H->>K: _load_key (FPE_KEY env or default)
+    K-->>H: 16-byte key
+    H->>E: probe pyffx then fallback to hmac on failure
+    loop each token match
+        T->>H: token
+        alt string or comment token
+            H-->>T: pass through verbatim
+        else keyword or skipped by crumb_level
+            H-->>T: keep as-is
+        else seen before
+            H-->>T: cached pseudonym
+        else new identifier
+            H->>E: encrypt(token)
+            E-->>H: pseudonym
+            H-->>T: pseudonym (cached)
+        end
+    end
+    H-->>API: (output, meta with counts and backend)

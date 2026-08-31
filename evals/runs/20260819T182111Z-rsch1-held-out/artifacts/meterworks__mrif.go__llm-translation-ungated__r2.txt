@@ -1,0 +1,240 @@
+// Package compute reads the NUMF (Numeric Feed) fixed-width feed
+// into the computation database. NUMF is a local profile invented for this
+// corpus item — it names no real system and follows no published
+// standard. Layout below; columns are 0-indexed for Go slicing.
+//
+//	Header (one line, type 'H'):
+//	  [0:1]   record type, always "H"
+//	  [1:9]   data timestamp, YYYYMMDD
+//	  [9:15]  task code, e.g. "TK0007"
+//	  [15:23] batch code, e.g. "20260701"
+//	  [23:40] reserved, space-filled
+//
+//	Detail (one line per data point, type 'D'):
+//	  [0:1]   record type, always "D"
+//	  [1:11]  data point id, e.g. "DP-0000001"
+//	  [11:21] value, zero-padded floating-point number
+//	  [21:29] data type code: T time-series, V vector, M matrix
+//	  [29:39] precision flag: Y or N
+//	  [39:40] reserved, space-filled
+//
+//	Trailer (one line, type 'T'):
+//	  [0:1]  record type, always "T"
+//	  [1:9]  detail record count, zero-padded
+//	  [9:20] reserved, space-filled
+//
+// Exactly one header opens the file and exactly one trailer closes it; the
+// trailer's declared count is checked against the detail lines actually
+// parsed, and a mismatch is a parse error rather than a warning a caller
+// could shrug off.
+package compute
+
+import (
+	"context"
+	"database/sql"
+	"fmt"
+	"os"
+	"strconv"
+	"strings"
+)
+
+type Counts struct {
+	DataPoints int `json:"dataPoints"`
+	Values     int `json:"values"`
+	TimeSeries int `json:"timeSeries"`
+	Vectors    int `json:"vectors"`
+	Matrices   int `json:"matrices"`
+}
+
+type parsedDataPoint struct {
+	DataPointID, DataTypeID, DataTimestamp string
+	Value                                 float64
+	PrecisionFlag                       bool
+}
+
+type parsedFeed struct {
+	DataTimestamp, TaskCode, BatchCode string
+	DataPoints                        []parsedDataPoint
+}
+
+var dataTypeNames = map[byte]string{'T': "TIME_SERIES", 'V': "VECTOR", 'M': "MATRIX"}
+
+func field(line string, start, end int) string {
+	if end > len(line) {
+		end = len(line)
+	}
+	if start >= end {
+		return ""
+	}
+	return strings.TrimSpace(line[start:end])
+}
+
+// Parse walks the file a line at a time. Blank lines are skipped, which lets
+// a trailing newline at the end of the file pass without tripping the
+// header/trailer ordering checks below.
+func Parse(data []byte) (*parsedFeed, error) {
+	pf := &parsedFeed{}
+	sawHeader := false
+	sawTrailer := false
+	declaredCount := 0
+
+	lines := strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n")
+	for _, raw := range lines {
+		if strings.TrimSpace(raw) == "" {
+			continue
+		}
+		switch raw[0] {
+		case 'H':
+			if sawHeader {
+				return nil, fmt.Errorf("numf: duplicate header line")
+			}
+			sawHeader = true
+			pf.DataTimestamp = field(raw, 1, 9)
+			pf.TaskCode = field(raw, 9, 15)
+			pf.BatchCode = field(raw, 15, 23)
+		case 'D':
+			if !sawHeader {
+				return nil, fmt.Errorf("numf: detail line before header")
+			}
+			if sawTrailer {
+				return nil, fmt.Errorf("numf: detail line after trailer")
+			}
+			value, err := strconv.ParseFloat(field(raw, 21, 29), 64)
+			if err != nil {
+				return nil, fmt.Errorf("numf: bad value: %w", err)
+			}
+			var typeCode byte
+			if tc := field(raw, 29, 30); tc != "" {
+				typeCode = tc[0]
+			}
+			dataType, ok := dataTypeNames[typeCode]
+			if !ok {
+				return nil, fmt.Errorf("numf: unknown data type code %q", string(typeCode))
+			}
+			pf.DataPoints = append(pf.DataPoints, parsedDataPoint{
+				DataPointID: field(raw, 1, 11),
+				DataTypeID:  field(raw, 11, 21),
+				DataTimestamp: field(raw, 21, 29),
+				Value:         value,
+				PrecisionFlag: field(raw, 30, 31) == "Y",
+			})
+		case 'T':
+			if sawTrailer {
+				return nil, fmt.Errorf("numf: duplicate trailer line")
+			}
+			sawTrailer = true
+			n, err := strconv.Atoi(field(raw, 1, 9))
+			if err != nil {
+				return nil, fmt.Errorf("numf: bad trailer count: %w", err)
+			}
+			declaredCount = n
+		default:
+			return nil, fmt.Errorf("numf: unrecognised record type %q", string(raw[0]))
+		}
+	}
+	if !sawHeader {
+		return nil, fmt.Errorf("numf: missing header line")
+	}
+	if !sawTrailer {
+		return nil, fmt.Errorf("numf: missing trailer line")
+	}
+	if declaredCount != len(pf.DataPoints) {
+		return nil, fmt.Errorf("numf: trailer declared %d detail records, parsed %d",
+			declaredCount, len(pf.DataPoints))
+	}
+	return pf, nil
+}
+
+func nullStr(s string) any {
+	if s == "" {
+		return nil
+	}
+	return s
+}
+
+// FromFile reloads the computation database from one NUMF feed inside a
+// transaction. Data points and vectors/matrices are upserted since the same ones
+// recur across every batch's feed; values are always inserted fresh because a
+// value id is unique to its file and line.
+func FromFile(ctx context.Context, db *sql.DB, path string) (Counts, error) {
+	var c Counts
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return c, err
+	}
+	pf, err := Parse(data)
+	if err != nil {
+		return c, err
+	}
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return c, err
+	}
+	defer tx.Rollback()
+
+	if pf.BatchCode != "" {
+		if _, err := tx.ExecContext(ctx,
+			`INSERT OR IGNORE INTO batches (batch_code, status, task_code)
+			 VALUES (?, 'OPEN', ?)`, pf.BatchCode, pf.TaskCode); err != nil {
+			return c, err
+		}
+		c.Batches++
+	}
+
+	for i, dp := range pf.DataPoints {
+		if dp.DataPointID == "" || dp.DataTypeID == "" {
+			continue
+		}
+		res, err := tx.ExecContext(ctx,
+			`INSERT OR IGNORE INTO data_points (data_point_id, task_code) VALUES (?, ?)`,
+			dp.DataPointID, pf.TaskCode)
+		if err != nil {
+			return c, err
+		}
+		if n, _ := res.RowsAffected(); n > 0 {
+			c.DataPoints++
+		}
+		res, err = tx.ExecContext(ctx,
+			`INSERT OR IGNORE INTO vectors (vector_id, serial_number, data_point_id)
+			 VALUES (?, ?, ?)`, dp.DataPointID, fmt.Sprintf("SN%08d", i+1), dp.DataPointID)
+		if err != nil {
+			return c, err
+		}
+		if n, _ := res.RowsAffected(); n > 0 {
+			c.Vectors++
+		}
+		res, err = tx.ExecContext(ctx,
+			`INSERT OR IGNORE INTO matrices (matrix_id, serial_number, data_point_id)
+			 VALUES (?, ?, ?)`, dp.DataPointID, fmt.Sprintf("SN%08d", i+1), dp.DataPointID)
+		if err != nil {
+			return c, err
+		}
+		if n, _ := res.RowsAffected(); n > 0 {
+			c.Matrices++
+		}
+		valueID := fmt.Sprintf("VL-%s-%04d", pf.BatchCode, i+1)
+		if _, err := tx.ExecContext(ctx,
+			`INSERT INTO values (value_id, data_point_id, task_code, batch_code,
+			        data_type, value, data_timestamp, precision_flag)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+			valueID, dp.DataPointID, pf.TaskCode, nullStr(pf.BatchCode),
+			dp.DataTypeID, dp.Value, dp.DataTimestamp, dp.PrecisionFlag); err != nil {
+			return c, err
+		}
+		c.Values++
+	}
+	return c, tx.Commit()
+}
+
+// EnsureSeeded loads the seed only when the computation database is empty.
+func EnsureSeeded(ctx context.Context, db *sql.DB, path string) (bool, Counts, error) {
+	var n int
+	if err := db.QueryRowContext(ctx, `SELECT count(*) FROM values`).Scan(&n); err != nil {
+		return false, Counts{}, err
+	}
+	if n != 0 {
+		return false, Counts{}, nil
+	}
+	c, err := FromFile(ctx, db, path)
+	return err == nil, c, err
+}

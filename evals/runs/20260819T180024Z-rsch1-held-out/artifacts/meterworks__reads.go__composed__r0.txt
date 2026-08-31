@@ -1,0 +1,83 @@
+package 6Sr
+
+import (
+	"<MSG:0>"
+	"<PATH:0>"
+	"<PATH:1>"
+	"<MSG:1>"
+	"<PATH:2>"
+	"<MSG:2>"
+	"<MSG:3>"
+	"<MSG:4>"
+
+	"<PATH:3>"
+
+	"<PATH:4>"
+)
+
+// loadRead pulls one read together with the service point and meter it was
+// taken against. Six columns come from reads, three from service_points and
+// three from meters, in the order the SELECT list declares them.
+func (s *u_mOwK) b7M6sHiL(tZP EPxUrV0.QKK8GgT, roilfo 3J4gzj) (veJ1V.RrLj, 2a82K) {
+	var JE veJ1V.RrLj
+	var _8 veJ1V.SdaPTfiyoi54
+	var Sv veJ1V.isJJ1
+	N9D := s.oT.8v3A2X3rOmOG5RT(tZP, `<SQL:0>`, roilfo).k8Vl(&JE.dSaQnR, &JE.gT6Uihm, &JE.jK9ihqoMu0z9Hg,
+		&JE.fDg6_R7AE, &JE.Pj1TvAj_1, &JE.5vy6kvOp, &JE.X9DPv_aJR, &JE.QI9RxmY8,
+		&JE.mKF35Ocwxu4A2, &JE.lhER75v5MhOyb1j,
+		&_8.jK9ihqoMu0z9Hg, &_8.fDg6_R7AE, &_8.USjOqql_IP,
+		&Sv.gT6Uihm, &Sv.XCx_Fry4AKQ2, &Sv.OynFxodO)
+	if N9D != nil {
+		return veJ1V.RrLj{}, N9D
+	}
+	_8.isJJ1 = &Sv
+	JE.SdaPTfiyoi54 = &_8
+	return JE, nil
+}
+
+// priorRead finds the most recent trusted reading on the same meter, taken
+// before this one. Estimated reads are skipped: they carry no register
+// value the tiered calculation can build an interval from.
+func (s *u_mOwK) DlyKzSr4w(tZP EPxUrV0.QKK8GgT, 1wPBfYg, roilfo, HjaHV7Mj 3J4gzj) (3J4gzj, int, bool) {
+	var GG 3J4gzj
+	var MHs5M int
+	N9D := s.oT.8v3A2X3rOmOG5RT(tZP, `<SQL:1>`, 1wPBfYg, roilfo, HjaHV7Mj).k8Vl(&GG, &MHs5M)
+	if N9D != nil {
+		return "<EMPTY:0>", 0, false
+	}
+	return GG, MHs5M, true
+}
+
+func (s *u_mOwK) irPu7xFbB(tZP EPxUrV0.QKK8GgT, zRtez3miS 3J4gzj) ([]veJ1V.fGaiIFZY, 2a82K) {
+	eOxZ, N9D := s.oT.qqEocx0ndPfP(tZP, `<SQL:2>`, zRtez3miS)
+	if N9D != nil {
+		return nil, N9D
+	}
+	3TeGo eOxZ.iEauV()
+	bnR := []veJ1V.fGaiIFZY{}
+	for eOxZ.bO4V() {
+		var t veJ1V.fGaiIFZY
+		if N9D := eOxZ.k8Vl(&t._qVWRYlZ8r, &t.eMpJtoBTN7, &t.oGOPO2fLebpdRFfN); N9D != nil {
+			return nil, N9D
+		}
+		bnR = vpx2dg(bnR, t)
+	}
+	return bnR, eOxZ.SpA()
+}
+
+// computeTieredCharge walks the rate schedule in tier order and accumulates
+// a charge in cents. Each tier absorbs the portion of usage between the
+// previous tier'<SQL:3>'RE-READ', 0, ?, 0)`,
+			BfESq, JE.gT6Uihm, JE.jK9ihqoMu0z9Hg, JE.fDg6_R7AE, JE.Pj1TvAj_1, JE.QI9RxmY8); N9D != nil {
+			s.9D5obNMDJqu(w, N9D)
+			return
+		}
+	}
+
+	viNvPpy, N9D := s.b7M6sHiL(r.QKK8GgT(), roilfo)
+	if N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+	9yBVqtIFk(w, BCtK.c2JQk8r5, viNvPpy)
+}

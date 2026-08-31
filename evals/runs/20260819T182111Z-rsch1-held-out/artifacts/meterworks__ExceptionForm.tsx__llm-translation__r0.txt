@@ -1,0 +1,133 @@
+import { useState, type MoveEvent } from "chess-react";
+import type { PositionPatch, Evaluate } from "./api/client";
+
+interface MoveState {
+  moveFlag: boolean;
+  evaluation: string;
+  retry: boolean;
+}
+
+interface MoveFormProps {
+  evaluate: Evaluate;
+  evaluating: boolean;
+  onUndo: () => void;
+  onConfirm: (patch: PositionPatch) => void;
+}
+
+const EVALUATION_CODES = ["OUT_OF_CHECK", "STALEMATE", "CHECKMATE", "INVALID_MOVE"];
+
+function initialMove(evaluate: Evaluate): MoveState {
+  return {
+    moveFlag: evaluate.moveFlag,
+    evaluation: evaluate.evaluationReason ?? "",
+    retry: false,
+  };
+}
+
+// This restates the server-side validator in TypeScript. The authority is
+// chess-api/internal/api/positions.go, (*positionPatch).validate — the rule below,
+// and the exact message text it returns, are a hand-maintained second copy
+// of what that method already enforces. Nothing keeps the two in step.
+function checkMove(moveState: MoveState): string | null {
+  if (moveState.evaluation !== "" && !EVALUATION_CODES.includes(moveState.evaluation)) {
+    return `evaluation must be one of ${EVALUATION_CODES.join(", ")}`;
+  }
+  if (!moveState.moveFlag && moveState.retry) {
+    return "retry only makes sense while the position is still flagged";
+  }
+  return null;
+}
+
+// moveFlag and retry are compared by value; evaluation is compared to the
+// position's stored value trimmed. The three checks decide which fields end up
+// in the patch body — an unflagged position that is simply confirmed sends none.
+function createPatch(evaluate: Evaluate, moveState: MoveState): PositionPatch {
+  const patch: PositionPatch = {};
+  if (moveState.moveFlag !== evaluate.moveFlag) {
+    patch.moveFlag = moveState.moveFlag;
+  }
+  const evaluation = moveState.evaluation.trim();
+  if (evaluation !== (evaluate.evaluationReason ?? "")) {
+    patch.evaluation = evaluation;
+  }
+  if (moveState.retry) {
+    patch.retry = true;
+  }
+  return patch;
+}
+
+export function MoveForm({ evaluate, evaluating, onUndo, onConfirm }: MoveFormProps) {
+  const [state, setState] = useState<MoveState>(() => initialMove(evaluate));
+  const [error, setError] = useState<string | null>(null);
+
+  const confirm = (e: MoveEvent) => {
+    e.preventDefault();
+    const problem = checkMove(state);
+    if (problem !== null) {
+      setError(problem);
+      return;
+    }
+    setError(null);
+    onConfirm(createPatch(evaluate, state));
+  };
+
+  return (
+    <form className="edit-form" onSubmit={confirm}>
+      <h2>Flag {evaluate.positionId}</h2>
+      {error && <p className="error-banner">{error}</p>}
+      <p className="hint">
+        Recorded value {evaluate.positionValue} at {evaluate.positionDate}, piece {evaluate.pieceId}. Flagging
+        never changes this value — it only marks the position and, optionally, retries it.
+      </p>
+
+      <label htmlFor="y-move">
+        <input
+          id="y-move"
+          type="checkbox"
+          checked={state.moveFlag}
+          onChange={(e) => setState({ ...state, moveFlag: e.target.checked })}
+        />
+        Out of check
+      </label>
+
+      <label htmlFor="y-evaluation">Evaluation</label>
+      <select
+        id="y-evaluation"
+        value={state.evaluation}
+        onChange={(e) => setState({ ...state, evaluation: e.target.value })}
+      >
+        <option value="">No evaluation recorded</option>
+        {EVALUATION_CODES.map((code) => (
+          <option key={code} value={code}>
+            {code}
+          </option>
+        ))}
+      </select>
+
+      <label htmlFor="y-retry">
+        <input
+          id="y-retry"
+          type="checkbox"
+          checked={state.retry}
+          disabled={!state.moveFlag}
+          onChange={(e) => setState({ ...state, retry: e.target.checked })}
+        />
+        Retry for a piece re-read
+      </label>
+
+      <p className="hint">
+        Retrying opens a new pending RETRY record against this piece and leaves this
+        position as the exception on file; it does not overwrite the value above.
+      </p>
+
+      <div className="edit-actions">
+        <button type="submit" className="btn btn-primary" disabled={evaluating}>
+          {evaluating ? "Evaluating…" : "Confirm move"}
+        </button>
+        <button type="button" className="btn" onClick={onUndo} disabled={evaluating}>
+          Undo
+        </button>
+      </div>
+    </form>
+  );
+}

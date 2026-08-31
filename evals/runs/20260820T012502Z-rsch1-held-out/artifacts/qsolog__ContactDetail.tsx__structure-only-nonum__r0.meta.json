@@ -1,0 +1,53 @@
+{
+  "key": "qsolog__ContactDetail.tsx__structure-only-nonum__r0",
+  "arm": "structure-only-nonum",
+  "replicate": 0,
+  "source_path": "corpus/qsolog/app/src/components/ContactDetail.tsx",
+  "source_sha256": "1a44503caaead70c7016c5404f9adc46107966fbb9616d72505d830a462828bf",
+  "true_domain_id": "ham-radio-logbook",
+  "language": "tsx",
+  "artifact_sha256": "bbb956ac0763a4b1e67ce15e2188538e70425d5ec3bde88bf4063ab3a8919051",
+  "artifact_lines": 91,
+  "latency_s": 0.8,
+  "solution_meta": {
+    "generated_by": "evals/canonicalize.py",
+    "preserved_tokens": [
+      "Boolean",
+      "className",
+      "dd",
+      "div",
+      "dl",
+      "dt",
+      "h2",
+      "h3",
+      "key",
+      "li",
+      "p",
+      "section",
+      "span",
+      "ul"
+    ],
+    "preserved_import_paths": [],
+    "n_idents_canonicalised": 28,
+    "n_strings_canonicalised": 30,
+    "n_runes_canonicalised": 0,
+    "n_numbers_canonicalised": 0,
+    "counters_delta": {
+      "lines": 0,
+      "bytes": -498,
+      "funcs": 0,
+      "structs": 0,
+      "interfaces": 0,
+      "imports": 0,
+      "exports": 0,
+      "string_literals": 0,
+      "max_brace_depth": 0
+    },
+    "blind_delta": {
+      "bytes": [
+        3265,
+        2767
+      ]
+    }
+  }
+}

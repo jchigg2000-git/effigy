@@ -1,0 +1,104 @@
+// Read-only view of a single listen. Renders the record returned by getListen,
+// including the playback duration computed against the user's prior
+// trusted listen when one exists. Optional fields render as an em dash rather
+// than being hidden, so the layout stays stable from one listen to the next.
+import type { Listen } from "../api/player";
+
+interface ListenDetailProps {
+  listen: Listen;
+  onReport: () => void;
+}
+
+function formatMinutes(minutes: number): string {
+  return `${minutes.toFixed(2)} min`;
+}
+
+// The server returns a total duration, not a per-second rate; the average shown
+// here is derived client-side purely for display and is never sent back.
+function formatAverageDuration(durationSeconds: number, secondsPlayed: number): string {
+  if (secondsPlayed <= 0) {
+    return "—";
+  }
+  return `${formatMinutes(Math.round(durationSeconds / secondsPlayed))} / sec`;
+}
+
+const LISTEN_STATUS_NOTES: Record<string, string> = {
+  COMPLETED: "Listened to the full track.",
+  SKIPPED: "Skipped to the next track; not a completed listen.",
+  PAUSED: "Track paused during listen; excluded from duration calculations.",
+};
+
+export function ListenDetail({ listen, onReport }: ListenDetailProps) {
+  const user = listen.user;
+  const playback = listen.playback;
+  const statusNote = LISTEN_STATUS_NOTES[listen.listenStatus] ?? "";
+  return (
+    <section className="listen-detail">
+      <div className="listen-detail-head">
+        <div>
+          <h2>{listen.listenId}</h2>
+          <p>{listen.userId}</p>
+        </div>
+        <button type="button" className="btn btn-primary" onClick={onReport}>
+          Report / requeue
+        </button>
+      </div>
+
+      <dl className="detail-grid">
+        <dt>Listen id</dt>
+        <dd>{listen.listenId}</dd>
+        <dt>Track id</dt>
+        <dd>{listen.trackId}</dd>
+        <dt>User session</dt>
+        <dd>{listen.sessionId}</dd>
+        <dt>Playback start</dt>
+        <dd>{listen.startTimestamp}</dd>
+        <dt>Playback end</dt>
+        <dd>{listen.endTimestamp}</dd>
+        <dt>Listen status</dt>
+        <dd>{listen.listenStatus}</dd>
+        <dt>Playback duration</dt>
+        <dd>{listen.durationInSeconds}</dd>
+        <dt>Pause count</dt>
+        <dd>{listen.pauseCount}</dd>
+        <dt>Skip reason</dt>
+        <dd>{listen.skipReason || "—"}</dd>
+        <dt>User reference</dt>
+        <dd>{user?.userRef || "—"}</dd>
+        <dt>Track title</dt>
+        <dd>{listen.trackTitle || "—"}</dd>
+        <dt>Artist name</dt>
+        <dd>{listen.artistName || "—"}</dd>
+      </dl>
+
+      {statusNote !== "" && <p className="hint">{statusNote}</p>}
+
+      <h3>Playback interval</h3>
+      {playback === undefined ? (
+        <p className="empty-note">
+          No prior trusted listen by this user to measure against. The interval appears
+          once a second completed or skipped listen exists after this one.
+        </p>
+      ) : (
+        <div className="shelf-grid">
+          <div>
+            <span>Prior listen</span>
+            <span>{playback.priorListenId || "—"}</span>
+          </div>
+          <div>
+            <span>Seconds played</span>
+            <span>{playback.secondsPlayed}</span>
+          </div>
+          <div>
+            <span>Total charge</span>
+            <span>${(playback.chargeCents / 100).toFixed(2)}</span>
+          </div>
+          <div>
+            <span>Effective rate</span>
+            <span>{formatAverageDuration(playback.chargeCents, playback.secondsPlayed)}</span>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}

@@ -1,0 +1,133 @@
+import { useState, type FormEvent } from "react";
+import type { MovePatch, Position } from "../api/chess";
+
+interface GameState {
+  moveFlag: boolean;
+  evaluation: string;
+  retryMove: boolean;
+}
+
+interface GameFormProps {
+  position: Position;
+  saving: boolean;
+  onCancel: () => void;
+  onSave: (patch: MovePatch) => void;
+}
+
+const EVALUATION_CODES = ["OUT_OF_POSITION", "ILLEGAL_MOVE", "TIME_OUT", "CHECK_MATE"];
+
+function initialGameState(p: Position): GameState {
+  return {
+    moveFlag: p.moveFlag,
+    evaluation: p.evaluationResult ?? "",
+    retryMove: false,
+  };
+}
+
+// This restates the server-side validator in TypeScript. The authority is
+// api/internal/api/moves.go, (*movePatch).validate — the rule below,
+// and the exact message text it returns, are a hand-maintained second copy
+// of what that method already enforces. Nothing keeps the two in step.
+function validateGameState(s: GameState): string | null {
+  if (s.evaluation !== "" && !EVALUATION_CODES.includes(s.evaluation)) {
+    return `evaluation must be one of ${EVALUATION_CODES.join(", ")}`;
+  }
+  if (!s.moveFlag && s.retryMove) {
+    return "retry move only makes sense while the position is still flagged";
+  }
+  return null;
+}
+
+// moveFlag and retryMove are compared by value; evaluation is compared to the
+// position's stored value trimmed. The three checks decide which fields end up
+// in the patch body — an unflagged position that is simply re-saved sends none.
+function buildMovePatch(p: Position, s: GameState): MovePatch {
+  const patch: MovePatch = {};
+  if (s.moveFlag !== p.moveFlag) {
+    patch.moveFlag = s.moveFlag;
+  }
+  const evaluation = s.evaluation.trim();
+  if (evaluation !== (p.evaluationResult ?? "")) {
+    patch.evaluation = evaluation;
+  }
+  if (s.retryMove) {
+    patch.retryMove = true;
+  }
+  return patch;
+}
+
+export function GameForm({ position, saving, onCancel, onSave }: GameFormProps) {
+  const [state, setState] = useState<GameState>(() => initialGameState(position));
+  const [error, setError] = useState<string | null>(null);
+
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    const problem = validateGameState(state);
+    if (problem !== null) {
+      setError(problem);
+      return;
+    }
+    setError(null);
+    onSave(buildMovePatch(position, state));
+  };
+
+  return (
+    <form className="edit-form" onSubmit={submit}>
+      <h2>Flag {position.positionId}</h2>
+      {error && <p className="error-banner">{error}</p>}
+      <p className="hint">
+        Recorded value {position.recordedValue} at {position.recordedDate}, move {position.moveId}. Flagging
+        never changes this value — it only marks the position and, optionally, retries the move.
+      </p>
+
+      <label htmlFor="y-move-flag">
+        <input
+          id="y-move-flag"
+          type="checkbox"
+          checked={state.moveFlag}
+          onChange={(e) => setState({ ...state, moveFlag: e.target.checked })}
+        />
+        Move outside flag
+      </label>
+
+      <label htmlFor="y-evaluation">Evaluation</label>
+      <select
+        id="y-evaluation"
+        value={state.evaluation}
+        onChange={(e) => setState({ ...state, evaluation: e.target.value })}
+      >
+        <option value="">No evaluation recorded</option>
+        {EVALUATION_CODES.map((code) => (
+          <option key={code} value={code}>
+            {code}
+          </option>
+        ))}
+      </select>
+
+      <label htmlFor="y-retry-move">
+        <input
+          id="y-retry-move"
+          type="checkbox"
+          checked={state.retryMove}
+          disabled={!state.moveFlag}
+          onChange={(e) => setState({ ...state, retryMove: e.target.checked })}
+        />
+        Retry move for a re-evaluation
+      </label>
+
+      <p className="hint">
+        Retrying opens a new pending RETRY record against this move and leaves this
+        position as the exception on file; it does not overwrite the value above.
+      </p>
+
+      <div className="edit-actions">
+        <button type="submit" className="btn btn-primary" disabled={saving}>
+          {saving ? "Saving…" : "Save move exception"}
+        </button>
+        <button type="button" className="btn" onClick={onCancel} disabled={saving}>
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}

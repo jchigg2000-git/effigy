@@ -1,0 +1,65 @@
+{
+  "key": "meterworks__servicepoints.go__structure-only-nonum__r0",
+  "arm": "structure-only-nonum",
+  "replicate": 0,
+  "source_path": "corpus/meterworks/api/internal/api/servicepoints.go",
+  "source_sha256": "2914066e847ea915c87850a8063de75ef0792bace5e2fff410600eab337f8290",
+  "true_domain_id": "water-utility-metering",
+  "language": "go",
+  "artifact_sha256": "143af7da8eda57c2256d273437ff6032b0c13179ec1cc7527845f9a8dce88970",
+  "artifact_lines": 97,
+  "latency_s": 0.1,
+  "solution_meta": {
+    "generated_by": "evals/canonicalize.py",
+    "preserved_tokens": [
+      "Atoi",
+      "ErrNoRows",
+      "Is",
+      "Request",
+      "ResponseWriter",
+      "StatusNotFound",
+      "StatusOK",
+      "TrimSpace",
+      "any",
+      "append",
+      "errors",
+      "http",
+      "len",
+      "nil",
+      "sql",
+      "strconv",
+      "string",
+      "strings",
+      "v5"
+    ],
+    "preserved_import_paths": [
+      "\"database/sql\"",
+      "\"errors\"",
+      "\"github.com/go-chi/chi/v5\"",
+      "\"net/http\"",
+      "\"strconv\"",
+      "\"strings\""
+    ],
+    "n_idents_canonicalised": 50,
+    "n_strings_canonicalised": 12,
+    "n_runes_canonicalised": 0,
+    "n_numbers_canonicalised": 2,
+    "counters_delta": {
+      "lines": 0,
+      "bytes": 144,
+      "funcs": 0,
+      "structs": 0,
+      "interfaces": 0,
+      "imports": 0,
+      "exports": 0,
+      "string_literals": 0,
+      "max_brace_depth": 0
+    },
+    "blind_delta": {
+      "bytes": [
+        2820,
+        2964
+      ]
+    }
+  }
+}

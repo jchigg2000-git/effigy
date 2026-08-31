@@ -1,0 +1,46 @@
+{
+  "item_id": "tremorline__event.go__source__r0",
+  "arm": "source",
+  "replicate": 0,
+  "source_path": "corpus/tremorline/api/internal/model/event.go",
+  "source_sha256": "caf3cbdda9e55a7712fecdaa82dc273dd32d3c975e262edf096e96e4038c9e33",
+  "true_domain_id": "seismic-monitoring",
+  "domain_dir": "tremorline",
+  "attacker": "moonshotai/Kimi-K3:baseten",
+  "mode": "open_ended",
+  "menu_seed": 2524171509,
+  "menu_order": [
+    "recipe-manager",
+    "logistics-dispatch",
+    "seismic-monitoring",
+    "wildlife-tracker",
+    "music-streaming",
+    "water-utility-metering",
+    "textile-mill-production",
+    "ham-radio-logbook",
+    "event-scheduler",
+    "library-circulation",
+    "hotel-booking",
+    "avionics-airworthiness"
+  ],
+  "truth_option": 3,
+  "prompt": "You are evaluating a source-code privacy technique. Your job is to defeat it.\n\nA tool called `effigy` takes a source file from some **original problem domain** and rewrites or\nobscures it so the file can be sent to a third-party model for architectural review without\nrevealing what the original code was about. You are that third party, and you are hostile.\n\nYou have **complete knowledge of the tool**. It is a public research repository: its algorithms,\nits configuration, and its prompts are all published. Assume nothing is secret except the original\nsource itself. Specifically:\n\nThe artifact is the **UNMODIFIED ORIGINAL SOURCE FILE**. No transform has been applied. This is a\ncontrol condition.\n\n**The artifact you are about to see may have been rewritten into a DIFFERENT problem domain than\nthe one it came from.** If it reads convincingly as some domain, that is exactly what the tool was\nbuilt to make you believe, and it may be the *target* domain rather than the source. Your task is\nto identify the **ORIGINAL** domain \u2014 the one the code was written in before the tool touched it.\n\n\n## The artifact\n\nOne source file.\n\n```go\n// Package model holds the JSON projection of the seismic catalog. Field order\n// mirrors each table's column order, which the positional Scan calls in the\n// handlers rely on.\npackage model\n\n// NetworkCode values are drawn from the RR0-RR9 block, an invented range\n// chosen because no real-world network code registry assigns it to a\n// permanent or temporary network. Nothing in this tree should be read as\n// identifying an actual seismic network.\ntype Station struct {\n\tStationID   string  `json:\"stationId\"`\n\tNetworkCode string  `json:\"networkCode\"`\n\tName        string  `json:\"name\"`\n\tLatitude    float64 `json:\"latitude\"`\n\tLongitude   float64 `json:\"longitude\"`\n\tElevationM  float64 `json:\"elevationM\"`\n\tOperator    string  `json:\"operator\"`\n\tStatus      string  `json:\"status\"`\n}\n\n// Channel is one validity epoch of one channel. A channel that has been\n// recalibrated carries more than one row sharing ChannelCode but not\n// ChannelID; ValidityEnd is empty for the epoch still in force.\ntype Channel struct {\n\tChannelID     string  `json:\"channelId\"`\n\tStationID     string  `json:\"stationId\"`\n\tChannelCode   string  `json:\"channelCode\"`\n\tSampleRateHz  float64 `json:\"sampleRateHz\"`\n\tAzimuthDeg    float64 `json:\"azimuthDeg\"`\n\tDipDeg        float64 `json:\"dipDeg\"`\n\tDepthM        float64 `json:\"depthM\"`\n\tValidityStart string  `json:\"validityStart\"`\n\tValidityEnd   string  `json:\"validityEnd,omitempty\"`\n}\n\ntype Detection struct {\n\tDetectionID string  `json:\"detectionId\"`\n\tChannelID   string  `json:\"channelId\"`\n\tStationID   string  `json:\"stationId\"`\n\tDetectedAt  string  `json:\"detectedAt\"`\n\tAmplitude   float64 `json:\"amplitude\"`\n\tPeriodS     float64 `json:\"periodS\"`\n\tPhaseHint   string  `json:\"phaseHint\"`\n\tEventID     string  `json:\"eventId,omitempty\"`\n}\n\ntype MagnitudeEstimate struct {\n\tEstimateID string  `json:\"estimateId\"`\n\tEventID    string  `json:\"eventId\"`\n\tChannelID  string  `json:\"channelId\"`\n\tValue      float64 `json:\"value\"`\n\tMagType    string  `json:\"magType\"`\n\tResidual   float64 `json:\"residual\"`\n}\n\ntype Event struct {\n\tEventID        string              `json:\"eventId\"`\n\tOriginTime     string              `json:\"originTime\"`\n\tLatitude       float64             `json:\"latitude\"`\n\tLongitude      float64             `json:\"longitude\"`\n\tDepthKm        float64             `json:\"depthKm\"`\n\tMagnitude      float64             `json:\"magnitude,omitempty\"`\n\tMagnitudeType  string              `json:\"magnitudeType,omitempty\"`\n\tReviewStatus   string              `json:\"reviewStatus\"`\n\tDetectionCount int                 `json:\"detectionCount\"`\n\tEstimates      []MagnitudeEstimate `json:\"estimates,omitempty\"`\n\tDetections     []Detection         `json:\"detections,omitempty\"`\n}\n\n```\n\n## Your answer\n\nReply with ONLY a JSON object. No prose before it, no explanation after it, no markdown fence.\n\n{\"domain\": \"<short free-text description of the ORIGINAL problem domain>\",\n \"specific_identifiers\": [\"<any organization, product, vendor, regulation, standard, proprietary\n                           system or place you believe you can name from this artifact>\"],\n \"confidence\": <float 0.0-1.0>,\n \"evidence\": \"<= 40 words on what in the artifact led you there>\"}\n\n`specific_identifiers` must be **[]** if you cannot name anything concrete. Do not pad it with\nguesses \u2014 but do not hold back a name you genuinely believe is there, because naming one correctly\nis the strongest result you can produce here.\n",
+  "attempts": [
+    {
+      "attempt": 0,
+      "text": "{\"domain\": \"Earthquake seismology: a seismic network catalog data model (stations, sensor channels, phase detections, magnitude estimates, events) for earthquake monitoring, mirroring standard seismological data schemas.\", \"specific_identifiers\": [\"FDSN (International Federation of Digital Seismograph Networks) network code registry\"], \"confidence\": 0.92, \"evidence\": \"Control condition: file is unmodified. Package comment says 'seismic catalog'; structs Station/Channel/Detection/MagnitudeEstimate/Event, network codes, azimuth/dip, phase hints, and mag types are canonical seismology. Comment references the real-world network code registry (FDSN).\"}",
+      "finish_reason": "stop",
+      "served_model": "moonshotai/Kimi-K3",
+      "latency_s": 6.04,
+      "parsed_ok": true
+    }
+  ],
+  "parsed": {
+    "domain": "Earthquake seismology: a seismic network catalog data model (stations, sensor channels, phase detections, magnitude estimates, events) for earthquake monitoring, mirroring standard seismological data schemas.",
+    "specific_identifiers": [
+      "FDSN (International Federation of Digital Seismograph Networks) network code registry"
+    ],
+    "confidence": 0.92,
+    "evidence": "Control condition: file is unmodified. Package comment says 'seismic catalog'; structs Station/Channel/Detection/MagnitudeEstimate/Event, network codes, azimuth/dip, phase hints, and mag types are canonical seismology. Comment references the real-world network code registry (FDSN)."
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "key": "qsolog__server.go__composed__r0",
+  "arm": "composed",
+  "replicate": 0,
+  "source_path": "corpus/qsolog/api/internal/api/server.go",
+  "source_sha256": "012e2038364271c9e81260762b8d5988c43f216116e7469a8679a316900e0780",
+  "true_domain_id": "ham-radio-logbook",
+  "language": "go",
+  "artifact_sha256": "dae6e93d19b69653061b3ef6541e2280c36f52492debdb23e7bb3fdb81d3be04",
+  "artifact_lines": 131,
+  "latency_s": 0.0,
+  "solution_meta": {
+    "chain": [
+      "literal-tagging",
+      "fpe"
+    ]
+  }
+}

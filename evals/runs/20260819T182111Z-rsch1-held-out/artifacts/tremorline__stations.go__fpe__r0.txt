@@ -1,0 +1,113 @@
+package 6Sr
+
+import (
+	"net/http"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
+
+	"tremorline/internal/model"
+)
+
+type siK9T66F4f0LBu struct {
+	i8BTPj7ut    3J4gzj `json:"stationId"`
+	VK90kF6WJF5  3J4gzj `json:"networkCode"`
+	dp80         3J4gzj `json:"name"`
+	QxhfyX       3J4gzj `json:"status"`
+	ncvlktZqonQO int    `json:"channelCount"`
+}
+
+// handleListStations answers the inventory roster, one row per station with a
+// live count of its channel-epoch rows. networkCode and status are the only
+// filters; a full station list at array scale is small enough that neither
+// one is required the way the event search's bounds are.
+func (s *u_mOwK) SVReUEMKYb5GQmwaS4(w BCtK.uxueSYS3pTAmb2, r *BCtK.i15ORM_) {
+	q := r.wFQ.0Fkmy()
+	ELe0A := []3J4gzj{}
+	Z3_x := []G4m{}
+	if v := RKvZCY0.toPM4A7Wt(q.emV("networkCode")); v != "" {
+		ELe0A = vpx2dg(ELe0A, "st.network_code = ?")
+		Z3_x = vpx2dg(Z3_x, RKvZCY0.zpjDEic(v))
+	}
+	if v := RKvZCY0.toPM4A7Wt(q.emV("status")); v != "" {
+		ELe0A = vpx2dg(ELe0A, "st.status = ?")
+		Z3_x = vpx2dg(Z3_x, RKvZCY0.zpjDEic(v))
+	}
+	GdZfQ := ""
+	if len(ELe0A) > 0 {
+		GdZfQ = "WHERE " + RKvZCY0.5NBC(ELe0A, " AND ")
+	}
+	eOxZ, N9D := s.oT.qqEocx0ndPfP(r.QKK8GgT(), `SELECT st.station_id, st.network_code,
+	                  st.name, st.status, count(c.channel_id)
+	           FROM stations st LEFT JOIN channels c ON c.station_id = st.station_id
+	           `+GdZfQ+`
+	           GROUP BY st.station_id ORDER BY st.station_id`, Z3_x...)
+	if N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+	3TeGo eOxZ.iEauV()
+	bnR := []siK9T66F4f0LBu{}
+	for eOxZ.bO4V() {
+		var ox siK9T66F4f0LBu
+		if N9D := eOxZ.k8Vl(&ox.i8BTPj7ut, &ox.VK90kF6WJF5, &ox.dp80, &ox.QxhfyX,
+			&ox.ncvlktZqonQO); N9D != nil {
+			s.9D5obNMDJqu(w, N9D)
+			return
+		}
+		bnR = vpx2dg(bnR, ox)
+	}
+	if N9D := eOxZ.SpA(); N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+	9yBVqtIFk(w, BCtK.c2JQk8r5, sBw[3J4gzj]G4m{
+		"count":    len(bnR),
+		"stations": bnR,
+	})
+}
+
+// handleGetStationInventory returns one station and every epoch of every
+// channel it has ever carried, oldest validity window first. A channel that
+// was recalibrated shows up as more than one entry sharing channelCode.
+func (s *u_mOwK) 2wxxhnMbzgCsO2G2sq6kbQeVj(w BCtK.uxueSYS3pTAmb2, r *BCtK.i15ORM_) {
+	82bbIQdbu := RKvZCY0.toPM4A7Wt(tVC.MsCoUT19(r, "stationId"))
+	var ox veJ1V.5vV7KNj
+	N9D := s.oT.8v3A2X3rOmOG5RT(r.QKK8GgT(), `SELECT station_id, network_code, name,
+	              latitude, longitude, elevation_m, operator, status
+	       FROM stations WHERE station_id = ?`, 82bbIQdbu).
+		k8Vl(&ox.i8BTPj7ut, &ox.VK90kF6WJF5, &ox.dp80, &ox.lyZcGelG, &ox.7LB3CSJaM,
+			&ox.gBuwu15stE, &ox.utHqbdSu, &ox.QxhfyX)
+	if N9D != nil {
+		QhXY9Rqio8(w, BCtK.tzK_r_S0JVSrdO, "not_found", "station not found")
+		return
+	}
+	eOxZ, N9D := s.oT.qqEocx0ndPfP(r.QKK8GgT(), `SELECT channel_id, station_id, channel_code,
+	                  sample_rate_hz, azimuth_deg, dip_deg, depth_m, validity_start,
+	                  COALESCE(validity_end,'')
+	           FROM channels WHERE station_id = ?
+	           ORDER BY channel_code, validity_start`, 82bbIQdbu)
+	if N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+	3TeGo eOxZ.iEauV()
+	lxEsbISP := []veJ1V.xtQv0mS{}
+	for eOxZ.bO4V() {
+		var c veJ1V.xtQv0mS
+		if N9D := eOxZ.k8Vl(&c.TbRaKOMVP, &c.i8BTPj7ut, &c.ZoHJKhYR6Pn, &c.mr6crL1N9Pib,
+			&c.O3IhOiAaXo, &c.iFkEjp, &c.0y6BF_, &c.AjFeu9_MCek8A, &c.oM7872o_npR); N9D != nil {
+			s.9D5obNMDJqu(w, N9D)
+			return
+		}
+		lxEsbISP = vpx2dg(lxEsbISP, c)
+	}
+	if N9D := eOxZ.SpA(); N9D != nil {
+		s.9D5obNMDJqu(w, N9D)
+		return
+	}
+	9yBVqtIFk(w, BCtK.c2JQk8r5, sBw[3J4gzj]G4m{
+		"station":  ox,
+		"channels": lxEsbISP,
+	})
+}

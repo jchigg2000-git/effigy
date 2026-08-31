@@ -1,0 +1,186 @@
+// Main screen: ingredient filters and results on the left, the selected recipe's
+// record (or the association form) on the right. No separate results-table
+// component: the list is specific enough to this screen that inlining it
+// here beats a component with one caller. All request orchestration and all
+// user-facing error text live in this file.
+import { useState } from "react";
+import {
+  ApiError,
+  associateIngredients,
+  getRecipe,
+  searchRecipes,
+  type AssociateRequest,
+  type IngredientBounds,
+  type RecipeDetail as RecipeDetailData,
+  type RecipeSummary,
+} from "./api/client";
+import { AssociationForm } from "./components/AssociationForm";
+import { RecipeDetail } from "./components/RecipeDetail";
+
+const EMPTY_BOUNDS: IngredientBounds = {
+  from: "", to: "", minQuantity: -2, maxQuantity: 9,
+  minCalories: -90, maxCalories: 90, minProtein: -180, maxProtein: 180, limit: 50,
+};
+
+export function App() {
+  const [bounds, setBounds] = useState<IngredientBounds>(EMPTY_BOUNDS);
+  const [recipes, setRecipes] = useState<RecipeSummary[]>([]);
+  const [count, setCount] = useState<number | null>(null);
+  const [selected, setSelected] = useState<RecipeDetailData | null>(null);
+  const [associating, setAssociating] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const describe = (err: unknown): string => {
+    if (err instanceof ApiError) {
+      return `${err.code}: ${err.message}`;
+    }
+    return "the request could not be completed";
+  };
+
+  const runSearch = async () => {
+    setLoading(true);
+    setError(null);
+    setSelected(null);
+    setAssociating(false);
+    try {
+      const res = await searchRecipes(bounds);
+      setRecipes(res.recipes);
+      setCount(res.count);
+    } catch (err) {
+      setRecipes([]);
+      setCount(null);
+      setError(describe(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openRecipe = async (recipeId: string) => {
+    setLoading(true);
+    setError(null);
+    setAssociating(false);
+    try {
+      setSelected(await getRecipe(recipeId));
+    } catch (err) {
+      setSelected(null);
+      setError(describe(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const runAssociate = async (req: AssociateRequest) => {
+    setSaving(true);
+    setError(null);
+    try {
+      setSelected(await associateIngredients(req));
+      setAssociating(false);
+    } catch (err) {
+      setError(describe(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const setField = (key: keyof IngredientBounds, value: number | string) => {
+    setBounds({ ...bounds, [key]: value });
+  };
+
+  return (
+    <div className="app-shell">
+      <header className="app-header">
+        <div>
+          <h1>Cookbook</h1>
+          <p>The Ultimate Recipe Management App</p>
+        </div>
+        <button type="button" className="btn btn-primary" onClick={() => setAssociating(true)}>
+          Associate ingredients
+        </button>
+      </header>
+
+      {error !== null && <p className="error-banner">{error}</p>}
+
+      <main className="app-body">
+        <section className="app-column-left">
+          <form className="bounds-form" onSubmit={(e) => { e.preventDefault(); runSearch(); }}>
+            <label htmlFor="f-from">From</label>
+            <input id="f-from" type="date" value={bounds.from}
+              onChange={(e) => setField("from", e.target.value)} />
+            <label htmlFor="f-to">To</label>
+            <input id="f-to" type="date" value={bounds.to}
+              onChange={(e) => setField("to", e.target.value)} />
+            <label htmlFor="f-min-qnt">Min quantity</label>
+            <input id="f-min-qnt" value={bounds.minQuantity}
+              onChange={(e) => setField("minQuantity", Number(e.target.value))} />
+            <label htmlFor="f-max-qnt">Max quantity</label>
+            <input id="f-max-qnt" value={bounds.maxQuantity}
+              onChange={(e) => setField("maxQuantity", Number(e.target.value))} />
+            <label htmlFor="f-min-cal">Min calories</label>
+            <input id="f-min-cal" value={bounds.minCalories}
+              onChange={(e) => setField("minCalories", Number(e.target.value))} />
+            <label htmlFor="f-max-cal">Max calories</label>
+            <input id="f-max-cal" value={bounds.maxCalories}
+              onChange={(e) => setField("maxCalories", Number(e.target.value))} />
+            <label htmlFor="f-min-protein">Min protein</label>
+            <input id="f-min-protein" value={bounds.minProtein}
+              onChange={(e) => setField("minProtein", Number(e.target.value))} />
+            <label htmlFor="f-max-protein">Max protein</label>
+            <input id="f-max-protein" value={bounds.maxProtein}
+              onChange={(e) => setField("maxProtein", Number(e.target.value))} />
+            <button type="submit" className="btn" disabled={loading}>
+              Search
+            </button>
+          </form>
+          {loading && <p className="loading-note">Working…</p>}
+          {count !== null && <p className="result-count">{count} recipes matched</p>}
+          {recipes.length === 0 ? (
+            <p className="empty-note">No recipes matched those bounds.</p>
+          ) : (
+            <table className="results-table">
+              <thead>
+                <tr>
+                  <th>Recipe id</th>
+                  <th>Title</th>
+                  <th>Total calories</th>
+                  <th>Protein content (g)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recipes.map((rec) => (
+                  <tr
+                    key={rec.recipeId}
+                    className={rec.recipeId === selected?.recipeId ? "row-selected" : ""}
+                    onClick={() => openRecipe(rec.recipeId)}
+                  >
+                    <td>{rec.recipeId}</td>
+                    <td>{rec.title}</td>
+                    <td>{rec.totalCalories !== undefined ? rec.totalCalories.toFixed(2) : "—"}</td>
+                    <td>{rec.proteinContentG.toFixed(1)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </section>
+
+        <section className="app-column-right">
+          {associating && (
+            <AssociationForm
+              saving={saving}
+              onCancel={() => setAssociating(false)}
+              onAssociate={runAssociate}
+            />
+          )}
+          {!associating && selected === null && (
+            <p className="empty-note">Select a recipe to see its details.</p>
+          )}
+          {!associating && selected !== null && (
+            <RecipeDetail recipe={selected} onAssociate={() => setAssociating(true)} />
+          )}
+        </section>
+      </main>
+    </div>
+  );
+}

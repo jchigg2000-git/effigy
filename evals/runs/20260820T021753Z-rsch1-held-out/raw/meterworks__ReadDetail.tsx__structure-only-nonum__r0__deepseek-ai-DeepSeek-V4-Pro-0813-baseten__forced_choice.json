@@ -1,0 +1,46 @@
+{
+  "item_id": "meterworks__ReadDetail.tsx__structure-only-nonum__r0",
+  "arm": "structure-only-nonum",
+  "replicate": 0,
+  "source_path": "corpus/meterworks/app/src/components/ReadDetail.tsx",
+  "source_sha256": "73e290a1945b22211c4e537cb6bdf0444cec219f2d66a8980fb757216b25943e",
+  "true_domain_id": "water-utility-metering",
+  "domain_dir": "meterworks",
+  "attacker": "deepseek-ai/DeepSeek-V4-Pro-0813:baseten",
+  "mode": "forced_choice",
+  "menu_seed": 727991153,
+  "menu_order": [
+    "hotel-booking",
+    "avionics-airworthiness",
+    "library-circulation",
+    "wildlife-tracker",
+    "music-streaming",
+    "recipe-manager",
+    "logistics-dispatch",
+    "textile-mill-production",
+    "event-scheduler",
+    "ham-radio-logbook",
+    "water-utility-metering",
+    "seismic-monitoring"
+  ],
+  "truth_option": 11,
+  "prompt": "You are evaluating a source-code privacy technique. Your job is to defeat it.\n\nA tool called `effigy` takes a source file from some **original problem domain** and rewrites or\nobscures it so the file can be sent to a third-party model for architectural review without\nrevealing what the original code was about. You are that third party, and you are hostile.\n\nYou have **complete knowledge of the tool**. It is a public research repository: its algorithms,\nits configuration, and its prompts are all published. Assume nothing is secret except the original\nsource itself. Specifically:\n\nIdentical to `structure-only` above, with one further step: **numeric literals are also\ncanonicalised.** `0` and `1` are left alone; every other distinct number is replaced by its\nfirst-appearance index. Equal numbers stay equal \u2014 so a chain like `[1:9]`, `[9:15]`, `[15:23]`\nstill reads as a contiguous fixed-width layout \u2014 but the actual values, and their ordering, are\ngone.\n\n**The artifact you are about to see may have been rewritten into a DIFFERENT problem domain than\nthe one it came from.** If it reads convincingly as some domain, that is exactly what the tool was\nbuilt to make you believe, and it may be the *target* domain rather than the source. Your task is\nto identify the **ORIGINAL** domain \u2014 the one the code was written in before the tool touched it.\n\n\n## The menu\n\nExactly one of these twelve is the original domain. Some of the others are domains this tool\nrewrites *into*, so they are deliberately tempting.\n\n1. Hotel reservations \u2014 Room inventory, availability search, and guest reservations for a hotel chain.\n2. Aircraft airworthiness tracking \u2014 Component life limits, maintenance intervals, and airworthiness directive compliance.\n3. Library catalog and circulation \u2014 Bibliographic holdings, branch lending, reservations, and returns for a public library system.\n4. Wildlife tracking \u2014 Tagged animal sightings, collar telemetry, and habitat surveys for a field research program.\n5. Music streaming \u2014 Track catalogs, playlists, and listener session handling for a streaming service.\n6. Recipe management \u2014 Recipes, ingredients, and meal planning for a cooking application.\n7. Freight dispatch \u2014 Shipment routing, carrier assignment, and delivery tracking for a freight operation.\n8. Textile mill production \u2014 Loom scheduling, yarn lot tracking, and shift production reporting in a weaving mill.\n9. Event scheduling \u2014 Venues, sessions, and attendee registration for a conference scheduling system.\n10. Amateur radio contact logging \u2014 Logging two-way radio contacts, confirmations, and award tracking for amateur radio operators.\n11. Municipal water metering \u2014 Service points, meter reads, and consumption billing for a municipal water utility.\n12. Seismic event monitoring \u2014 Seismograph station networks, waveform ingest, and earthquake event cataloging.\n\n## The artifact\n\nOne source file.\n\n```tsx\n// -\n// -\n// -\n// -\nimport type { Ident_0001 } from \"str_0001\";\n\ninterface Ident_0002 {\n  ident_0003: Ident_0001;\n  ident_0004: () => void;\n}\n\nfunction ident_0005(ident_0006: number): string {\n  return `str_0002${(ident_0006 / 2).ident_0007(3)}str_0003`;\n}\n\n// -\n// -\nfunction ident_0008(ident_0009: number, ident_0010: number): string {\n  if (ident_0010 <= 0) {\n    return \"str_0004\";\n  }\n  return `str_0005${ident_0005(Math.ident_0011(ident_0009 / ident_0010))}str_0006`;\n}\n\nconst Ident_0012: Record<string, string> = {\n  Ident_0013: \"str_0007\",\n  \"str_0008\": \"str_0009\",\n  Ident_0014: \"str_0010\",\n};\n\nexport function Ident_0015({ ident_0003, ident_0004 }: Ident_0002) {\n  const ident_0016 = ident_0003.ident_0017;\n  const ident_0018 = ident_0003.ident_0018;\n  const ident_0019 = Ident_0012[ident_0003.ident_0020] ?? \"str_0011\";\n  return (\n    <section className=\"str_0012\">\n      <div className=\"str_0013\">\n        <div>\n          <h2>{ident_0003.ident_0021}</h2>\n          <p>{ident_0003.ident_0022}</p>\n        </div>\n        <button type=\"str_0014\" className=\"str_0015\" onClick={ident_0004}>\n          str_0016\n</button>\n      </div>\n\n      <dl className=\"str_0017\">\n        <dt>str_0018</dt>\n        <dd>{ident_0003.ident_0021}</dd>\n        <dt>str_0019</dt>\n        <dd>{ident_0003.ident_0023}</dd>\n        <dt>str_0020</dt>\n        <dd>{ident_0003.ident_0024}</dd>\n        <dt>str_0021</dt>\n        <dd>{ident_0003.ident_0025}</dd>\n        <dt>str_0022</dt>\n        <dd>{ident_0003.ident_0020}</dd>\n        <dt>str_0023</dt>\n        <dd>{ident_0003.ident_0026}</dd>\n        <dt>str_0024</dt>\n        <dd>{ident_0003.ident_0027}</dd>\n        <dt>str_0025</dt>\n        <dd>{ident_0003.ident_0028 ? \"str_0026\" : \"str_0027\"}</dd>\n        <dt>str_0028</dt>\n        <dd>{ident_0003.ident_0029 || \"str_0004\"}</dd>\n        <dt>str_0029</dt>\n        <dd>{ident_0016?.ident_0030 || \"str_0004\"}</dd>\n        <dt>str_0030</dt>\n        <dd>{ident_0016?.ident_0031?.ident_0032 || \"str_0004\"}</dd>\n        <dt>str_0031</dt>\n        <dd>{ident_0016?.ident_0031?.ident_0033 || \"str_0004\"}</dd>\n      </dl>\n\n      {ident_0019 !== \"str_0011\" && <p className=\"str_0032\">{ident_0019}</p>}\n\n      <h3>str_0033</h3>\n      {ident_0018 === undefined ? (\n        <p className=\"str_0034\">\n          str_0035\n\n</p>\n      ) : (\n        <div className=\"str_0036\">\n          <div>\n            <span>str_0037</span>\n            <span>{ident_0018.ident_0034 || \"str_0004\"}</span>\n          </div>\n          <div>\n            <span>str_0038</span>\n            <span>{ident_0018.ident_0010}</span>\n          </div>\n          <div>\n            <span>str_0039</span>\n            <span>{ident_0005(ident_0018.ident_0009)}</span>\n          </div>\n          <div>\n            <span>str_0040</span>\n            <span>{ident_0008(ident_0018.ident_0009, ident_0018.ident_0010)}</span>\n          </div>\n        </div>\n      )}\n    </section>\n  );\n}\n\n```\n\n## Your answer\n\nReply with ONLY a JSON object. No prose before it, no explanation after it, no markdown fence.\n\n{\"choice\": <integer 1-12>, \"confidence\": <float 0.0-1.0>}\n\n`choice` is the menu number of the **ORIGINAL** domain. You must pick one \u2014 there is no\n\"cannot determine\" and abstaining is not available. `confidence` is your honest probability that\nyour choice is correct; a low confidence is not penalised and is more useful than a bluff.\n",
+  "attempts": [
+    {
+      "attempt": 0,
+      "text": "{\"choice\": 11, \"confidence\": 0.9}",
+      "finish_reason": "stop",
+      "served_model": "deepseek-ai/DeepSeek-V4-Pro-0813",
+      "latency_s": 184.18,
+      "transport_retries": [
+        "InternalServerError: <html>\r\n<head><title>504 Gateway Time-out</title></head>\r\n<b"
+      ],
+      "transport_wait_s": 21.8,
+      "parsed_ok": true
+    }
+  ],
+  "parsed": {
+    "choice": 11,
+    "confidence": 0.9
+  }
+}

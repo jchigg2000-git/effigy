@@ -1,0 +1,45 @@
+{
+  "key": "qsolog__ContactDetail.tsx__llm-translation-ungated__r0",
+  "arm": "llm-translation-ungated",
+  "replicate": 0,
+  "source_path": "corpus/qsolog/app/src/components/ContactDetail.tsx",
+  "source_sha256": "1a44503caaead70c7016c5404f9adc46107966fbb9616d72505d830a462828bf",
+  "true_domain_id": "ham-radio-logbook",
+  "language": "tsx",
+  "artifact_sha256": "30a574a6b0c2301ee4e8b4f79bf12ccb0603b9ccb621620145aa973f97d2248d",
+  "artifact_lines": 76,
+  "latency_s": 5.4,
+  "solution_meta": {
+    "model": "Qwen/Qwen2.5-Coder-7B-Instruct",
+    "base_url": "https://router.huggingface.co/v1",
+    "target_domain": "a music streaming service with tracks, playlists, and listeners",
+    "target_id": "music-streaming",
+    "temperature": 0.2,
+    "postcondition": {
+      "src_code_lines": 81,
+      "husk_code_lines": 67,
+      "similarity_ratio": 0.387,
+      "ident_retention": 0.394,
+      "code_verbatim": 0.313,
+      "longest_identical_run": 4,
+      "longest_identical_run_share": 0.049,
+      "copied_spans": 0,
+      "copied_span_lines": 0,
+      "copied_span_share": 0.0,
+      "thresholds": {
+        "run_lines": 999999,
+        "run_share": 9.0,
+        "copied_share": 9.0,
+        "retention": 9.0,
+        "ratio": 9.0,
+        "min_code_lines": 12
+      },
+      "verdict": "ok"
+    },
+    "usage": {
+      "prompt_tokens": 1926,
+      "completion_tokens": 616,
+      "total_tokens": 2542
+    }
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "key": "tremorline__event.go__llm-translation__r2",
+  "arm": "llm-translation",
+  "replicate": 2,
+  "source_path": "corpus/tremorline/api/internal/model/event.go",
+  "source_sha256": "caf3cbdda9e55a7712fecdaa82dc273dd32d3c975e262edf096e96e4038c9e33",
+  "true_domain_id": "seismic-monitoring",
+  "language": "go",
+  "artifact_sha256": "16795ee113e950d1534ab223df8e5defa65d0862622de6e2278da32b48f5102a",
+  "artifact_lines": 73,
+  "latency_s": 6.3,
+  "solution_meta": {
+    "model": "Qwen/Qwen2.5-Coder-7B-Instruct",
+    "base_url": "https://router.huggingface.co/v1",
+    "target_domain": "abstract graph traversal over labelled nodes",
+    "target_id": "graph-traversal",
+    "temperature": 0.2,
+    "postcondition": {
+      "src_code_lines": 63,
+      "husk_code_lines": 68,
+      "similarity_ratio": 0.537,
+      "ident_retention": 0.783,
+      "code_verbatim": 0.324,
+      "longest_identical_run": 7,
+      "longest_identical_run_share": 0.111,
+      "copied_spans": 1,
+      "copied_span_lines": 7,
+      "copied_span_share": 0.111,
+      "thresholds": {
+        "run_lines": 999999,
+        "run_share": 9.0,
+        "copied_share": 9.0,
+        "retention": 9.0,
+        "ratio": 9.0,
+        "min_code_lines": 12
+      },
+      "verdict": "ok"
+    },
+    "usage": {
+      "prompt_tokens": 1815,
+      "completion_tokens": 751,
+      "total_tokens": 2566
+    }
+  }
+}

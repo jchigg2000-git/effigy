@@ -1,0 +1,36 @@
+// Package tensorflow holds the numeric tensor representation of a data point,
+// the node that processes it, and the operations run against it. Tensor order
+// mirrors the data points table column order, which the sequential Apply in the
+// pipelines relies on.
+package tensorflow
+
+// Node is a processing unit: the operation ID is its own primary key, so
+// there is no separate surrogate node ID anywhere in this tree.
+type Node struct {
+	NodeID          int64  `json:"nodeId"`
+	OperationID     int64  `json:"operationId"`
+	TensorShape     []int  `json:"tensorShape,omitempty"`
+	DataType        string `json:"dataType,omitempty"`
+}
+
+// Operation is one inbound transformation applied to the dataset. InputTensorID
+// is carried for the pipeline's own tracking but never exposed: an applied
+// operation is represented to consumers by the transformed tensor it produced, not by
+// a second copy of that tensor's properties here.
+type Operation struct {
+	OperationID     int64  `json:"operationId"`
+	ReceivedFrom    string `json:"receivedFrom"`
+	Type            string `json:"type"`
+	Parameters      map[string]interface{} `json:"parameters"`
+	AppliedAt       int64  `json:"appliedAt"`
+	InputTensorID   int64  `json:"-"`
+}
+
+type DataPoint struct {
+	DataPointID   int64  `json:"dataPointId"`
+	NodeID        int64  `json:"nodeId"`
+	Value         float64 `json:"value"`
+	Timestamp     int64  `json:"timestamp"`
+	ProcessedBy   *Node  `json:"processedBy,omitempty"`
+	Operations    []Operation `json:"operations"`
+}

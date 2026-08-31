@@ -1,0 +1,58 @@
+{
+  "run_id": "20260819T124154Z-smell-loop",
+  "evaluator": "openai/gpt-oss-120b",
+  "huskers": [
+    "Qwen/Qwen2.5-Coder-7B-Instruct",
+    "Qwen/Qwen2.5-7B-Instruct",
+    "meta-llama/Llama-3.1-8B-Instruct",
+    "google/gemma-3n-E4B-it"
+  ],
+  "endpoint_host": "router.huggingface.co",
+  "files": [
+    "corpus/stacks/api/cmd/stacksd/main.go",
+    "corpus/stacks/api/internal/api/branches.go",
+    "corpus/stacks/api/internal/api/holdings.go",
+    "corpus/stacks/api/internal/api/server.go",
+    "corpus/stacks/api/internal/ingest/marc21.go",
+    "corpus/stacks/api/internal/store/store.go",
+    "corpus/stacks/app/src/api/client.ts",
+    "corpus/stacks/app/src/auth.ts"
+  ],
+  "manifest_sha256": "fc7c27d08c79e5b6fe5547b6920e6fee0a79d408c45a3da213e17c366d87ab4e",
+  "baseline_source_findings": {
+    "corpus/stacks/api/cmd/stacksd/main.go": [
+      "inline_magic_literals"
+    ],
+    "corpus/stacks/api/internal/api/branches.go": [
+      "duplicated_error_handling",
+      "inline_magic_literals",
+      "inline_sql_in_handler",
+      "layering_violation",
+      "wide_positional_bind"
+    ],
+    "corpus/stacks/api/internal/api/holdings.go": [],
+    "corpus/stacks/api/internal/api/server.go": [
+      "god_object",
+      "inline_magic_literals",
+      "inline_sql_in_handler",
+      "layering_violation"
+    ],
+    "corpus/stacks/api/internal/ingest/marc21.go": [
+      "closure_over_mutable_state",
+      "deep_nested_switch",
+      "duplicated_error_handling",
+      "inline_magic_literals",
+      "wide_positional_bind"
+    ],
+    "corpus/stacks/api/internal/store/store.go": [
+      "inline_magic_literals"
+    ],
+    "corpus/stacks/app/src/api/client.ts": [
+      "inline_magic_literals"
+    ],
+    "corpus/stacks/app/src/auth.ts": [
+      "inline_magic_literals"
+    ]
+  },
+  "note": "Huskers are hosted here as a STAND-IN for cheap LOCAL models. In production the husker must run in-tenant; a hosted husker leaks the source it exists to protect."
+}

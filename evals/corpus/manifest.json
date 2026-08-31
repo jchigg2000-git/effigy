@@ -1,0 +1,812 @@
+{
+  "generated_by": "evals/run_eval.py --refresh-manifest",
+  "domains": {
+    "_provenance": "AUTHORED ground truth, not derived. leak_terms are the discriminative vocabulary of each source domain, used for the deterministic leak pre-check in preregistration.md 6.2 and the hard veto in 8. Terms must be pairwise disjoint across domains and must exclude ordinary programming vocabulary. IMPORTANT, and the reason these are not the lists the corpus generators proposed: 6.2 pass 1 matches these against the ATTACKER'S FREE-TEXT GUESS, not against husk source. A code identifier like channelCode or sampleRateHz can never appear in a natural-language guess such as 'seismic monitoring network', so an identifier-shaped list is dead weight that can only make the veto FAIL LESS OFTEN -- an error in the flattering direction. These lists are therefore natural-language domain vocabulary. Note that evals/leak_terms.json serves a DIFFERENT job (score_husk.py matches it against husk lines) and is correctly identifier-ish; the two lists are not interchangeable.",
+    "stacks": {
+      "true_domain_id": "library-circulation",
+      "label": "Library catalog and circulation",
+      "leak_terms": [
+        "isbn",
+        "marc",
+        "dewey",
+        "oclc",
+        "lccn",
+        "bibliographic",
+        "shelfmark",
+        "interlibrary",
+        "overdue",
+        "patron",
+        "borrower",
+        "circulation",
+        "holding",
+        "library",
+        "call number",
+        "stacks",
+        "due date",
+        "checkout",
+        "renewal",
+        "shelf"
+      ]
+    },
+    "qsolog": {
+      "true_domain_id": "ham-radio-logbook",
+      "label": "Amateur radio contact logging",
+      "leak_terms": [
+        "amateur radio",
+        "ham radio",
+        "callsign",
+        "call sign",
+        "qso",
+        "contact log",
+        "logbook",
+        "grid square",
+        "maidenhead",
+        "propagation",
+        "transceiver",
+        "antenna",
+        "qsl",
+        "repeater",
+        "shortwave",
+        "radio operator",
+        "award credit",
+        "band plan",
+        "radio contact",
+        "worked all"
+      ]
+    },
+    "meterworks": {
+      "true_domain_id": "water-utility-metering",
+      "label": "Municipal water metering",
+      "leak_terms": [
+        "water meter",
+        "meter reading",
+        "service point",
+        "tiered rate",
+        "rate tier",
+        "consumption interval",
+        "billing cycle",
+        "meter serial",
+        "potable water",
+        "water main",
+        "water utility",
+        "municipal water",
+        "meter register",
+        "cubic feet",
+        "water district",
+        "meter route",
+        "utility billing",
+        "water service",
+        "consumption billing",
+        "meter read"
+      ]
+    },
+    "tremorline": {
+      "true_domain_id": "seismic-monitoring",
+      "label": "Seismic event monitoring",
+      "leak_terms": [
+        "seismic",
+        "seismograph",
+        "seismometer",
+        "earthquake",
+        "epicenter",
+        "hypocenter",
+        "waveform",
+        "tremor",
+        "aftershock",
+        "moment magnitude",
+        "seismic magnitude",
+        "seismic station",
+        "ground motion",
+        "event catalog",
+        "seismology",
+        "geophysical",
+        "origin time",
+        "seismic network",
+        "station channel",
+        "seismic detection"
+      ]
+    },
+    "loomshed": {
+      "true_domain_id": "textile-mill-production",
+      "label": "Textile mill production",
+      "leak_terms": [
+        "textile",
+        "weaving",
+        "weaving mill",
+        "loom",
+        "yarn",
+        "yarn lot",
+        "warp",
+        "weft",
+        "picks per minute",
+        "fabric",
+        "denier",
+        "greige",
+        "selvedge",
+        "shuttle",
+        "creel",
+        "mill production",
+        "fabric spec",
+        "woven",
+        "textile mill",
+        "shift production"
+      ]
+    },
+    "tailwatch": {
+      "true_domain_id": "avionics-airworthiness",
+      "label": "Aircraft airworthiness tracking",
+      "leak_terms": [
+        "airworthiness",
+        "airworthiness directive",
+        "aircraft",
+        "airframe",
+        "avionics",
+        "tail number",
+        "aircraft registration",
+        "flight hours",
+        "flight cycles",
+        "life limit",
+        "life-limited",
+        "maintenance interval",
+        "component life",
+        "aviation",
+        "maintenance program",
+        "time between overhaul",
+        "aircraft maintenance",
+        "directive compliance",
+        "rotable",
+        "hours and cycles"
+      ]
+    }
+  },
+  "artifacts": [
+    {
+      "path": "corpus/loomshed/api/cmd/loomshedd/main.go",
+      "domain_dir": "loomshed",
+      "language": "go",
+      "sha256": "4858a5f1dbcb035301880bfc275e02e5f00262e73f8aef90804ee52c1fdfb1d1",
+      "bytes": 4210,
+      "lines": 120,
+      "git_blob_oid": "45ad6897abfe8625a4ba87658bd8a2b3c64915e7"
+    },
+    {
+      "path": "corpus/loomshed/api/internal/api/looms.go",
+      "domain_dir": "loomshed",
+      "language": "go",
+      "sha256": "84a63e1782bafb25dfe88666c640554437ad8d8cf4ccff04917beb3b5df30a6f",
+      "bytes": 3426,
+      "lines": 100,
+      "git_blob_oid": "51edbe955defd7f49e8f02307e61a11a2d41eb3b"
+    },
+    {
+      "path": "corpus/loomshed/api/internal/api/runs.go",
+      "domain_dir": "loomshed",
+      "language": "go",
+      "sha256": "11bba75469b893e130686d8bf82c2dbf345ff29448629f801c4bec393215c25b",
+      "bytes": 11495,
+      "lines": 342,
+      "git_blob_oid": "a7c824f9e4a6fa6b2379c734c9039dd0f53c8663"
+    },
+    {
+      "path": "corpus/loomshed/api/internal/api/server.go",
+      "domain_dir": "loomshed",
+      "language": "go",
+      "sha256": "05e9b90dd14d67a8cd0e668bf2cfb40010f85a517c451e8b901c02d9611d0aa6",
+      "bytes": 4025,
+      "lines": 137,
+      "git_blob_oid": "546a420d524ef1a8041efe87b785a44c9b255851"
+    },
+    {
+      "path": "corpus/loomshed/api/internal/ingest/shiftreport.go",
+      "domain_dir": "loomshed",
+      "language": "go",
+      "sha256": "d3a64f129bf547e309698a5c4e93abb67d036c25ebe4dce21f1f9a53c5106f5c",
+      "bytes": 8228,
+      "lines": 279,
+      "git_blob_oid": "0242bcc51d6b1fe234a6b445b227cf249bce60f9"
+    },
+    {
+      "path": "corpus/loomshed/api/internal/model/run.go",
+      "domain_dir": "loomshed",
+      "language": "go",
+      "sha256": "ec6f4915d2b56c4c4a02dad361c9c9854c1e547ab0013e3afb4d6aedcce9ce35",
+      "bytes": 2553,
+      "lines": 66,
+      "git_blob_oid": "c410f7bc5317ef4d6b2e6289ad84ad638d717abe"
+    },
+    {
+      "path": "corpus/loomshed/app/src/App.tsx",
+      "domain_dir": "loomshed",
+      "language": "tsx",
+      "sha256": "17ba9597a9ca4695fb663d41c8915c1552f072aacb615a55f0937a9bb14bd876",
+      "bytes": 5648,
+      "lines": 176,
+      "git_blob_oid": "a79e1fab92802718a0079194e45a7751f12871a2"
+    },
+    {
+      "path": "corpus/loomshed/app/src/api/client.ts",
+      "domain_dir": "loomshed",
+      "language": "ts",
+      "sha256": "cc4914b7e43c2411104ed30c02407462906c6f0696f01d9cfc8c7f475008db0a",
+      "bytes": 4179,
+      "lines": 173,
+      "git_blob_oid": "a8a062eaf5e7451bf4a46ec86027cfc1a54e56f0"
+    },
+    {
+      "path": "corpus/loomshed/app/src/components/DefectEditForm.tsx",
+      "domain_dir": "loomshed",
+      "language": "tsx",
+      "sha256": "20834259a3cfd80fe113e9436b87cc981d1eed3bbbde6da1f40e1262597c1e1e",
+      "bytes": 4604,
+      "lines": 158,
+      "git_blob_oid": "cb384e769a341cfe37dcd7fab6e7e16ffb730eee"
+    },
+    {
+      "path": "corpus/loomshed/app/src/components/RunDetail.tsx",
+      "domain_dir": "loomshed",
+      "language": "tsx",
+      "sha256": "9a7e206b305daf9eb9ec43da475e7a55fe802bf5cd1a9a471848afee30a3ad46",
+      "bytes": 3068,
+      "lines": 96,
+      "git_blob_oid": "3a7a43911d1ed3827056539a2372419f5011bb14"
+    },
+    {
+      "path": "corpus/meterworks/api/cmd/meterworksd/main.go",
+      "domain_dir": "meterworks",
+      "language": "go",
+      "sha256": "ff23a7603ab82c6b61085b74ea86249f6eac78e802f3d3f0f8c537513fb04497",
+      "bytes": 2663,
+      "lines": 97,
+      "git_blob_oid": "ae83cb1052219062a912aeeb2ff78a221f655755"
+    },
+    {
+      "path": "corpus/meterworks/api/internal/api/reads.go",
+      "domain_dir": "meterworks",
+      "language": "go",
+      "sha256": "c6f4d52392420511c2fe190aa7343e57e40df7ade0b830e99ef22a8afa85d780",
+      "bytes": 9161,
+      "lines": 285,
+      "git_blob_oid": "f208c56302dd7fa5753f45ee18a5683408282df0"
+    },
+    {
+      "path": "corpus/meterworks/api/internal/api/server.go",
+      "domain_dir": "meterworks",
+      "language": "go",
+      "sha256": "ed1ba137ebbf46f5228080cfefb5ae8d5234e02b2f519ed61ab1fb5571279a62",
+      "bytes": 3704,
+      "lines": 128,
+      "git_blob_oid": "7accd225e2b1d7a302d7c4a5382dbce1fcbaa66b"
+    },
+    {
+      "path": "corpus/meterworks/api/internal/api/servicepoints.go",
+      "domain_dir": "meterworks",
+      "language": "go",
+      "sha256": "2914066e847ea915c87850a8063de75ef0792bace5e2fff410600eab337f8290",
+      "bytes": 2820,
+      "lines": 96,
+      "git_blob_oid": "542e3fe002ff650e28c4a90184f9e90b8ec07993"
+    },
+    {
+      "path": "corpus/meterworks/api/internal/ingest/mrif.go",
+      "domain_dir": "meterworks",
+      "language": "go",
+      "sha256": "b951f6b52d9a30e19e57ffcc2af53f2f72bdb2f1c20f8243bf60ba0c0d01b05c",
+      "bytes": 6820,
+      "lines": 234,
+      "git_blob_oid": "f6326f5284e8a02800a700f8ebb199d16d55ae61"
+    },
+    {
+      "path": "corpus/meterworks/api/internal/model/meter.go",
+      "domain_dir": "meterworks",
+      "language": "go",
+      "sha256": "2e0ec4242e44ff1fe6f844fbdb13c0d96a8469d4b1b0d98470050f91d0864c94",
+      "bytes": 1739,
+      "lines": 47,
+      "git_blob_oid": "01cc7ca543009e72b1a3d8fc17416359b32ad94f"
+    },
+    {
+      "path": "corpus/meterworks/app/src/App.tsx",
+      "domain_dir": "meterworks",
+      "language": "tsx",
+      "sha256": "a837cfa4f34b5bd6b26cbb3668905e652444c7108847e2828925eafa533cc3c0",
+      "bytes": 5501,
+      "lines": 168,
+      "git_blob_oid": "2bc26228cc3a387bc3100edbb2c2db4433ff4360"
+    },
+    {
+      "path": "corpus/meterworks/app/src/api/client.ts",
+      "domain_dir": "meterworks",
+      "language": "ts",
+      "sha256": "c7f85c7784906d0eca33cb23a15c442e295eaea32b65039ba02a04ca24e19bf3",
+      "bytes": 3805,
+      "lines": 140,
+      "git_blob_oid": "994eeb603990f08b4cf7c6d67247a1858f9fc580"
+    },
+    {
+      "path": "corpus/meterworks/app/src/components/ExceptionForm.tsx",
+      "domain_dir": "meterworks",
+      "language": "tsx",
+      "sha256": "62b832b7fda329a2f785c58d35e36afc898b5bcc21246f35777454c338d3c191",
+      "bytes": 4162,
+      "lines": 133,
+      "git_blob_oid": "1982723bf6110d91f93cb575b6e23f74e30b5d98"
+    },
+    {
+      "path": "corpus/meterworks/app/src/components/ReadDetail.tsx",
+      "domain_dir": "meterworks",
+      "language": "tsx",
+      "sha256": "73e290a1945b22211c4e537cb6bdf0444cec219f2d66a8980fb757216b25943e",
+      "bytes": 3502,
+      "lines": 104,
+      "git_blob_oid": "d2316747642b9469a871a702ebc804c0fa3a4b66"
+    },
+    {
+      "path": "corpus/qsolog/api/cmd/qsologd/main.go",
+      "domain_dir": "qsolog",
+      "language": "go",
+      "sha256": "b54c14903f5ba4905a6e51af00213e2b77c64dc17b68705817e9891347ffa0db",
+      "bytes": 2764,
+      "lines": 98,
+      "git_blob_oid": "046bf3b92241dd24fcf8acf650a16cbe3630e86e"
+    },
+    {
+      "path": "corpus/qsolog/api/internal/api/contacts.go",
+      "domain_dir": "qsolog",
+      "language": "go",
+      "sha256": "af67c3deac92283512d2b9ec9ae11130242873b31b23b9ebf36e5671b9ca18b5",
+      "bytes": 12938,
+      "lines": 369,
+      "git_blob_oid": "4d841513e002b1363bd73a35ed6694d2358bc9b2"
+    },
+    {
+      "path": "corpus/qsolog/api/internal/api/server.go",
+      "domain_dir": "qsolog",
+      "language": "go",
+      "sha256": "012e2038364271c9e81260762b8d5988c43f216116e7469a8679a316900e0780",
+      "bytes": 3912,
+      "lines": 130,
+      "git_blob_oid": "86925ad943324f3c5b00aacbc125c843e53ba273"
+    },
+    {
+      "path": "corpus/qsolog/api/internal/api/stations.go",
+      "domain_dir": "qsolog",
+      "language": "go",
+      "sha256": "0ee9d8e478d6dec639fd77236b8a141b2ea6b982fac5b83ddd05c37626f31dac",
+      "bytes": 2631,
+      "lines": 74,
+      "git_blob_oid": "eb61dbb2fd98667dfb5ed555ce8e549a16756c78"
+    },
+    {
+      "path": "corpus/qsolog/api/internal/ingest/qlif.go",
+      "domain_dir": "qsolog",
+      "language": "go",
+      "sha256": "df83a2d22150eac7dbe2b5d052c717d14b46a8cd38c58e68fb888f6aa74fe4c9",
+      "bytes": 6576,
+      "lines": 224,
+      "git_blob_oid": "6e04391e2155b83cd3007388131a9abcceb5259f"
+    },
+    {
+      "path": "corpus/qsolog/api/internal/model/contact.go",
+      "domain_dir": "qsolog",
+      "language": "go",
+      "sha256": "6b4d7aaa3dbe7d705cd23b696f7037ddaf6dac3a2dcba258d1ab8c4fb3bc0cbf",
+      "bytes": 2071,
+      "lines": 46,
+      "git_blob_oid": "5bc59c06a06880f77199dbfd440ed190e5845038"
+    },
+    {
+      "path": "corpus/qsolog/app/src/App.tsx",
+      "domain_dir": "qsolog",
+      "language": "tsx",
+      "sha256": "4aed4ed99fc5c4025e8e889ca51df9fbf39352f7f544a0c090ce938fefeebc8d",
+      "bytes": 6082,
+      "lines": 180,
+      "git_blob_oid": "6b2a55bc93912b6fb306181bb8bdbd9b16922c7b"
+    },
+    {
+      "path": "corpus/qsolog/app/src/api/client.ts",
+      "domain_dir": "qsolog",
+      "language": "ts",
+      "sha256": "f995c2de8b737a36791b87e1d7b34da11a48667fa5fe57a25b5efec52575376c",
+      "bytes": 4957,
+      "lines": 189,
+      "git_blob_oid": "0df5c30e93212292e893d18c34a3af3e6e05d01f"
+    },
+    {
+      "path": "corpus/qsolog/app/src/components/ConfirmationForm.tsx",
+      "domain_dir": "qsolog",
+      "language": "tsx",
+      "sha256": "e76263f23c4972e192429aaacba0d3db02f6667428ccb029068bbcf28cd634e5",
+      "bytes": 4600,
+      "lines": 148,
+      "git_blob_oid": "41849148ddcbbe7b8d4e1dd257e26cbf95bf4698"
+    },
+    {
+      "path": "corpus/qsolog/app/src/components/ContactDetail.tsx",
+      "domain_dir": "qsolog",
+      "language": "tsx",
+      "sha256": "1a44503caaead70c7016c5404f9adc46107966fbb9616d72505d830a462828bf",
+      "bytes": 3265,
+      "lines": 90,
+      "git_blob_oid": "5d89ae5082a01d44c5496700d91138b3c7a05b77"
+    },
+    {
+      "path": "corpus/stacks/api/cmd/stacksd/main.go",
+      "domain_dir": "stacks",
+      "language": "go",
+      "sha256": "af41d15610e00e710065a0effbec1e2b7d3bf388489cd59f23415c72c12d4639",
+      "bytes": 2983,
+      "lines": 102,
+      "git_blob_oid": "57e1ed4dfcda289d6bba68cc1b5ddd77e09e4ce4"
+    },
+    {
+      "path": "corpus/stacks/api/internal/api/admin.go",
+      "domain_dir": "stacks",
+      "language": "go",
+      "sha256": "bdca938ab34a5420f61ad82efa6f86513a853afa1b80f48454520a526e8cbd6f",
+      "bytes": 661,
+      "lines": 26,
+      "git_blob_oid": "57d68afe2a7694895425bd325575925fdd6988d1"
+    },
+    {
+      "path": "corpus/stacks/api/internal/api/branches.go",
+      "domain_dir": "stacks",
+      "language": "go",
+      "sha256": "cfb0af60eb836de4c2ba5f01413a23784d1d613d762940a7495acd99d206fe4d",
+      "bytes": 2492,
+      "lines": 90,
+      "git_blob_oid": "909946c5dc7a05ca66e698314f9ae177b5e59ef1"
+    },
+    {
+      "path": "corpus/stacks/api/internal/api/errors.go",
+      "domain_dir": "stacks",
+      "language": "go",
+      "sha256": "7f33fcfc2d3b40dfa6e623edf731faa7b477edc3060b0a8d9bd868b6a1dded58",
+      "bytes": 543,
+      "lines": 25,
+      "git_blob_oid": "02877b841667c6092586e512ac948bb9d15739f0"
+    },
+    {
+      "path": "corpus/stacks/api/internal/api/holdings.go",
+      "domain_dir": "stacks",
+      "language": "go",
+      "sha256": "abf146c0061d686b1d200976f6921a8be01425246ae379c00bae9df39bb29d4a",
+      "bytes": 12238,
+      "lines": 376,
+      "git_blob_oid": "d5ee8adb3821e67d8426707d02e926ea1477e902"
+    },
+    {
+      "path": "corpus/stacks/api/internal/api/server.go",
+      "domain_dir": "stacks",
+      "language": "go",
+      "sha256": "c05d6b3307fef47edd7ed0939acb0c10523dc25a5918bb7f722430ed3333523d",
+      "bytes": 3619,
+      "lines": 114,
+      "git_blob_oid": "12ea59817969554cea9db590f2178d813b6a60be"
+    },
+    {
+      "path": "corpus/stacks/api/internal/ingest/marc21.go",
+      "domain_dir": "stacks",
+      "language": "go",
+      "sha256": "18ba005088e2ca58cae96deb5e85ba35f6c861fa1454b3643dc7880a6768d4f0",
+      "bytes": 10500,
+      "lines": 356,
+      "git_blob_oid": "1ff1f236f21927ae783f339a0c4ed03d0e690390"
+    },
+    {
+      "path": "corpus/stacks/api/internal/interchange/dublincore.go",
+      "domain_dir": "stacks",
+      "language": "go",
+      "sha256": "22d3f445df4f5691718eefd1de3574038b3f638b53189c67f34c657bfead3e6c",
+      "bytes": 7913,
+      "lines": 265,
+      "git_blob_oid": "9ac700208d24730ed54f09fa086db60311f992e3"
+    },
+    {
+      "path": "corpus/stacks/api/internal/model/holding.go",
+      "domain_dir": "stacks",
+      "language": "go",
+      "sha256": "ec7d5fb87bb207cdc9f2dc982f39dd507e5634193ec3e353f3bef56d5defb40b",
+      "bytes": 1755,
+      "lines": 46,
+      "git_blob_oid": "e93d002aea3b1efc4db4bee2c72f97a47d386e9e"
+    },
+    {
+      "path": "corpus/stacks/api/internal/store/store.go",
+      "domain_dir": "stacks",
+      "language": "go",
+      "sha256": "dddb2b36eeed726da9aa5e256b621e8921b6460c41db05653331c5754edd3bc2",
+      "bytes": 778,
+      "lines": 32,
+      "git_blob_oid": "fdd136a0101b450bb2f6b8b281b3447122176a49"
+    },
+    {
+      "path": "corpus/stacks/app/src/App.tsx",
+      "domain_dir": "stacks",
+      "language": "tsx",
+      "sha256": "8eef25a3e714a91b0ea097a78d540b69492cbf1bbadd740f08508ba6522b7b8a",
+      "bytes": 4358,
+      "lines": 164,
+      "git_blob_oid": "966b87a7d7c4f5b02b138dcfe51f263a3432fed2"
+    },
+    {
+      "path": "corpus/stacks/app/src/api/client.ts",
+      "domain_dir": "stacks",
+      "language": "ts",
+      "sha256": "95ff406bd36b10c65dfa689dd58a237d8baa8f9a48a154941b79ad647415cde4",
+      "bytes": 4325,
+      "lines": 167,
+      "git_blob_oid": "f0eaf61c80d42fe019df78de52bb6f12e0f9df6e"
+    },
+    {
+      "path": "corpus/stacks/app/src/auth.ts",
+      "domain_dir": "stacks",
+      "language": "ts",
+      "sha256": "3cbd9e7c141cf32ac782f1b71ef74dc03633a53ed12de99a0c9078570e1db930",
+      "bytes": 1114,
+      "lines": 33,
+      "git_blob_oid": "9a8c49f326499600ad157bc656c16ae2e54dc415"
+    },
+    {
+      "path": "corpus/stacks/app/src/components/AuthGate.tsx",
+      "domain_dir": "stacks",
+      "language": "tsx",
+      "sha256": "178b0441e98c014732896bc197d438ebf4ee8b8c6521c8c03faffc315e64c214",
+      "bytes": 612,
+      "lines": 22,
+      "git_blob_oid": "68ad867e2ad56c636b9641b2c7c09365f5ad3929"
+    },
+    {
+      "path": "corpus/stacks/app/src/components/HoldingDetail.tsx",
+      "domain_dir": "stacks",
+      "language": "tsx",
+      "sha256": "c27c4f758b192ab79ad4ec2739ff8c87288e1f5c3125628eb52f3cb9f6ffb8b0",
+      "bytes": 3374,
+      "lines": 108,
+      "git_blob_oid": "0ce845a886e492d146740ca10062bb66cdd2d8b6"
+    },
+    {
+      "path": "corpus/stacks/app/src/components/HoldingEditForm.tsx",
+      "domain_dir": "stacks",
+      "language": "tsx",
+      "sha256": "08d5f7395bbd22c09e45d479e0bc84975ef07f5efd5781430eed820090a8083a",
+      "bytes": 5607,
+      "lines": 176,
+      "git_blob_oid": "9a12256ce20a12b1637d3bb85ecaa19247e511ed"
+    },
+    {
+      "path": "corpus/stacks/app/src/components/LoginPage.tsx",
+      "domain_dir": "stacks",
+      "language": "tsx",
+      "sha256": "1500fa0d520b7eb8779f4aaed8c0f0f2bd24380daaed4413789a994b36778a3d",
+      "bytes": 1551,
+      "lines": 60,
+      "git_blob_oid": "c4509ed6e14b0f5c72ce35c423888398a34b976e"
+    },
+    {
+      "path": "corpus/stacks/app/src/components/ResultsTable.tsx",
+      "domain_dir": "stacks",
+      "language": "tsx",
+      "sha256": "765e2c941ea6abfd70bb9e1b793181fdb3d489e120a3f904f68b9b37570c195a",
+      "bytes": 1275,
+      "lines": 47,
+      "git_blob_oid": "fbef3d8e612ebbdb49214a6f3cbe7c6a54315108"
+    },
+    {
+      "path": "corpus/stacks/app/src/components/SearchForm.tsx",
+      "domain_dir": "stacks",
+      "language": "tsx",
+      "sha256": "bf2f5df10cf6d48db205a6f4196ae141ff5ee55045370bd0d2d17bc14c43945a",
+      "bytes": 3194,
+      "lines": 118,
+      "git_blob_oid": "ecb1446feea4a097652b8884ac8d2a1d706974eb"
+    },
+    {
+      "path": "corpus/stacks/app/src/main.tsx",
+      "domain_dir": "stacks",
+      "language": "tsx",
+      "sha256": "55504f9d998351a13835b9948d9db1c3ad3604d56c87256eead494d26e8563f2",
+      "bytes": 246,
+      "lines": 10,
+      "git_blob_oid": "4b6bdb2205c795637b6822f1d7917513f905367f"
+    },
+    {
+      "path": "corpus/stacks/app/src/test-setup.ts",
+      "domain_dir": "stacks",
+      "language": "ts",
+      "sha256": "694cd77d11be3564087dd3c52b1cc45168e5d09967ba65089edbaa691e6e735d",
+      "bytes": 114,
+      "lines": 1,
+      "git_blob_oid": "3139896d083648edec64d05cc9aa7ea56b3f7d64"
+    },
+    {
+      "path": "corpus/stacks/app/vite.config.ts",
+      "domain_dir": "stacks",
+      "language": "ts",
+      "sha256": "226b78c72e8eddd193937056ebb7f851316319d7f44cc6e25a61352bc02c41e1",
+      "bytes": 448,
+      "lines": 21,
+      "git_blob_oid": "4c936f73f32b403223bc7c6187cdf47eeb51b04d"
+    },
+    {
+      "path": "corpus/tailwatch/api/cmd/tailwatchd/main.go",
+      "domain_dir": "tailwatch",
+      "language": "go",
+      "sha256": "e751721f52d842be13f9d4151a441574b6e153234f006af417a3b020b8c41dbc",
+      "bytes": 2940,
+      "lines": 101,
+      "git_blob_oid": "86a7e269bccfa3d3dfec3e7a74e4af63bd28b3c6"
+    },
+    {
+      "path": "corpus/tailwatch/api/internal/api/components.go",
+      "domain_dir": "tailwatch",
+      "language": "go",
+      "sha256": "49ad29925c57d457168de3434bed20eabc88febc4a1962d364facf5a7f2cc024",
+      "bytes": 12366,
+      "lines": 358,
+      "git_blob_oid": "37b1600d1e9a8adbaf5e24d3232b9a453cee84ff"
+    },
+    {
+      "path": "corpus/tailwatch/api/internal/api/directives.go",
+      "domain_dir": "tailwatch",
+      "language": "go",
+      "sha256": "7f087b9b7e6607f71526f87ec3a269d75814ba95a3bb46003abca5f197184625",
+      "bytes": 3056,
+      "lines": 104,
+      "git_blob_oid": "07c4010f7564103f9d006b4bdd78054830aafbe7"
+    },
+    {
+      "path": "corpus/tailwatch/api/internal/api/server.go",
+      "domain_dir": "tailwatch",
+      "language": "go",
+      "sha256": "4221f45ba74b50483432994527f591427c75be514e5f4fe4e85b47c0c7576ec3",
+      "bytes": 3911,
+      "lines": 130,
+      "git_blob_oid": "073e88c81757358f4e5f6daa4172b321509ed0fb"
+    },
+    {
+      "path": "corpus/tailwatch/api/internal/ingest/localdirective.go",
+      "domain_dir": "tailwatch",
+      "language": "go",
+      "sha256": "8ed12cbf4827994b0205705f3e7710203a79db6c83ee14b35ff1aed8171c271f",
+      "bytes": 11635,
+      "lines": 349,
+      "git_blob_oid": "9324389057293b2a096f0784ce71b53b8351c601"
+    },
+    {
+      "path": "corpus/tailwatch/api/internal/model/component.go",
+      "domain_dir": "tailwatch",
+      "language": "go",
+      "sha256": "eb688d47ed70b525e1e1bf70452c4692bbc05c70a34ebd23ad4727f98895215a",
+      "bytes": 2941,
+      "lines": 69,
+      "git_blob_oid": "be8ae5723a316a59af7acf3b45584013aac575b4"
+    },
+    {
+      "path": "corpus/tailwatch/app/src/App.tsx",
+      "domain_dir": "tailwatch",
+      "language": "tsx",
+      "sha256": "f5aaa00d3412e14de63ce8a4173242590046c687750820587d7bd17b13a5f25d",
+      "bytes": 6023,
+      "lines": 179,
+      "git_blob_oid": "afe46a051190a638dc58bcc3e554085b4e823f53"
+    },
+    {
+      "path": "corpus/tailwatch/app/src/api/client.ts",
+      "domain_dir": "tailwatch",
+      "language": "ts",
+      "sha256": "7d38511eba768cbe4d8873e501a1d2187bdd5039c7a51b7072b95e55f4942832",
+      "bytes": 4271,
+      "lines": 160,
+      "git_blob_oid": "116f2ac6ba24e2f5d20dca31668d35d21191c7a4"
+    },
+    {
+      "path": "corpus/tailwatch/app/src/components/ComponentDetail.tsx",
+      "domain_dir": "tailwatch",
+      "language": "tsx",
+      "sha256": "08e4400e204af42b78e8b63ddf745eda800eba64715b9e67c213ad1fe7b3bdd1",
+      "bytes": 3600,
+      "lines": 111,
+      "git_blob_oid": "d5403ea2f44abe854e89f31dd1a3e02efce47840"
+    },
+    {
+      "path": "corpus/tailwatch/app/src/components/ComponentEditForm.tsx",
+      "domain_dir": "tailwatch",
+      "language": "tsx",
+      "sha256": "b24d20df64f4b8dbefa33beb3688a5de61427425ff001e9cf32bab49c3ca5b94",
+      "bytes": 4557,
+      "lines": 143,
+      "git_blob_oid": "96c687db1a096673492d82df50a81d8b5b326057"
+    },
+    {
+      "path": "corpus/tremorline/api/cmd/tremorlined/main.go",
+      "domain_dir": "tremorline",
+      "language": "go",
+      "sha256": "1ef76d259f0cc4b77c5ca59c4624456d1936beef124a3adbf6f45944d8c9abee",
+      "bytes": 3011,
+      "lines": 103,
+      "git_blob_oid": "1a257419642cf167f78a805dabfd36392bc009b6"
+    },
+    {
+      "path": "corpus/tremorline/api/internal/api/events.go",
+      "domain_dir": "tremorline",
+      "language": "go",
+      "sha256": "03a61ec2777ab90129977a412c1b0d7983b23dbeb47e55414a49cd3c6f0ce5cb",
+      "bytes": 12517,
+      "lines": 370,
+      "git_blob_oid": "012a2f7a57d7ec4db80379376491d2e90922af3f"
+    },
+    {
+      "path": "corpus/tremorline/api/internal/api/server.go",
+      "domain_dir": "tremorline",
+      "language": "go",
+      "sha256": "1a98b1e09afa79566396016a0544c943057266deedc4b26ce9682d83e8a0a494",
+      "bytes": 3894,
+      "lines": 129,
+      "git_blob_oid": "82ee1c52de204ba2ab08d770a3e64ce35f839c65"
+    },
+    {
+      "path": "corpus/tremorline/api/internal/api/stations.go",
+      "domain_dir": "tremorline",
+      "language": "go",
+      "sha256": "5f5573a9d4671f915b3e9226eed1242ae3fa74da6b68b7d803e1dca4f45c5965",
+      "bytes": 3651,
+      "lines": 113,
+      "git_blob_oid": "52844ca1cf7549b5cb9298024cc58ef6da8eefc6"
+    },
+    {
+      "path": "corpus/tremorline/api/internal/ingest/channelmeta.go",
+      "domain_dir": "tremorline",
+      "language": "go",
+      "sha256": "8aac601eea6a634ec916ea4588c74cecf7be61a685bbed866caf0d4640b50b95",
+      "bytes": 6242,
+      "lines": 222,
+      "git_blob_oid": "3482d81a408b43fe2ba23b89e1ece14a1ed7a859"
+    },
+    {
+      "path": "corpus/tremorline/api/internal/model/event.go",
+      "domain_dir": "tremorline",
+      "language": "go",
+      "sha256": "caf3cbdda9e55a7712fecdaa82dc273dd32d3c975e262edf096e96e4038c9e33",
+      "bytes": 2710,
+      "lines": 68,
+      "git_blob_oid": "0b31f76514a47fb5f72c28d4459b171fd2323388"
+    },
+    {
+      "path": "corpus/tremorline/app/src/App.tsx",
+      "domain_dir": "tremorline",
+      "language": "tsx",
+      "sha256": "d41b409ce24c6323601b6a6b25b7c3c709bb7254b7dfda21d88141bc855c3cab",
+      "bytes": 5979,
+      "lines": 174,
+      "git_blob_oid": "fd292c86f00c81da6531ea41ebd2b0b9232f0e74"
+    },
+    {
+      "path": "corpus/tremorline/app/src/api/client.ts",
+      "domain_dir": "tremorline",
+      "language": "ts",
+      "sha256": "6fb47b5ef86d3cf537d1e148c8c724bb5df0ce22925e31b020643eb0f2c5c097",
+      "bytes": 4637,
+      "lines": 181,
+      "git_blob_oid": "536fa100d661d4f91e6ce47ac67804fc7ea5da8e"
+    },
+    {
+      "path": "corpus/tremorline/app/src/components/AssociationForm.tsx",
+      "domain_dir": "tremorline",
+      "language": "tsx",
+      "sha256": "10e6f5b53e85827aba67598d5b5714dc07fb6dcea811489147fe4d4784bb3dba",
+      "bytes": 4473,
+      "lines": 137,
+      "git_blob_oid": "49bf342d9d64873bc33bfa5e02f614f13fef30e7"
+    },
+    {
+      "path": "corpus/tremorline/app/src/components/EventDetail.tsx",
+      "domain_dir": "tremorline",
+      "language": "tsx",
+      "sha256": "7b8174fa8e466eac55bd54c885af41753f5f7577e3ae6c85534e58ae10647267",
+      "bytes": 3843,
+      "lines": 111,
+      "git_blob_oid": "18c23b181e2662a9f9ce9d364c8c53fb0af2bb16"
+    }
+  ]
+}
