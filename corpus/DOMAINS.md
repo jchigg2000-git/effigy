@@ -11,8 +11,9 @@ that one domain scores 100%, so any recovery rate measured that way is an artifa
 rather than a property of the husk. §2 therefore requires **K ≥ 6 distinct source domains**, and
 calls that "a precondition for this pre-registration being meaningful at all."
 
-`corpus/stacks/` is one domain. `evals/domains.json` already declares the six intended source
-domains; five of them have zero artifacts. **This document is the contract for those five.**
+`corpus/stacks/` is one domain. `evals/domains.json` declares the six intended source domains;
+when this contract was written, five of them had zero artifacts. **This document is the contract
+for those five** — they have since been built to it, and `evals/verify_domains.py` gates them.
 
 ## 2. Each domain gets its OWN architecture
 

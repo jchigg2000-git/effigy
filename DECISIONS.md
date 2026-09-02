@@ -164,3 +164,21 @@ authored `domains` block so a refresh cannot reset the privacy eval's ground tru
 diff is four derived fields on one entry; artifact count, ordering, paths and `domains` are
 byte-identical. `--verify` now reports OK on all 72.
 
+## 2026-09-01 — Publication addendum: references that do not resolve in the published tree
+
+Written for the public flip. Entries above are left exactly as written, per this file's rule; this
+entry records what a reader of the published tree cannot follow, and what they can check instead.
+
+- **The 2026-04-30 entry** cites an `algorithmTests.md` section, "Re-evaluation:
+  qwen2.5-coder:14b". That section was deleted in the 2026-08-19 rewrite (see "Drop the vendored
+  fixtures" above and the banner at the top of `algorithmTests.md`). The 14B verdict now survives
+  only as a disclaimed aside at the end of that file's "`llm-translation` — model scale, and a
+  reversal" section.
+- **The 2026-08-31 entry** reasons from commit and blob history ("does not exist in this repository
+  at any commit", "written in the same commit that built the six-domain corpus"). Those claims were
+  made against the full development history; the published tree is a single root commit, so they
+  cannot be re-derived from it. What a reader can still check: `git cat-file -e 041b4980` fails
+  here too, and `python3 evals/run_eval.py --verify` reports OK on all 72 artifacts.
+- **Every commit SHA** cited in this file, in `ROADMAP.md`, in `algorithmTests.md` and under
+  `evals/runs/` identifies the pre-publication history and will not resolve. `evals/README.md`
+  § "Commit references under `evals/runs/` do not resolve" is the standing disclosure.

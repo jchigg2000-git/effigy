@@ -19,7 +19,7 @@ Structure is preserved deliberately: path layout is itself part of the evidence
 a reviewer uses, and flattening it would destroy the layering finding before the
 evaluator ever sees it.
 
-    python3 evals/husk_tree.py --model Qwen/Qwen2.5-Coder-7B-Instruct --out /tmp/x
+    python3 evals/husk_tree.py --model Qwen/Qwen2.5-Coder-7B-Instruct --target <target_id> --out /tmp/x
 """
 
 from __future__ import annotations

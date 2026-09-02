@@ -1,9 +1,25 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "husk-api"
 version = "0.1.0"
+description = "FastAPI service that husks source code through pluggable anonymization solutions"
 requires-python = ">=3.11"
 license = "MIT"
 authors = [{ name = "Justin Higgins" }]
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.30",
+  "pydantic>=2.7",
+  "python-dotenv>=1.0",
+  "pyffx>=0.3",
+  "openai>=1.40",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8.0", "httpx>=0.27"]
 
 [tool.setuptools.packages.find]
 include = ["app*"]

@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="img/effigy-logo-dark.png">
+    <img alt="effigy — preserve the mess, destroy the meaning." src="img/effigy-logo-light.png" width="520">
+  </picture>
+</p>
+
 # effigy
 
 **Privacy-preserving code-husking for LLMs.** Transform (redact / re-domain)
@@ -129,7 +136,13 @@ solution also reads `FPE_KEY` (32 hex chars) directly from the environment.
 process: husks stay valid within one run, but pseudonyms change on restart and
 a re-identification map from an earlier process will no longer dehusk. A
 set-but-malformed `FPE_KEY` is an error rather than a silent fallback, and
-`EFFIGY_ENV=production` refuses to start without one.
+`EFFIGY_ENV=production` makes every `fpe` request fail without one instead of
+falling back to an ephemeral key (the process itself still starts).
+
+The shipped default `LLM_MODEL` is `qwen2.5-coder:14b`, the model the service
+was first built against. The recorded evidence favours the 7B (item 6 under
+*Status* below), so set `LLM_MODEL` deliberately rather than relying on the
+default.
 
 ## Where to read next
 
@@ -142,8 +155,11 @@ set-but-malformed `FPE_KEY` is an error rather than a silent fallback, and
 - **`docs/working-paper.md`** — a two-section fragment (introduction and §4.2,
   the invariant) that predates the preprint. Superseded on its central claim;
   both carry a status note pointing at `LIMITATIONS.md`.
-- **`docs/architecture/diagrams/*.mmd`** — context, components, and per-solution
-  sequence diagrams (Mermaid).
+- **`docs/architecture/diagrams/*.mmd`** — context, components, and sequence
+  diagrams (Mermaid), with `.svg` renders beside them. Drawn at the initial
+  build: they predate `POST /dehusk` and the post-condition gate, and there is
+  no `literal-tagging` sequence. Where they disagree with the code, the code
+  wins.
 - **`docs/handoffs/01`–`06`** — the build history, one handoff per component
   (buildout, fpe, literal-tagging, llm-translation, frontend, target catalog).
   These are *task briefs written to the agents that built each component*, kept
@@ -224,3 +240,8 @@ The seven things a reader should know before trusting anything in this repo:
 a "what would falsify this" section and one claim that has **already been
 falsified and fixed**. This summary is deliberately a strict subset of it; where
 the two disagree, that file is correct and this one is stale.
+
+## License
+
+MIT — see [`LICENSE`](LICENSE). The preprint at `docs/draft-1.md` additionally
+carries its own CC BY 4.0 notice covering reuse of its text.

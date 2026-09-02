@@ -133,7 +133,6 @@ def test_fpe_full_roundtrip():
     })
     assert hr.status_code == 200, hr.text
     hbody = hr.json()
-    husked = hbody["output"]
     rmap = hbody["reidentify_map"]
 
     # Simulate an LLM diagnosis written against the husked identifiers: it

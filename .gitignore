@@ -152,6 +152,7 @@ __pycache__/
 *.egg-info/
 .pytest_cache/
 .venv/
+.ruff_cache/
 
 # SQLite (local dev DBs)
 *.db
@@ -172,10 +173,14 @@ evals/canon/canon_go
 
 # Withheld leak-term overlay: carries the two source-identifying operator names
 # that are redacted from the published evals/leak_terms.json. score_husk.py
-# merges it when present; without it, leak counts are lower bounds.
-evals/leak_terms.private.json
+# merges it when present; without it, leak counts are lower bounds. The rule is
+# a suffix so a stray copy anywhere in the tree stays out too.
+*.private.json
 
-# Local-only publishing guard. Explains why this repo must NOT be made public by
-# flipping visibility, and what to publish instead. Never ships.
-/PUBLISHING.local.md
-/release-gate.local.sh
+# Path re-identification map that evals/husk_paths.py writes beside a husked tree.
+_path_map.json
+
+# Local-only notes and scripts (the maintainer's publishing notes and release
+# gate live here). Suffix rules, so a copy anywhere in the tree stays out.
+*.local.md
+*.local.sh

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Committed evaluation harness for the husking solutions.
 
-Replaces husk-api/scripts/fpe_corpus_eval.py, which was fpe-only, printed to
+Replaces the since-deleted husk-api/scripts/fpe_corpus_eval.py, which was fpe-only, printed to
 stdout, saved nothing, and hardcoded corpus paths. Every number that ends up in
 a doc must come from a file this wrote.
 

@@ -3,7 +3,7 @@
 The committed evaluation harness. **Every number that appears in a document must
 come from a file this wrote.**
 
-It replaces `husk-api/scripts/fpe_corpus_eval.py`, which was `fpe`-only, printed
+It replaces the since-deleted `husk-api/scripts/fpe_corpus_eval.py`, which was `fpe`-only, printed
 to stdout, saved nothing, and hardcoded corpus paths. That is why the previously
 recorded results were not reproducible: they were transcribed by hand from a
 terminal, and a later commit edited the corpus underneath them without anything
@@ -27,7 +27,26 @@ noticing.
 | `prompts/` | The attacker briefing (§4 Kerckhoffs), forced-choice (§6.1), open-ended (§6.2) and judge prompts. Each carries a leading HTML-comment design note that `load_prompt()` strips before the text reaches a model. |
 | `kappa_judge.py` | Cohen's κ for the judge (§6.2). `--sample` writes a blinded worksheet (no judge label, no artifact), `--score` computes κ. Below 0.6 the judge table is descriptive only. |
 | `verify_domains.py` | The mechanical acceptance gate for `corpus/DOMAINS.md` §5 — file count, line envelope, `gofmt -e`, TS1xxx syntax, path escapes, cross-domain vocabulary bleed, and `leak_terms` size/disjointness. |
-| `runs/<utc-stamp>-<solution>-<backend>/` | One directory per run: `config.json`, one JSON record per case, and raw husk output under `husks/`. |
+| `run_models.py` | Model selection sweep for `llm-translation`: which backend preserves code structure. |
+| `probe_models.py` | Probes every model in the shipped catalog for reachability at the configured endpoint. |
+| `run_smell_loop.py` | The diagnostic-validity loop: does a husk still smell the same? |
+| `husk_tree.py` | Husks the whole corpus tree with one model, preserving directory structure, so repository-level defects stay visible to a multi-file reviewer. |
+| `husk_paths.py` | Husks the file paths of an already-husked tree and makes its imports resolve; writes `_path_map.json` (gitignored) beside the tree. |
+| `canonicalize.py` + `canon/` | The RSCH-1B canonicaliser (pre-registration A4): strips identifiers, strings, comments and JSX text from one Go or TS/TSX file. `canon/canon_go` is a gitignored binary — build it with `(cd evals/canon && go build -o canon_go ./canon_go.go)`. |
+| `structure_probes.py` / `structure_probes.json` | Model-free probes of the canonicalised artifacts (RSCH-1B); the JSON is the script's committed output. |
+| `permutation_baseline.py` | Permuted-null correction for attacker answer bias; folded into `score_rsch1.py` §2b. |
+| `domains.json` | The six declared source domains; read by `run_rsch1.py`, `kappa_judge.py` and `verify_domains.py`. |
+| `runs/` | One directory per run. Layout depends on which script wrote it — see below. |
+
+`run_eval.py` writes `runs/<utc-stamp>-<solution>-<backend>/` with `config.json`, one JSON record
+per case and raw husks under `husks/`; **no committed run was produced by it.** The committed
+directories were written by `run_rsch1.py` (`*-rsch1-held-out/`: `config.json`, `artifacts/`,
+`raw/`, then `scored.jsonl` and `summary.md` from `score_rsch1.py`; abandoned attempts keep what
+was written plus a `DISCARDED.md`), `run_smell_loop.py` (`*-smell-loop/`: `config.json`,
+`cases.jsonl`, `husks/`, `summary.json`), `probe_models.py` (`*-model-probe/`: `probe.json`, plus
+`PANEL.md` where a panel was chosen), and — for the four `20260819-*` directories — by hand or by
+`run_replicates.py` / `score_husk.py` / `calibrate_postcondition.py`, each carrying its own
+`RESULT.md` or JSON write-up.
 
 ## Usage
 
@@ -45,7 +64,7 @@ noticing.
     python3 evals/score_rsch1.py evals/runs/<run-id>                 # gate, score, verdicts
     python3 evals/kappa_judge.py --sample evals/runs/<run-id>        # then hand-label, then --score
 
-## Commit references in run summaries do not resolve
+## Commit references under `evals/runs/` do not resolve
 
 This repository is published as a **single root commit**. Each run's `summary.md` records a
 `Pre-registration commit:` and a `Repo commit:` SHA, per the pre-registration's §12 rule 4 — those
@@ -53,7 +72,10 @@ identify the pre-publication history and **will not resolve here**. They are lef
 recorded rather than edited, because they are the provenance the pre-registration asked for and
 rewriting them would falsify it. What they pinned is unavailable to a reader of this repository;
 what each run actually measured is fully contained in its own directory — config, raw responses,
-scored records and the summary that reports them.
+scored records and the summary that reports them. The same applies to every other commit SHA under
+`evals/runs/` — the commit fields in each `config.json`, and the fix commits cited in
+`DISCARDED.md`, `RESULT.md` and `baseline_real.json` — and to the SHAs in `ROADMAP.md`,
+`DECISIONS.md` and `algorithmTests.md`.
 
 ## A fresh clone skips the TypeScript parse gate
 
@@ -67,7 +89,10 @@ Go parsing, self-containment, cross-domain bleed and the leak-term gates all run
 
 ## Known: `canonicalize.py --all` has one failing artifact
 
-`python3 evals/canonicalize.py --all` gates every corpus artifact and **exits 1**: 63 of 64 pass,
+`python3 evals/canonicalize.py --all` shells out to `evals/canon/canon_go`, a gitignored binary a
+fresh clone must build first — `(cd evals/canon && go build -o canon_go ./canon_go.go)` — and to
+`evals/canon/canon_ts.mjs` under Node. With both in place it gates every corpus artifact and
+**exits 1**: 63 of 64 pass,
 and `corpus/stacks/api/internal/ingest/marc21.go` fails gate **G8** (`max_brace_depth` 7 → 6 — the
 canonicaliser loses one level of nesting on that file). This is expected and does not affect any
 recorded result: `corpus/stacks` is the pathology corpus, **not** an RSCH-1 domain, and the RSCH-1B

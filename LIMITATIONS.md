@@ -104,7 +104,8 @@ The Go module name — which in this corpus **is** the domain label — survived
 `llm-translation` husks. On those the attacker was right **44/44 (100%)**; on husks where it was
 removed, **83/125 (66.4%)**. `llm_translation.py` had always required own-module imports to be
 renamed, so this was a shipped defect rather than a property of husking, and it is now enforced by a
-fourth trigger in `_husk_check.check` (fires on 14/14 real cases, 0/76 clean ones).
+fourth trigger in `_husk_check.check` (fires on 14/14 real cases, 0/76 clean ones — development-log
+counts; no committed run records them).
 
 **The residual matters more than the fix.** The remaining 8 leaks (2 Go, 6 TS/TSX) arrive as
 *content* — `<h1>qsolog</h1>` — with no import to derive the name from. No import-based rule can see
@@ -187,7 +188,8 @@ input and refuses to return a husk that is substantially the source
 150 file-observations, 3 of 3 known passthroughs caught). A refusal retries once, naming what was
 copied, then fails closed with a 500 rather than returning a degraded husk with a warning — a
 warning in a field the caller may not read is how this defect survived in the first place. Live
-acceptance on a whole tree: 5 of 6 files husked, 1 refused. Every response now carries
+acceptance on a whole tree: 5 of 6 files husked with the first two triggers, 4 of 6 once the third
+shipped (`evals/runs/20260819-prompt-fix-32b/POSTCONDITION.md`). Every response now carries
 `meta.postcondition` with the measurements and the verdict, because the caller cannot run this
 comparison themselves.
 
@@ -222,10 +224,11 @@ prompt fix is true only of *whole-file* passthrough. See
 "DO NOT: Refactor or improve the code in any way", which a strong instruction-follower reads as
 "do not change the text". Rewriting that clause removed every observed passthrough on this corpus:
 32B went from 2 of 6 files returned substantially unchanged to 0 of 6, and domain-term retention
-fell from 41% to 31% (`evals/runs/20260819-prompt-fix-32b/`). **The defect itself is unchanged** —
-the service still returns whatever the model produced without comparing it to the input, so a
-future model, prompt, or temperature can reintroduce silent passthrough with nothing to catch it.
-`evals/score_husk.py` implements the comparison; the service does not call it.
+fell from 41% to 31% (`evals/runs/20260819-prompt-fix-32b/`). **At that point the defect itself was
+unchanged** — the service still returned whatever the model produced without comparing it to the
+input. The request-path gate above, closed later the same day, is what changed that: the service
+now runs the same copied-span comparison `evals/score_husk.py` uses, so a future model, prompt, or
+temperature that reintroduces passthrough is refused rather than returned.
 
 ## 3. What each solution actually destroys
 
@@ -337,8 +340,9 @@ configuration is that category error. Results run on rewriter goodwill.
   consistent within one run, but pseudonyms change on restart, so a re-identification map from an
   earlier process will not dehusk.
 - A malformed `FPE_KEY` raises rather than falling back.
-- **All `fpe` outputs recorded in `algorithmTests.md` were produced under a key that is baked into
-  this source file** and under the pre-2026-08-19 62-character alphabet. They are historical; see
+- **All `fpe` outputs measured before 2026-08-19 — since withdrawn from `algorithmTests.md` with
+  their fixture — were produced under a key that is baked into this source file** and under the
+  pre-2026-08-19 62-character alphabet. They are historical; see
   §12/F7.
 - The cipher is `pyffx` 0.3.0 — a pure-Python Feistel construction, **not** NIST SP 800-38G FF1 or
   FF3-1 (HMAC-SHA1 round function, no tweak parameter, unmaintained). The design catalog cites
@@ -347,8 +351,9 @@ configuration is that category error. Results run on rewriter goodwill.
 
 ## 7. Output is not deterministic
 
-`llm-translation` is not byte-stable. Two runs of the same input at temperature 0.2 against the 14B
-model produced **144 and 159 lines, with 15 vs 16 top-level exports**, differing in which entity the
+`llm-translation` is not byte-stable. Measured on the earlier, since-withdrawn fixture — no committed
+run records it; see the banner at the top of `algorithmTests.md` — two runs of the same input at
+temperature 0.2 against the 14B model produced **144 and 159 lines, with 15 vs 16 top-level exports**, differing in which entity the
 PATCH endpoint operated on. Both were valid translations. At 7B the same test produced 42 and 76
 lines with disjoint function sets.
 
@@ -420,7 +425,7 @@ not an RSCH-1 domain.
 input half moved off its original domain, and the output half's verb was renamed with it so the
 pair stays coherent (`settle_booking` → `issue_booking`). Every *instruction*, the ordering, and the
 example's structure — same lines, same FIXME position, same control flow — are unchanged. The
-shipped text is **4793 bytes against the artifact's 4795**. `evals/runs/20260819-prompt-fix-32b/prompts/v3.txt` remains
+shipped text is **4793 characters against the artifact's 4795** (4807 and 4809 bytes in UTF-8). `evals/runs/20260819-prompt-fix-32b/prompts/v3.txt` remains
 the byte-exact text the recorded numbers were produced with and is deliberately not synchronised to
 the shipped file. **No recorded number was re-measured after this change.**
 
@@ -432,7 +437,8 @@ disagree, the artifact is what produced the numbers and the shipped file is what
 
 ## 10. Known correctness defects, open
 
-Recorded in `algorithmTests.md`, unfixed:
+Found on the earlier, since-withdrawn fixture — their record left `algorithmTests.md` with it (see
+its banner) — and unfixed:
 
 - **`literal-tagging` breaks on nested template literals** — TSX backtick interpolation defeats the
   regex and can yield syntactically invalid output.

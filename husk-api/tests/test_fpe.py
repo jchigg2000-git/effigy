@@ -57,7 +57,7 @@ def test_fpe_l3_ciphers_proper_nouns():
 
 
 # --- Injectivity regression: the "_" -> "H" alphabet collision ---------------
-# _IDENT_RE admits "_", but _ALPHABET_MIXED used to exclude it, so the sanitizer
+# _TOKEN_RE's identifier branch admits "_", but _ALPHABET_MIXED used to exclude it, so the sanitizer
 # in _make_cipher mapped it via alphabet[ord("_") % 62] == alphabet[33] == "H".
 # foo_bar and fooHbar therefore enciphered identically, and the map inversion
 # (a dict comprehension) silently dropped one of them -- so /dehusk rewrote a

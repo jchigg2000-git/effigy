@@ -94,7 +94,8 @@ Nothing under `corpus/stacks/` may reference a path above it. The seed file live
 at `stacks/api/testdata/catalog_seed.mrk`, the listen address is the literal
 `:8300` in `main.go`, the SPA's TypeScript config is standalone with no `extends`,
 and `go.sum` and both lockfiles are committed. `grep -rn '\.\./\.\.'` over the tree
-returns nothing outside `node_modules/`. The previous fixture failed all of this
+returns nothing outside `node_modules/` and the lines of `SPEC.md` that describe the anti-pattern.
+The previous fixture failed all of this
 and was not clonable; that is the anti-pattern this one exists to not repeat.
 
 ## Verifying it

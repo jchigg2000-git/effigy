@@ -25,8 +25,6 @@ from typing import Callable
 from app.registry import register
 
 
-_IDENT_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]+")  # 2+ chars to avoid clobbering `i`, `x`
-
 # Combined tokenizer: matches strings, comments, and identifiers in priority order.
 # String literals and comments are passed through verbatim (per handoff: "Do not
 # rewrite string literals or comments"). This protects Go import paths, SQL in
@@ -39,7 +37,7 @@ _TOKEN_RE = re.compile(
     r"|//[^\n]*"                    # // line comment
     r"|\#[^\n]*"                    # # line comment (Python, shell)
     r"|/\*(?:[^*]|\*(?!/))*\*/"     # /* block comment */
-    r"|[A-Za-z_][A-Za-z0-9_]+",     # identifier (2+ chars)
+    r"|[A-Za-z_][A-Za-z0-9_]+",     # identifier (2+ chars, so `i`/`x` are never clobbered)
     re.DOTALL,
 )
 
@@ -80,9 +78,10 @@ _GENERIC_DOMAIN_NOUNS = frozenset({
 })
 
 
-# Must be a superset of every character _IDENT_RE can produce, or the
-# sanitizer below silently maps out-of-alphabet chars onto in-alphabet ones and
-# the transform stops being injective. "_" is in _IDENT_RE, so it must be here:
+# Must be a superset of every character _TOKEN_RE's identifier branch can
+# produce, or the sanitizer below silently maps out-of-alphabet chars onto
+# in-alphabet ones and the transform stops being injective. "_" is in that
+# branch, so it must be here:
 # without it, ord("_") % 62 == 33 -> "H", making foo_bar and fooHbar collide.
 _ALPHABET_MIXED = string.ascii_letters + string.digits + "_"
 

@@ -38,7 +38,8 @@ must not be an answer key.** Its first version carried eight comments naming the
 defects they sat beside ("every query in this program is written at its call
 site"). Reviewers cited the prose instead of the code, and the husker faithfully
 translated the prose, so the husk scored well for entirely the wrong reason.
-Removed in `c6bc23f`.
+Removed before the corpus was frozen (a pre-publication commit; see `evals/README.md` on commit
+references).
 
 **A private sibling repo** (six Python files, regulated-utility data processing)
 — used for the husker-scale and prompt work, because privacy questions need

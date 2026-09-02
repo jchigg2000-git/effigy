@@ -7,8 +7,10 @@ drop-in file. A hand-authored static UI ships with the service.
 ## Setup
 
     python -m venv .venv && source .venv/bin/activate
-    pip install -r requirements.txt
-    pip install -e .
+    pip install -e ".[test]"
+
+Runtime dependencies live in `pyproject.toml`; `requirements.txt` is the same
+install spelled for `pip install -r`.
 
 ## Run
 
@@ -100,7 +102,7 @@ back to the defaults below.
 | Var                   | Default                      | Purpose |
 | --------------------- | ---------------------------- | ------- |
 | `LLM_BASE_URL`        | `http://localhost:11434/v1`  | OpenAI-compatible chat endpoint. |
-| `LLM_MODEL`           | `qwen2.5-coder:14b`          | Model name (per-request override via `options.model`). |
+| `LLM_MODEL`           | `qwen2.5-coder:14b`          | Model name (per-request override via `options.model`). The default is the model the service was first built against; the recorded evidence favours the 7B — see the root `README.md`, *Status* item 6. |
 | `LLM_API_KEY`         | `ollama`                     | API key. This is the only token var — there is **no** separate `HF_TOKEN`. |
 | `LLM_TIMEOUT_SECONDS` | `180`                        | Request timeout. |
 | `LLM_TEMPERATURE`     | `0.2`                        | Sampling temperature. |
@@ -136,7 +138,26 @@ Generate a key with:
 **What the key does and does not protect:** it protects *identifier tokens*
 only. String literals and comments are passed through verbatim by design, so
 import paths, URLs, SQL and error messages survive into the husk regardless of
-the key. See `LIMITATIONS.md`.
+the key. See [LIMITATIONS.md](../LIMITATIONS.md).
+
+### Post-condition gate (`llm-translation` only)
+
+Eight variables tune the fail-closed post-condition check that `llm-translation`
+runs on its own output — the only mechanical enforcement in the service (there
+is no verifier; see [LIMITATIONS.md §5](../LIMITATIONS.md#5-there-is-no-verifier)).
+`fpe` and `literal-tagging` are deterministic transforms and have no gate.
+Loosening these disables it.
+
+| Variable | Default | Effect |
+|---|---|---|
+| `HUSK_CHECK_RUN_LINES` | `20` | A verbatim run this many lines long counts as copied |
+| `HUSK_CHECK_RUN_SHARE` | `0.15` | ...or this share of the input's code lines |
+| `HUSK_CHECK_COPIED_SHARE` | `0.35` | Total copied-span share that fails the husk |
+| `HUSK_CHECK_RETENTION` | `0.92` | Identifier retention that fails the husk |
+| `HUSK_CHECK_RATIO` | `0.95` | Whole-file similarity that fails the husk |
+| `HUSK_CHECK_MIN_LINES` | `12` | Inputs shorter than this skip the gate entirely |
+| `HUSK_CHECK_MODULE_NAMES` | `1` | `0` disables the input-module-name check |
+| `HUSK_CHECK_RETRIES` | `1` | Retries before the gate raises |
 
 ## Test
 
@@ -150,23 +171,6 @@ and immediately available at `/husk/<slug>`. See `app/solutions/_example.py`
 for the template.
 
 ## Scripts
-
-### Post-condition gate
-
-Eight variables tune the shipped fail-closed post-condition check — the only
-mechanical enforcement in the service (there is no verifier; see
-`LIMITATIONS.md` §5). Loosening them disables it.
-
-| Variable | Default | Effect |
-|---|---|---|
-| `HUSK_CHECK_RUN_LINES` | `20` | A verbatim run this many lines long counts as copied |
-| `HUSK_CHECK_RUN_SHARE` | `0.15` | ...or this share of the input's code lines |
-| `HUSK_CHECK_COPIED_SHARE` | `0.35` | Total copied-span share that fails the husk |
-| `HUSK_CHECK_RETENTION` | `0.92` | Identifier retention that fails the husk |
-| `HUSK_CHECK_RATIO` | `0.95` | Whole-file similarity that fails the husk |
-| `HUSK_CHECK_MIN_LINES` | `12` | Inputs shorter than this skip the gate entirely |
-| `HUSK_CHECK_MODULE_NAMES` | `1` | `0` disables the input-module-name check |
-| `HUSK_CHECK_RETRIES` | `1` | `llm-translation` only: retries before the gate raises |
 
 - `scripts/build_models_catalog.py` — queries the configured
   OpenAI-compatible `/models` endpoint and curates it into

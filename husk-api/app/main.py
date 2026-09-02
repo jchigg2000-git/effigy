@@ -115,7 +115,7 @@ def dehusk(req: DehuskRequest):
     )
 
 
-# Static UI mount. Directory must exist; handoff 05 fills it with index.html etc.
+# Static UI mount. static/ holds the hand-authored UI (index.html, app.js, style.css).
 _static_dir = Path(__file__).resolve().parent.parent / "static"
 _static_dir.mkdir(exist_ok=True)
 app.mount("/ui", StaticFiles(directory=str(_static_dir), html=True), name="ui")

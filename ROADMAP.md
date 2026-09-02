@@ -48,14 +48,16 @@ a parked item as a blocker is misreading this file.
 > ## ✅ RSCH-1B ANSWERED — **yes, the architecture is itself domain-informative.**
 >
 > Run `evals/runs/20260820T021753Z-rsch1-held-out`, forced choice, 111 resolved records, **parse
-> failure 0%**. Registered as amendment **A4**, committed before any call was made.
+> failure 0%**. Registered as amendment **A4**, committed before any call was made. (§8 validity
+> gate recorded FAILED — `summary.md` §1, no source or BLIND arm; §3 marks both arms NOT
+> COMPUTABLE; the corrected figures below are A4.1 permuted-baseline deltas, not §8 verdicts.)
 >
 > | arm | observed | permuted null | **corrected** | p |
 > |---|---:|---:|---:|---:|
 > | `structure-only` | 0.467 / 0.520 | 0.232 / 0.276 | **+0.234 / +0.244** | 0.0014 / 0.0031 |
 > | `structure-only-nonum` | 0.500 / 0.538 | 0.243 / 0.273 | **+0.257 / +0.265** | 0.0008 / 0.0023 |
 >
-> Against the anchors: **BLIND +0.03** (no signal) · **structure-only +0.24** · `llm-translation`
+> Against the RSCH-1 anchors (run `20260819T182111Z`): **BLIND +0.03** (no signal) · **structure-only +0.24** · `llm-translation`
 > **+0.44 / +0.48** · **source +0.67**. **Architecture alone carries roughly half the leak a husk
 > carries.**
 >
@@ -97,6 +99,9 @@ a parked item as a blocker is misreading this file.
 >   n=25/26 per arm rather than 30. All nine were transport failures, split 5/4 across the two arms,
 >   so they are missing coverage rather than a biased exclusion.
 > - Synthetic corpus, so identifier-level re-identification stays untestable by construction.
+> - **This run's own §8 validity gate is recorded FAILED** (`summary.md` §1: no source arm,
+>   p_source 0/0) and it carried no BLIND arm, so §3 marks both arms NOT COMPUTABLE. The
+>   +0.234 / +0.257 figures are A4.1 permuted-baseline corrections, not §8 verdicts.
 >
 > ### Also settled this session
 > - **The BLIND floor was response bias.** It corrects to **+0.025 / +0.033 at p ≈ 0.40** — no
@@ -347,8 +352,9 @@ a parked item as a blocker is misreading this file.
 > *whole-file* passthrough.
 >
 > #### ⚠️ Disputed / UNVERIFIED — do not cite without checking
-> **Items 1 and 2 were settled in commit `ad4b31f` (2026-08-19)** — §2 now reads "still
-> unmeasured", the dependency-leak claim is withdrawn, and the dogfood tree was diffed: the files
+> **Items 1 and 2 were settled on 2026-08-19** — §2 was re-scoped to "still unmeasured" at
+> the time (since superseded by RSCH-1 and RSCH-1B; see §2 as it stands), the dependency-leak
+> claim is withdrawn, and the dogfood tree was diffed: the files
 > had never been transformed. Kept below as the record of what was disputed and why; do not
 > re-open them as work.
 >
@@ -360,9 +366,10 @@ a parked item as a blocker is misreading this file.
 >    probably over-broad as written. **Re-scope it before publishing anything.**
 > 2. ~~**The dogfood result is UNVERIFIED and probably wrong.**~~ *(settled — it was a false
 >    positive, exactly as the owner said: the files were passthrough, not leaks.)* Husking `husk-api/app` itself appeared
->    to leave `openai`, `pyffx`, `fastapi`, `husk`, `dehusk`, `fpe`, `pseudonym` in the output, and I
->    reported that as a structural "dependency names are unhuskable" finding. **The owner's response
->    was that it has to be a false positive, and I had not finished checking when the session ended.**
+>    to leave `openai`, `pyffx`, `fastapi`, `husk`, `dehusk`, `fpe`, `pseudonym` in the output, and an
+>    earlier session reported that as a structural "dependency names are unhuskable" finding. **The
+>    owner's response was that it had to be a false positive, and the check was not finished when
+>    that session ended.**
 >    The specific unrun check: several files came back near-identity (`registry.py` 40→46,
 >    `dehusk.py` 71→69, `main.py` 121→113), which matches the **known L3 passthrough failure mode** —
 >    i.e. those files may never have been husked at all, making the "leak" an artifact of a failed
@@ -429,9 +436,11 @@ a parked item as a blocker is misreading this file.
   amendment A4, committed before any call. Canonicalised source (no identifiers, strings, comments
   or JSX text; 11 hard gates; 3 model-free probes find nothing) is still re-identified at
   **+0.234 / +0.244 corrected, p = 0.0014 / 0.0031** — about **half** the leak `llm-translation`
-  carries, against a BLIND arm with **no** signal (+0.03, p≈0.40). Numerics do not explain it: the
+  carries, against RSCH-1's retroactively-corrected BLIND arm with **no** signal (+0.03, p≈0.40). Numerics do not explain it: the
   `-nonum` arm scores the same or higher. Run `evals/runs/20260820T021753Z-rsch1-held-out`; full
-  detail and caveats in §0. Open-ended endpoint not run (spend stopped), so no §8 verdict.
+  detail and caveats in §0. No source or BLIND arm was run, so the run's §8 validity gate is
+  recorded FAILED and no §8 verdict is issued — the figures are A4.1 permuted-baseline
+  corrections. The open-ended endpoint was also not run (spend stopped).
 - ⬜ **RSCH-2 — NOT "build the verifier as specified". Re-scope §4.2 first.** RSCH-1B changed what
   this item is. `docs/working-paper.md` §4.2 specifies a CPG-isomorphism + anti-pattern-density +
   comment-speech-act checker as the mechanism that enforces the pathology-anchor invariant. That
@@ -456,13 +465,24 @@ a parked item as a blocker is misreading this file.
 
 ## §2 Open-decisions index
 
-(none yet — first roadmap pass, no prior decisions on record)
+No open decisions. Ratified decisions live in `DECISIONS.md` (append-only; cited by date + title):
+
+- 2026-04-30 (approx.) — Retire `crumb_level` as `llm-translation`'s target-selection knob
+- 2026-08-07 — Install ROADMAP.md/DECISIONS.md triad; keep build-history handoffs in place
+- 2026-08-19 — `fpe` stops shipping its own decryption key; alphabet gains `_`
+- 2026-08-19 — Drop the vendored fixtures; the results file dies with its corpus
+- 2026-08-19 — Build the corpus to six domains rather than weaken RSCH-1's design
+- 2026-08-30 — Drop `docs/Effigy_Technical_Abstract.pdf` rather than annotate it
+- 2026-08-31 — Regenerate the one drifted manifest entry, having established it is bookkeeping
+- 2026-09-01 — Publication addendum: references that do not resolve in the published tree
 
 ## Appendix — consolidation history
 
-- `rerun-llm-test.md` (95 lines) — folded into §0 "What shipped" (its result is already fully
-  recorded in `algorithmTests.md` "Re-evaluation: qwen2.5-coder:14b", zero inbound references
-  anywhere in the repo) — staged, recoverable via `git show HEAD:rerun-llm-test.md`.
+- `rerun-llm-test.md` (95 lines) — folded into §0 and removed by the 2026-08-07 consolidation
+  sweep (DECISIONS 2026-08-07). The `algorithmTests.md` "Re-evaluation: qwen2.5-coder:14b" section
+  that recorded its result was deleted with the vendored fixtures (DECISIONS 2026-08-19); the 14B
+  result is not carried forward — see the banner at the top of `algorithmTests.md`. Not
+  recoverable from this repository: history was reset to a single root commit at publication.
 
 **Stays separate, deliberately not folded:**
 - `docs/handoffs/01-06` — README's own "Where to read next" section indexes these as canonical
