@@ -50,6 +50,9 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO / "husk-api"))
+sys.path.insert(0, str(REPO / "evals"))
+
+from run_rsch1 import usage_fields  # noqa: E402
 
 SOURCE_EXT = {".py", ".go", ".ts", ".tsx", ".js", ".mod", ".sum", ".json",
                ".html", ".css", ".sql", ".mrk"}
@@ -90,7 +93,8 @@ def collect(tree: Path) -> list[str]:
     )
 
 
-def propose(target: str, paths: list[str], model: str) -> dict:
+def propose(target: str, paths: list[str], model: str) -> tuple[dict, dict | None]:
+    """The model's mapping for the whole tree, and the usage the call reported."""
     from openai import OpenAI  # noqa: PLC0415
 
     c = OpenAI(base_url=os.environ["LLM_BASE_URL"], api_key=os.environ["LLM_API_KEY"], timeout=300)
@@ -103,7 +107,7 @@ def propose(target: str, paths: list[str], model: str) -> dict:
     m = re.search(r"\{.*\}", raw, re.S)
     if not m:
         raise SystemExit(f"unparseable mapping: {raw[:200]!r}")
-    return json.loads(m.group(0))
+    return json.loads(m.group(0)), usage_fields(r)
 
 
 def main() -> int:
@@ -123,7 +127,7 @@ def main() -> int:
     if not paths:
         raise SystemExit(f"no source files found under {tree} — check SOURCE_EXT")
 
-    doc = propose(a.target, paths, a.model)
+    doc, usage = propose(a.target, paths, a.model)
     mapping: dict[str, str] = doc["paths"]
     module = re.sub(r"[^a-z0-9]", "", doc.get("module", "app").lower()) or "app"
 
@@ -183,6 +187,7 @@ def main() -> int:
 
     (staged / "_path_map.json").write_text(json.dumps(
         {"target": a.target, "module": module, "mapping_model": a.model,
+         "mapping_usage": usage,
          "renamed": renamed, "files_rewritten": rewrites,
          "WARNING": "maps husked paths back to source paths; never ship beside a husk",
          "paths": mapping}, indent=2) + "\n")

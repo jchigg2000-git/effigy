@@ -182,3 +182,63 @@ entry records what a reader of the published tree cannot follow, and what they c
 - **Every commit SHA** cited in this file, in `ROADMAP.md`, in `algorithmTests.md` and under
   `evals/runs/` identifies the pre-publication history and will not resolve. `evals/README.md`
   § "Commit references under `evals/runs/` do not resolve" is the standing disclosure.
+
+## 2026-09-26 — Audit fixes ship; affected published figures get errata, not rewrites
+
+**Context.** A four-lane audit of the husking solutions, the service, the statistics and the eval
+harness produced 37 findings, all reproduced, with each lane re-checked by a second reviewer. The
+largest: `run_rsch1.py` switched the post-condition gate off for its ungated arm by editing
+process-wide environment variables from worker threads, so 89 of 90 "gated" `llm-translation`
+husks in `20260819T182111Z` were built with the gate off. Others mean committed artifacts no longer
+match what the code produces (tokenizer defects in `fpe` and `literal-tagging`; a TS canonicaliser
+that let 8 of 60 RSCH-1B artifacts keep an authored comment), or move published figures in the
+third or fourth decimal.
+
+**Decision.**
+
+1. **Ship the fixes for 33 findings**, 6 of them in part, each with a regression test that fails on
+   the old code. `husk-api` tests went from 69 to 93, and a new `evals/tests` suite has 20.
+2. **Do not rewrite a published figure.** Each affected figure keeps its value in `LIMITATIONS.md`,
+   `README.md` and `ROADMAP.md`, with a pointer to a numbered erratum (E1–E17) at the top of
+   `LIMITATIONS.md` that says what was wrong, gives the corrected value or why it needs a re-run,
+   and says whether a verdict changes. None does. A statement that was simply false ("the gate
+   refused nothing, 90/90 ok"; "the open-ended endpoint was not run"; a leak channel "now closed")
+   is struck through with a dated correction, never deleted.
+3. **Leave committed run artifacts as they were run.** Where today's code would produce something
+   different (E7, E10), that is recorded, not repaired. The one exception is
+   `20260819T182111Z-rsch1-held-out/kappa_worksheet.jsonl`, regenerated in place because it showed
+   the wrong attacker's guess on 57 of 98 rows and none of its 98 labels had been filled in (E13).
+   No κ had been computed from it.
+4. **Re-run nothing.** Each figure that needs a re-run (the gated `llm-translation` arm; a clean
+   RSCH-1B re-attack; regenerated `fpe` and `literal-tagging` arms) costs model calls, which is the
+   owner's call. `ROADMAP.md` §0 lists them with call counts and rough costs. Committed runs record
+   the rewriter's token usage in artifact metas but not the attackers' or the judge's, so the
+   attacker share is estimated from RSCH-1's average (~$43 over 1,475 calls); the harness records
+   attacker and judge usage from now on.
+5. **Some `fpe` pseudonyms change again** (the 2026-08-19 entry above said they changed once). A
+   map saved under an existing `FPE_KEY` goes stale for tokens that are now cycle-walked to a
+   usable pseudonym, the Go and Python keywords now spared, number tails and non-ASCII tokens
+   (`LIMITATIONS.md` §6). The alternative was husks that do not parse: 18 of 18 committed Go `fpe`
+   husks fail `gofmt -e`.
+
+**Deferred to the owner, and why.**
+
+- **SVC-2** — the gate cannot see copied comments and never judges an input under 12 code lines.
+  Fixing it changes what the gate refuses (about 6 of 93 recorded passing husks), and it can be
+  calibrated only on the Go/TS runs because the Python calibration trees were removed.
+- **SOL-6** — `fpe` enciphers JSX prose with the code's key, so one guessed word unmasks an
+  identifier. No regex-only fix is safe; the owner has to choose between passing JSX text through
+  and enciphering it under a separate key.
+- **SOL-8** — `literal-tagging` import paths lose their identity across files. A design item: opt-in
+  keyed segments would work, but relative imports need a file path the API does not carry.
+- **STAT-8** — replicated `llm-translation` cells get Wilson intervals about 30% too narrow.
+  Preregistration §9 registers Wilson, so replacing it would be an unregistered deviation; adding a
+  descriptive column or a note is the owner's choice.
+
+**Also not done, deliberately.** STAT-2/HAR-8: moving the A4.1 permutation to §6.1's denominator
+changes a registered rule, so only a corrected docstring and a §2b note shipped; switching needs a
+dated amendment (A5), and the preregistration is append-only and the owner's. Where
+`evals/preregistration.md` quotes an affected figure (0.276, 26 of 29, +0.439) it is left as
+written, and `evals/structure_probes.json` is not regenerated.
+
+Superseded by nothing.

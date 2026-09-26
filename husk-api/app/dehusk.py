@@ -18,18 +18,18 @@ The substitution is deliberately careful about two collision modes:
   such as ``xY7q`` must not be rewritten when it appears *inside* a larger word
   in the diagnosis prose. Any key made entirely of word characters
   (``[A-Za-z0-9_]``) is matched only at non-word boundaries. This deliberately
-  includes digit-leading keys: ``fpe`` ciphers over ``ascii_letters + digits``
-  without pinning the first character, so real pseudonyms routinely start with
-  a digit and need the same guard (and the same ability to match standalone).
-  Placeholder-shaped keys (e.g. ``<URL:0>``, whose ``<`` / ``>`` already
-  delimit them) are matched literally.
+  includes digit-leading keys: ``fpe`` now always starts a pseudonym with a
+  letter or ``_``, but maps made before that change hold keys that start with
+  a digit, and those need the same guard (and the same ability to match
+  standalone). Placeholder-shaped keys (e.g. ``<URL:0>``, whose ``<`` /
+  ``>`` already delimit them) are matched literally.
 """
 
 import re
 
 # Any key composed entirely of word characters gets the boundary guard. NOTE:
-# this must NOT require a leading alpha/underscore — fpe pseudonyms are
-# ciphered over letters+digits and often start with a digit.
+# this must NOT require a leading alpha/underscore — fpe maps made before
+# pseudonyms were pinned to a letter-or-underscore start hold digit-leading keys.
 _WORD_KEY_RE = re.compile(r"[A-Za-z0-9_]+")
 
 

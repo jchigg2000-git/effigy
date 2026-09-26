@@ -217,6 +217,14 @@ The third trigger was added after the copied-span rescore showed the first two
 were under-powered: **copying distributes.** One husk returned 66% of its source
 in spans of 5–14 lines and passed a gate watching only for a run of 20.
 
+**Since then.** A fourth trigger (2026-08-20) refuses a husk that still carries the
+input's own module name, widened on 2026-09-26 to host-prefixed Go module paths
+(`LIMITATIONS.md` E8). Also on 2026-09-26: the third trigger fires on a reordered
+copy as well, Go is detected from its `package` clause, and each report records
+its retry budget. The gate still cannot see copied comments or judge an input
+under 12 code lines (E16). And in RSCH-1's authoritative run it was **not
+running** for 89 of 90 "gated" husks, because of a harness race (E1).
+
 **This is not the verifier.** RSCH-2 specifies a CPG-isomorphism +
 anti-pattern-density + comment-speech-act checker that certifies a husk *preserved
 the pathology*. This checks one much narrower thing — that the output is not the
@@ -244,13 +252,17 @@ to run the pre-registered experiment, not a substitute for it.
   organization, product line or proprietary algorithm* is untestable here by
   construction. RSCH-1 measures problem-domain leakage and nothing narrower.
   Cohen's κ on the judge pass is also still owed, so that endpoint's table is
-  descriptive only.
+  descriptive only (its worksheet was regenerated on 2026-09-26 after it was
+  found pairing rows with the wrong attacker; `LIMITATIONS.md` E13).
 - **`fpe` and `literal-tagging` against the current corpus.** Both carried
   `viable-with-caveats` verdicts against the superseded fixture. Neither has been
   re-evaluated. `fpe`'s cipher configuration also changed on 2026-08-19 (the
   alphabet gained `_`, which had been silently colliding onto `H`, and the
   source-baked default key became a random per-process key), so the old
-  pseudonyms were not reproducible even before the corpus was replaced.
+  pseudonyms were not reproducible even before the corpus was replaced. Both
+  tokenizers changed again on 2026-09-26 (`LIMITATIONS.md` E7, §6, §10): the
+  committed RSCH-1 `fpe` and `literal-tagging` husks no longer match what the
+  code produces.
 - **Any language but Go, TypeScript and Python.** The post-condition gate's
   comment-stripping is a documented heuristic, not a parser.
 - **Byte-stability.** `llm-translation` returns valid-but-different husks for the

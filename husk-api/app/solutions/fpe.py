@@ -11,9 +11,16 @@ through VERBATIM by design (see _TOKEN_RE below) and are NOT protected at all
 survive into the output unchanged. This transform is not, on its own,
 sufficient to strip source-domain signal. See LIMITATIONS.md.
 
+The one exception is the code inside a backtick literal's ${...}: that is
+JavaScript, not literal text, so it is enciphered like the rest of the file.
+Go raw strings have no interpolation, but the tokenizer cannot tell them apart,
+so a Go raw string containing ${...} has the identifiers inside it enciphered
+too.
+
 Crumb levels control which tokens are spared (kept as-is) vs ciphered.
 """
 
+import functools
 import os
 import logging
 import hmac
@@ -25,21 +32,134 @@ from typing import Callable
 from app.registry import register
 
 
-# Combined tokenizer: matches strings, comments, and identifiers in priority order.
-# String literals and comments are passed through verbatim (per handoff: "Do not
-# rewrite string literals or comments"). This protects Go import paths, SQL in
-# backtick raw strings, JSX class names inside double quotes, etc. Bare JSX text
-# nodes still leak through (no parser), which is acknowledged as a limitation.
+# Tokenizer: matches strings, comments, numbers and identifiers in priority order.
+# String literals, comments and numbers are passed through verbatim (per handoff:
+# "Do not rewrite string literals or comments"). This protects Go import paths,
+# SQL in backtick raw strings, JSX class names inside double quotes, etc. Bare
+# JSX text nodes still leak through (no parser), which is acknowledged as a
+# limitation.
+#
+# Quoted literals and /* */ comments match only their opener here and are
+# scanned by _span_end. In a single alternation, re.sub retried an unterminated
+# opener at every later opener, each retry scanning to the end of the input, so
+# one 200 KB request of escaped quotes held the process for minutes.
 _TOKEN_RE = re.compile(
-    r"`(?:[^`\\]|\\.)*`"            # backtick raw string / JS template literal
-    r'|"(?:[^"\\]|\\.)*"'           # double-quoted string
-    r"|'(?:[^'\\]|\\.)*'"           # single-quoted string / Go rune
+    r"(?P<open>'''|[`\"']|/\*)"     # quoted literal or /* block comment */
     r"|//[^\n]*"                    # // line comment
-    r"|\#[^\n]*"                    # # line comment (Python, shell)
-    r"|/\*(?:[^*]|\*(?!/))*\*/"     # /* block comment */
-    r"|[A-Za-z_][A-Za-z0-9_]+",     # identifier (2+ chars, so `i`/`x` are never clobbered)
-    re.DOTALL,
+    r"|(?<!\.)\#[^\n]*"             # # line comment (Python, shell), but not JS `this.#field`
+    r"|(?<!\w)\d\w*"                # number (0x1F, 0o755, 1_000); its tail is not an identifier
+    r"|[^\W\d]\w+"                  # identifier (2+ chars, so `i`/`x` are never clobbered)
 )
+
+# Body of each quoted literal up to, not including, its closing quote. A body
+# is consumed one escape pair or one other character at a time, so the literal
+# is terminated exactly when the longest body is followed by the closing quote.
+_QUOTE_BODY = {
+    "`": re.compile(r"(?:[^`\\]|\\.)*", re.DOTALL),   # backtick raw string / JS template literal
+    '"': re.compile(r'(?:[^"\\]|\\.)*', re.DOTALL),   # double-quoted string
+    # Python ''' string. It needs its own branch because a '...' literal stops
+    # at a newline; """ strings already pair up through the '"' branch.
+    "'''": re.compile(r"(?:[^\\']|\\.|'(?!''))*", re.DOTALL),
+    # Single-quoted string / Go rune. A raw newline ends it: Go, JS/TS, Python
+    # and C do not allow one there, and without the stop an apostrophe in a
+    # comment or JSX text paired with a quote lines later and hid the code between.
+    "'": re.compile(r"(?:[^'\\\n]|\\.)*", re.DOTALL),
+}
+
+
+def _span_end(text: str, start: int, opener: str, dead: dict[str, int], end: int) -> int:
+    """End of the quoted literal or block comment opening at text[start], or -1.
+
+    `dead` maps an opener to a position before which it is known not to
+    terminate. A failed scan from `start` stops at the same place as a scan from
+    any later opener it passed over (that opener was escaped, so both scans are
+    in step after it), so each failure is paid for once and the tokenizer stays
+    linear. Every call sharing a `dead` must use the same text and `end`.
+    """
+    if start < dead.get(opener, -1):
+        return -1
+    if opener == "/*":
+        close = text.find("*/", start + 2, end)
+        if close >= 0:
+            return close + 2
+        dead[opener] = end
+        return -1
+    stop = _QUOTE_BODY[opener].match(text, start + len(opener), end).end()
+    if text.startswith(opener, stop, end):
+        return stop + len(opener)
+    dead[opener] = stop
+    return -1
+
+
+def _substitute(text: str, replace: Callable[[str], str]) -> str:
+    """Pass every token in `text` through replace(); keep the text between tokens."""
+    out: list[str] = []
+    dead: dict[str, int] = {}
+    kept = pos = 0
+    while (m := _TOKEN_RE.search(text, pos)) is not None:
+        start, stop = m.span()
+        opener = m.group("open")
+        if opener is not None:
+            stop = _span_end(text, start, opener, dead, len(text))
+            if stop < 0 and opener == "'''":
+                stop = _span_end(text, start, "'", dead, len(text))
+            if stop < 0:
+                # Unterminated: the opener is ordinary text and scanning resumes
+                # right after it, exactly as a failed regex alternative would.
+                pos = start + 1
+                continue
+        out.append(text[kept:start])
+        out.append(replace(text[start:stop]))
+        kept = pos = stop
+    out.append(text[kept:])
+    return "".join(out)
+
+
+# Literal text of a template, up to the next ${ (or the end).
+_TEMPLATE_TEXT_RE = re.compile(r"(?:[^\\$]|\\.|\$(?!\{))*", re.DOTALL)
+# Code inside ${...}, up to the next quote or brace.
+_INTERPOLATION_CODE_RE = re.compile(r"[^'\"{}]*")
+
+
+def _map_interpolations(template: str, fn: Callable[[str], str]) -> str:
+    """Apply fn to the code inside each ${...} of a backtick literal token and keep
+    the literal text around it verbatim. Braces inside quoted strings in that
+    code do not count towards finding the closing brace."""
+    out = ["`"]
+    dead: dict[str, int] = {}
+    end = len(template) - 1          # the closing backtick
+    i = 1
+    while True:
+        j = _TEMPLATE_TEXT_RE.match(template, i, end).end()
+        if not template.startswith("${", j, end):
+            out.append(template[i:end])
+            break
+        out.append(template[i:j])
+        body = k = j + 2
+        depth = 0
+        while (k := _INTERPOLATION_CODE_RE.match(template, k, end).end()) < end:
+            ch = template[k]
+            if ch in "'\"":
+                stop = _span_end(template, k, ch, dead, end)
+                k = stop if stop >= 0 else k + 1
+                continue
+            if ch == "{":
+                depth += 1
+            elif depth == 0:
+                break
+            else:
+                depth -= 1
+            k += 1
+        if k >= end:
+            # No closing brace: a quote in this code was not a string opener (a
+            # regex such as /"/g) and paired with a later quote, so the walk ran
+            # into template text. Leave the rest verbatim rather than encipher it.
+            out.append(template[j:end])
+            break
+        out.append("${" + fn(template[body:k]))
+        i = k
+    out.append("`")
+    return "".join(out)
 
 
 _BASELINE_KEYWORDS = frozenset({
@@ -53,6 +173,9 @@ _BASELINE_KEYWORDS = frozenset({
     "internal", "void", "null", "None", "True", "False", "true", "false",
     "self", "this", "super", "new", "delete", "typeof", "instanceof",
     "async", "await", "lambda", "pass", "and", "or", "not", "nil",
+    # Go and Python reserved words; enciphering one breaks the parse.
+    "go", "defer", "map", "chan", "select", "goto", "fallthrough", "range", "type",
+    "assert", "del", "global", "nonlocal",
 })
 
 _STDLIB_NAMES = frozenset({
@@ -78,20 +201,26 @@ _GENERIC_DOMAIN_NOUNS = frozenset({
 })
 
 
-# Must be a superset of every character _TOKEN_RE's identifier branch can
-# produce, or the sanitizer below silently maps out-of-alphabet chars onto
-# in-alphabet ones and the transform stops being injective. "_" is in that
-# branch, so it must be here:
-# without it, ord("_") % 62 == 33 -> "H", making foo_bar and fooHbar collide.
+# Must hold every ASCII character _TOKEN_RE's identifier branch can produce.
+# "_" is in that branch, so it must be here: an earlier sanitizer mapped it via
+# ord("_") % 62 == 33 -> "H", making foo_bar and fooHbar collide. Identifiers
+# with non-ASCII characters go to the keyed HMAC fallback instead.
 _ALPHABET_MIXED = string.ascii_letters + string.digits + "_"
 
 
+@functools.cache
+def _spared_words(crumb_level: int) -> frozenset[str]:
+    """The fixed word lists kept as-is at this crumb level."""
+    words = _BASELINE_KEYWORDS
+    if crumb_level >= 1:
+        words |= _STDLIB_NAMES
+    if crumb_level >= 2:
+        words |= _GENERIC_DOMAIN_NOUNS
+    return words
+
+
 def _should_skip(token: str, crumb_level: int) -> bool:
-    if token in _BASELINE_KEYWORDS:
-        return True
-    if crumb_level >= 1 and token in _STDLIB_NAMES:
-        return True
-    if crumb_level >= 2 and token in _GENERIC_DOMAIN_NOUNS:
+    if token in _spared_words(crumb_level):
         return True
     if crumb_level >= 3:
         humps = len(re.findall(r"[A-Z][a-z]+", token))
@@ -101,7 +230,13 @@ def _should_skip(token: str, crumb_level: int) -> bool:
     return False
 
 
-def _make_cipher(key: bytes, alphabet: str) -> Callable[[str], str]:
+def _usable(pseudo: str, reserved: frozenset[str]) -> bool:
+    """A pseudonym must itself be an identifier, and must not be a word left in
+    plain text: /dehusk could not tell the two apart and would rewrite both."""
+    return (pseudo[0].isalpha() or pseudo[0] == "_") and pseudo not in reserved
+
+
+def _make_cipher(key: bytes, alphabet: str, reserved: frozenset[str]) -> Callable[[str], str]:
     import pyffx
     cache: dict[int, "pyffx.String"] = {}
 
@@ -113,32 +248,41 @@ def _make_cipher(key: bytes, alphabet: str) -> Callable[[str], str]:
         if c is None:
             c = pyffx.String(key, alphabet=alphabet, length=n)
             cache[n] = c
-        sanitized = "".join(
-            ch if ch in alphabet else alphabet[ord(ch) % len(alphabet)]
-            for ch in token
-        )
-        return c.encrypt(sanitized)
+        out = c.encrypt(token)
+        # Cycle-walk: FFX permutes alphabet^n, so re-enciphering until the result
+        # is usable stays a bijection on the tokens that get enciphered, which are
+        # all usable themselves. A token whose first ciphertext is usable keeps it.
+        while not _usable(out, reserved):
+            out = c.encrypt(out)
+        return out
 
     return encrypt
 
 
-def _make_cipher_fallback(key: bytes, alphabet: str) -> Callable[[str], str]:
+def _make_cipher_fallback(key: bytes, alphabet: str, reserved: frozenset[str]) -> Callable[[str], str]:
     base = len(alphabet)
 
     def encrypt(token: str) -> str:
         if not token:
             return token
-        digest = hmac.new(key, token.encode("utf-8"), hashlib.sha256).digest()
-        while len(digest) < len(token):
-            digest += hmac.new(key, digest, hashlib.sha256).digest()
-        out = "".join(alphabet[b % base] for b in digest[: len(token)])
-        if token[0] == "_":
-            out = "_" + out[1:]
-        elif token[0].isupper():
-            out = out[0].upper() + out[1:].lower()
-        else:
-            out = out.lower()
-        return out
+        msg = token.encode("utf-8")
+        while True:
+            digest = hmac.new(key, msg, hashlib.sha256).digest()
+            stream = digest
+            while len(stream) < len(token):
+                stream += hmac.new(key, stream, hashlib.sha256).digest()
+            out = "".join(alphabet[b % base] for b in stream[: len(token)])
+            if token[0] == "_":
+                out = "_" + out[1:]
+            elif token[0].isupper():
+                out = out[0].upper() + out[1:].lower()
+            else:
+                out = out.lower()
+            if _usable(out, reserved):
+                return out
+            # Not a permutation, so there is no cycle to walk: re-hash instead.
+            # The caller's reverse-dict check still catches any collision.
+            msg = digest
 
     return encrypt
 
@@ -222,12 +366,14 @@ def _load_key() -> tuple[bytes, str]:
 )
 def husk(input: str, crumb_level: int, options: dict) -> tuple[str, dict]:
     key, key_id = _load_key()
+    reserved = _spared_words(crumb_level)
+    fallback = _make_cipher_fallback(key, _ALPHABET_MIXED, reserved)
     backend_name = "pyffx"
     try:
-        encrypt = _make_cipher(key, _ALPHABET_MIXED)
+        encrypt = _make_cipher(key, _ALPHABET_MIXED, reserved)
         encrypt("probe")
     except Exception:
-        encrypt = _make_cipher_fallback(key, _ALPHABET_MIXED)
+        encrypt = fallback
         backend_name = "hmac-fallback"
 
     seen: dict[str, str] = {}
@@ -235,27 +381,36 @@ def husk(input: str, crumb_level: int, options: dict) -> tuple[str, dict]:
     # detected at the moment it happens rather than silently swallowed by a
     # dict comprehension at map-build time.
     reverse: dict[str, str] = {}
+    spared: set[str] = set()
     skipped = 0
     replaced = 0
     collisions = 0
+    non_ascii = 0
     emit_map = bool(options.get("emit_map"))
 
-    def replace(m: re.Match) -> str:
-        nonlocal skipped, replaced, collisions
-        tok = m.group(0)
-        # Strings and comments: pass through verbatim
+    def replace(tok: str) -> str:
+        nonlocal skipped, replaced, collisions, non_ascii
         first = tok[0]
+        if first == "`" and "${" in tok:
+            return _map_interpolations(tok, lambda code: _substitute(code, replace))
+        # Strings, comments and numbers: pass through verbatim
         if not (first.isalpha() or first == "_"):
             return tok
         if _should_skip(tok, crumb_level):
             skipped += 1
+            spared.add(tok)
             return tok
         if tok not in seen:
-            try:
-                pseudo = encrypt(tok)
-            except Exception:
-                # Per-token fallback if the primary cipher rejects this length/charset
-                pseudo = _make_cipher_fallback(key, _ALPHABET_MIXED)(tok)
+            if not tok.isascii():
+                # FFX needs a fixed alphabet, so these take the keyed fallback.
+                non_ascii += 1
+                pseudo = fallback(tok)
+            else:
+                try:
+                    pseudo = encrypt(tok)
+                except Exception:
+                    # Per-token fallback if the primary cipher rejects this length/charset
+                    pseudo = fallback(tok)
             prior = reverse.get(pseudo)
             if prior is not None and prior != tok:
                 # Two distinct source identifiers mapped to one pseudonym. The
@@ -276,7 +431,19 @@ def husk(input: str, crumb_level: int, options: dict) -> tuple[str, dict]:
         replaced += 1
         return seen[tok]
 
-    output = _TOKEN_RE.sub(replace, input)
+    output = _substitute(input, replace)
+
+    # The cipher never lands on a word the fixed lists spare, but the crumb-3
+    # heuristic spares arbitrary short tokens, so a pseudonym can still equal a
+    # token left in plain text elsewhere in the input. Same asymmetry as above.
+    for tok, pseudo in seen.items():
+        if pseudo in spared:
+            if emit_map:
+                raise ValueError(
+                    f"pseudonym collision: {tok!r} enciphers to {pseudo!r}, which is also "
+                    f"left in plain text; refusing to emit an ambiguous re-identification map"
+                )
+            collisions += 1
 
     meta = {
         "cipher_backend": backend_name,
@@ -285,6 +452,7 @@ def husk(input: str, crumb_level: int, options: dict) -> tuple[str, dict]:
         "unique_tokens_replaced": len(seen),
         "key_id": key_id,
         "pseudonym_collisions": collisions,
+        "non_ascii_identifiers": non_ascii,
     }
     if key_id == "ephemeral":
         meta["key_warning"] = (

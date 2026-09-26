@@ -78,7 +78,7 @@ TERMS_FILE = HERE / "leak_terms.json"
 # SERVICE runs, not reimplemented here. An offline scorer that disagrees with the
 # request-path gate is worse than no scorer: it certifies husks the service would
 # refuse, and vice versa. Loaded by file path so this stays runnable under a bare
-# interpreter (importing app.solutions pulls in openai and writes files).
+# interpreter (importing app.solutions pulls in openai and dotenv).
 _spec = importlib.util.spec_from_file_location(
     "_husk_check", HERE.parent / "husk-api" / "app" / "solutions" / "_husk_check.py")
 _hc = importlib.util.module_from_spec(_spec)

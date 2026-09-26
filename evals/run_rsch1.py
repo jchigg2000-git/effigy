@@ -19,7 +19,12 @@ differently:
 
 Both stages are resumable: an artifact or a raw response already on disk is not
 recomputed. That is not a convenience — §12 rule 3 requires a discarded run's
-raw output to stay committed, so runs are append-only by construction.
+raw output to stay committed, so runs are append-only by construction. What a
+resume does attempt again is what was never observed: an artifact that failed
+for any reason other than a gate refusal, and an attacker call that never
+reached the model or is still owed its §6.1 retry. The earlier record is moved
+aside (`*.attemptN.error.json`, `raw_superseded/`), never overwritten, and
+config.json keeps the first invocation's settings with later ones appended.
 
     python3 evals/run_rsch1.py --stage artifacts --split held-out
     python3 evals/run_rsch1.py --stage attack    --split held-out
@@ -80,10 +85,40 @@ ALL_ARMS = ("blind", "source", *DETERMINISTIC_ARMS, *STOCHASTIC_ARMS)
 
 # Neutralises every threshold in app/solutions/_husk_check.py, same values
 # evals/run_replicates.py uses so the two harnesses cannot drift apart.
+#
+# Never applied to this process's os.environ. _thresholds() reads the process
+# environment at check time, so setting these from one worker thread switched the
+# gate off for gated husks running in the others: 89 of 90 "gated" husks in run
+# 20260819T182111Z were checked with the gate off. The ungated arm is built in a
+# child process that gets these in its own environment instead, the way
+# run_replicates.py already did it.
 GATE_OFF = {"HUSK_CHECK_RUN_LINES": "999999", "HUSK_CHECK_RUN_SHARE": "9",
             "HUSK_CHECK_COPIED_SHARE": "9", "HUSK_CHECK_RETENTION": "9",
             "HUSK_CHECK_RATIO": "9", "HUSK_CHECK_RETRIES": "0",
             "HUSK_CHECK_MODULE_NAMES": "0"}
+
+
+class GateStateMismatch(RuntimeError):
+    """An llm-translation husk was not built under the gate its arm defines.
+
+    A harness error, never a datum: the husk says nothing about the service under
+    test, so it is recorded as an error, kept away from the attackers, and built
+    again on resume.
+    """
+
+    def __init__(self, message: str, report: dict | None = None):
+        super().__init__(message)
+        self.report = report or {}
+
+
+class HuskChildError(RuntimeError):
+    """A failure inside the ungated-arm child, carrying the child's exception type
+    name so the error record reads the same as an in-process failure."""
+
+    def __init__(self, type_name: str, message: str, report: dict | None = None):
+        super().__init__(message)
+        self.type_name = type_name
+        self.report = report or {}
 
 
 # ------------------------------------------------------------------ helpers --
@@ -313,17 +348,8 @@ def build_artifact(arm: str, src: str, language: str, rep: int,
     entry = get(slug)
     if entry is None:
         raise SystemExit(f"unknown solution: {slug}")
-    if arm == "llm-translation-ungated":
-        prev = {k: os.environ.get(k) for k in GATE_OFF}
-        os.environ.update(GATE_OFF)
-        try:
-            out, meta = entry.fn(src, crumb_level, {})
-        finally:
-            for k, v in prev.items():
-                if v is None:
-                    os.environ.pop(k, None)
-                else:
-                    os.environ[k] = v
+    if arm in STOCHASTIC_ARMS:
+        out, meta = husk_under_gate(arm, entry, src, crumb_level)
     else:
         out, meta = entry.fn(src, crumb_level, {})
     assert_no_map(meta, f"{arm} rep{rep}")
@@ -332,8 +358,173 @@ def build_artifact(arm: str, src: str, language: str, rep: int,
     return out, {k: v for k, v in meta.items() if k != "reidentify_map"}
 
 
+# ------------------------------------------------------------ gate state ----
+# Run in a fresh interpreter, so the answer comes from the environment it is
+# given rather than from whatever this process's environment holds. `retries`
+# restates llm_translation.husk()'s own reading of HUSK_CHECK_RETRIES.
+_GATE_PROBE = ("import json, os\n"
+               "from app.solutions._husk_check import _thresholds\n"
+               "print(json.dumps({'thresholds': _thresholds(), 'retries': "
+               "max(0, int(os.environ.get('HUSK_CHECK_RETRIES', '1')))}))")
+_gate_cache: dict[tuple, dict] = {}
+_gate_lock = threading.Lock()
+
+
+def gate_env(arm: str) -> dict[str, str]:
+    """The environment an llm-translation arm's husks are built under."""
+    env = dict(os.environ)
+    if arm == "llm-translation-ungated":
+        env.update(GATE_OFF)
+    return env
+
+
+def expected_gate(arm: str) -> dict:
+    """The gate an llm-translation arm is defined by: the thresholds dict
+    _husk_check._thresholds() returns under the arm's environment, and the
+    post-condition retries llm_translation allows under it.
+
+    The gated arm is the shipped gate. A HUSK_CHECK_* value in this process's
+    environment (husk-api/.env is loaded first) that makes the gate differ from
+    the shipped defaults would quietly make it something else, so that is refused
+    rather than taken as the expectation. A value equal to its default is fine.
+    """
+    env = gate_env(arm)
+    got = _probe_gate(env)
+    if arm == "llm-translation":
+        shipped = _probe_gate({k: v for k, v in os.environ.items()
+                               if not k.startswith("HUSK_CHECK_")})
+        if got != shipped:
+            stray = sorted(k for k in os.environ if k.startswith("HUSK_CHECK_"))
+            raise GateStateMismatch(
+                f"{', '.join(stray)} set in this process's environment make the gate "
+                f"{got}, not the shipped {shipped}: the gated arm would not be the "
+                f"shipped gate. Unset them and re-run.")
+    return got
+
+
+def _probe_gate(env: dict[str, str]) -> dict:
+    sig = tuple(sorted((k, v) for k, v in env.items() if k.startswith("HUSK_CHECK_")))
+    with _gate_lock:
+        if sig not in _gate_cache:
+            p = subprocess.run([sys.executable, "-c", _GATE_PROBE], env=env,
+                               cwd=REPO / "husk-api", capture_output=True, text=True)
+            if p.returncode != 0:
+                raise RuntimeError(f"gate probe failed: {p.stderr.strip()[-300:]}")
+            _gate_cache[sig] = json.loads(p.stdout.strip().splitlines()[-1])
+        return _gate_cache[sig]
+
+
+def check_gate(arm: str, report: dict | None, expected: dict) -> None:
+    """Fail closed unless the recorded post-condition matches the arm's gate.
+
+    The whole thresholds dict is compared, not just run_lines: a key-by-key
+    restore of the environment can leave a reader with half of each.
+    """
+    report = report if isinstance(report, dict) else {}
+    got = report.get("thresholds")
+    if got != expected["thresholds"]:
+        raise GateStateMismatch(
+            f"{arm} husk was checked under thresholds {got}, expected "
+            f"{expected['thresholds']}", report)
+    retries = report.get("retries_allowed")
+    if retries is not None and retries != expected["retries"]:
+        raise GateStateMismatch(
+            f"{arm} husk allowed {retries} post-condition retries, expected "
+            f"{expected['retries']}", report)
+
+
+def husk_under_gate(arm: str, entry, src: str, crumb_level: int) -> tuple[str, dict]:
+    """One llm-translation husk, built under its arm's gate and checked against it
+    afterwards. Gated husks run in this process, whose environment nothing
+    mutates; ungated husks run in a child process that has GATE_OFF in its own."""
+    from app.solutions._husk_check import PassthroughDetected  # noqa: PLC0415
+
+    expected = expected_gate(arm)
+    try:
+        if arm == "llm-translation-ungated":
+            out, meta = _husk_in_child(src, crumb_level, gate_env(arm))
+        else:
+            out, meta = entry.fn(src, crumb_level, {})
+    except PassthroughDetected as exc:
+        # A refusal is itself evidence the gate was on; its thresholds, when the
+        # report carries them, must still be the arm's.
+        if isinstance(exc.report, dict) and "thresholds" in exc.report:
+            check_gate(arm, exc.report, expected)
+        raise
+    check_gate(arm, meta.get("postcondition"), expected)
+    return out, meta
+
+
+def _husk_child_cmd() -> list[str]:
+    """argv of the ungated-arm child. A function so the offline tests can start it
+    through a launcher that stubs the model client first."""
+    return [sys.executable, str(Path(__file__).resolve()), "--husk-child"]
+
+
+def _husk_in_child(src: str, crumb_level: int, env: dict[str, str]) -> tuple[str, dict]:
+    p = subprocess.run(_husk_child_cmd(), env=env, cwd=REPO, capture_output=True, text=True,
+                       input=json.dumps({"src": src, "crumb_level": crumb_level}))
+    lines = p.stdout.strip().splitlines()
+    if p.returncode != 0 or not lines:
+        raise RuntimeError(f"husk child exited {p.returncode}: {p.stderr.strip()[-300:]}")
+    reply = json.loads(lines[-1])
+    if reply["ok"]:
+        return reply["out"], reply["meta"]
+    if reply["type"] == "PassthroughDetected":
+        # The ungated arm has no gate to refuse with. A refusal here means the
+        # child was not running the arm it was asked for.
+        raise GateStateMismatch(
+            f"the ungated arm refused a husk: {reply['message'][:200]}", reply.get("report"))
+    raise HuskChildError(reply["type"], reply["message"], reply.get("report"))
+
+
+def husk_child_main() -> int:
+    """Child side of _husk_in_child: one llm-translation husk under whatever
+    environment the parent passed, reply as one JSON line on stdout."""
+    job = json.loads(sys.stdin.read())
+    real_stdout, sys.stdout = sys.stdout, sys.stderr  # nothing else may reach stdout
+    try:
+        from app.registry import get       # noqa: PLC0415
+        import app.solutions               # noqa: F401,PLC0415
+
+        out, meta = get("llm-translation").fn(job["src"], job["crumb_level"], {})
+        reply = {"ok": True, "out": out, "meta": meta}
+    except Exception as exc:  # noqa: BLE001 — the parent decides what it means
+        reply = {"ok": False, "type": type(exc).__name__, "message": str(exc)[:2000],
+                 "report": getattr(exc, "report", None)}
+    finally:
+        sys.stdout = real_stdout
+    print(json.dumps(reply, default=str))
+    return 0
+
+
+def is_gate_refusal(meta: dict) -> bool:
+    """An error record that is the gated arm refusing a husk: a §12 rule-3 datum
+    about the service, kept as it is and not retried until it passes. Retrying
+    refusals until they pass is the selection effect the ungated arm exists to
+    expose. Records written before `error_type` existed carry the type as the
+    prefix of `error`."""
+    kind = meta.get("error_type") or str(meta.get("error", "")).split(":", 1)[0]
+    return meta.get("arm") == "llm-translation" and kind == "PassthroughDetected"
+
+
+def preserve_error_meta(art_dir: Path, k: str) -> str:
+    """Move an error record aside before its artifact is attempted again.
+
+    The new name does not match `*.meta.json`, which is the only artifact glob
+    any reader uses, so the earlier attempt stays on disk without being read as
+    the current one."""
+    n = 1
+    while (art_dir / f"{k}.attempt{n}.error.json").exists():
+        n += 1
+    name = f"{k}.attempt{n}.error.json"
+    (art_dir / f"{k}.meta.json").rename(art_dir / name)
+    return name
+
+
 def stage_artifacts(outdir: Path, rows: list[dict], reps: int, crumb_level: int,
-                    arms: tuple[str, ...], workers: int, dry: bool) -> None:
+                    arms: tuple[str, ...], workers: int, dry: bool,
+                    retry_refused: bool = False) -> None:
     art_dir = outdir / "artifacts"
     art_dir.mkdir(parents=True, exist_ok=True)
     jobs = []
@@ -342,6 +533,15 @@ def stage_artifacts(outdir: Path, rows: list[dict], reps: int, crumb_level: int,
             n = reps if arm in STOCHASTIC_ARMS else 1
             for rep in range(n):
                 jobs.append((r, arm, rep))
+
+    # Before any husk is paid for: a gated arm that would not be the shipped
+    # gate refuses the whole stage here, rather than failing one husk at a time.
+    if not dry:
+        for arm in (a for a in arms if a in STOCHASTIC_ARMS):
+            try:
+                expected_gate(arm)
+            except GateStateMismatch as exc:
+                raise SystemExit(f"REFUSING TO BUILD {arm}: {exc}") from exc
 
     def key(r: dict, arm: str, rep: int) -> str:
         stem = Path(r["path"]).name
@@ -354,8 +554,15 @@ def stage_artifacts(outdir: Path, rows: list[dict], reps: int, crumb_level: int,
         meta_dest = art_dir / f"{k}.meta.json"
         if dest.exists() and meta_dest.exists():
             return {"key": k, "ok": True, "cached": True}
+        prior = json.loads(meta_dest.read_text()) if meta_dest.exists() else None
+        if prior is not None and is_gate_refusal(prior) and not retry_refused:
+            return {"key": k, "ok": False, "cached": True, "refused": True}
         if dry:
             return {"key": k, "ok": True, "cached": False, "dry": True}
+        # Any other earlier failure (transport, harness, a gate-state mismatch) is
+        # not an observation, so it is attempted again, with the record kept.
+        prior_errors = ([preserve_error_meta(art_dir, k)]
+                        if prior is not None and prior.get("error") else [])
         src = (REPO / r["path"]).read_text(encoding="utf-8")
         t0 = time.time()
         try:
@@ -368,17 +575,26 @@ def stage_artifacts(outdir: Path, rows: list[dict], reps: int, crumb_level: int,
                 "language": r["language"], "artifact_sha256": sha256_text(out),
                 "artifact_lines": out.count("\n") + 1,
                 "latency_s": round(time.time() - t0, 1), "solution_meta": meta,
+                **({"prior_errors": prior_errors} if prior_errors else {}),
             }, indent=2) + "\n")
             return {"key": k, "ok": True, "cached": False}
         except Exception as exc:  # noqa: BLE001 — a failure is the datum
             # Recorded, not raised: §12 rule 3. A husk the rewriter refused is a
             # real observation about the service and must survive in the record.
-            meta_dest.write_text(json.dumps({
+            kind = getattr(exc, "type_name", type(exc).__name__)
+            report = getattr(exc, "report", None)
+            rec = {
                 "key": k, "arm": arm, "replicate": rep, "source_path": r["path"],
-                "error": f"{type(exc).__name__}: {str(exc)[:300]}",
+                "error": f"{kind}: {str(exc)[:300]}", "error_type": kind,
                 "latency_s": round(time.time() - t0, 1),
-            }, indent=2) + "\n")
-            return {"key": k, "ok": False, "error": f"{type(exc).__name__}"}
+            }
+            # A refused husk was still paid for. None when the service did not say.
+            if isinstance(report, dict) and "usage" in report:
+                rec["usage"] = report.get("usage")
+            if prior_errors:
+                rec["prior_errors"] = prior_errors
+            meta_dest.write_text(json.dumps(rec, indent=2, default=str) + "\n")
+            return {"key": k, "ok": False, "error": kind}
 
     print(f"[artifacts] {len(jobs)} to build ({len(rows)} sources x {len(arms)} arms, "
           f"stochastic arms x{reps})")
@@ -386,8 +602,9 @@ def stage_artifacts(outdir: Path, rows: list[dict], reps: int, crumb_level: int,
         res = list(ex.map(work, jobs))
     ok = sum(1 for r in res if r["ok"])
     cached = sum(1 for r in res if r.get("cached"))
-    print(f"[artifacts] {ok}/{len(res)} ok ({cached} already cached, "
-          f"{len(res) - ok} failed)")
+    refused = sum(1 for r in res if r.get("refused"))
+    print(f"[artifacts] {ok}/{len(res)} ok ({cached} already on disk, of which {refused} "
+          f"kept gate refusals; {len(res) - ok} not built)")
 
 
 # ----------------------------------------------------------------- attack ----
@@ -441,6 +658,34 @@ SCHEMAS = {
 }
 
 
+# §6.1's retry is decided on the schema's required keys, not on "any JSON
+# object". Strict json_schema makes a keyless object near-impossible, but one
+# would otherwise skip the retry and still be scored a parse failure.
+REQUIRED_KEYS = {m: set(s["json_schema"]["schema"]["required"]) for m, s in SCHEMAS.items()}
+
+
+def answered(parsed: dict | None, mode: str | None) -> bool:
+    return parsed is not None and REQUIRED_KEYS.get(mode, set()) <= parsed.keys()
+
+
+def responses(attempts: list[dict]) -> int:
+    """Attempts the model actually answered. A transport failure carries no
+    `text` (the same rule as score_rsch1.is_missing)."""
+    return sum(1 for a in attempts if a.get("text") is not None)
+
+
+def attack_done(rec: dict) -> bool:
+    """Whether a raw record on disk is final, so a resume leaves it alone.
+
+    Not final: a record the model never answered, where every attempt was a
+    transport failure, and a record still owed its §6.1 retry, where the one
+    answer was unusable and the retry never reached the model. Both are
+    coverage the run has not yet bought, not observations.
+    """
+    return (answered(rec.get("parsed"), rec.get("mode"))
+            or responses(rec.get("attempts") or []) >= 2)
+
+
 def call_model(client, model: str, prompt: str, max_tokens: int,
                mode: str | None = None) -> dict:
     """One attacker call.
@@ -468,7 +713,31 @@ def call_model(client, model: str, prompt: str, max_tokens: int,
         "finish_reason": r.choices[0].finish_reason,
         "served_model": getattr(r, "model", None),
         "latency_s": round(time.time() - t0, 2),
+        "usage": usage_fields(r),
     }
+
+
+def usage_fields(resp) -> dict | None:
+    """Token usage off one chat-completions response, as plain ints.
+
+    None when the response carries no usage block, and a call that raised
+    records None too: absence is not zero, since whether a failed request was
+    billed is unknown. Every field is int-or-None, so an odd provider object
+    (or a test double) can never make a record unserialisable. Shared by the
+    other harness scripts that call a model directly.
+    """
+    u = getattr(resp, "usage", None)
+    if u is None:
+        return None
+
+    def as_int(v):
+        return v if isinstance(v, int) and not isinstance(v, bool) else None
+
+    details = getattr(u, "completion_tokens_details", None)
+    return {"prompt_tokens": as_int(getattr(u, "prompt_tokens", None)),
+            "completion_tokens": as_int(getattr(u, "completion_tokens", None)),
+            "total_tokens": as_int(getattr(u, "total_tokens", None)),
+            "reasoning_tokens": as_int(getattr(details, "reasoning_tokens", None))}
 
 
 def stage_attack(outdir: Path, rows: list[dict], attackers: list[str], judge: str,
@@ -513,7 +782,8 @@ def stage_attack(outdir: Path, rows: list[dict], attackers: list[str], judge: st
         item_id = f"{m['key']}"
         safe_atk = re.sub(r"[^A-Za-z0-9.-]+", "-", attacker)
         dest = raw_dir / f"{item_id}__{safe_atk}__{mode}.json"
-        if dest.exists():
+        old = json.loads(dest.read_text(encoding="utf-8")) if dest.exists() else None
+        if old is not None and attack_done(old):
             return {"ok": True, "cached": True}
         if breaker is not None and breaker.tripped.is_set():
             return {"ok": False, "skipped": True}
@@ -541,22 +811,47 @@ def stage_attack(outdir: Path, rows: list[dict], attackers: list[str], judge: st
                             .replace("{artifact}", artifact))
 
         client = OpenAI(base_url=base, api_key=key, timeout=420)
-        attempts = []
-        parsed = None
+        # A resumed record carries its earlier attempts forward, so an answer the
+        # model already gave still counts against the single §6.1 retry.
+        carried = old is not None and old.get("prompt") == prompt
+        attempts = list(old.get("attempts") or []) if carried else []
+        parsed = old.get("parsed") if carried else None
         # §6.1: unparseable responses are retried ONCE, then scored incorrect,
-        # with the parse-failure rate reported separately.
-        for attempt in range(2):
+        # with the parse-failure rate reported separately. Only model RESPONSES
+        # count against that; a transport failure (after call_model_resilient's
+        # own backoff) has a budget of its own, so it can neither use up the
+        # parse retry nor turn an unasked retry into a scored miss.
+        n_resp, n_fail = responses(attempts), 0
+        while n_resp < 2 and n_fail < 2:
             try:
                 resp = call_model_resilient(client, attacker, prompt, max_tokens, mode)
-                parsed = parse_json_reply(resp["text"])
-                attempts.append({"attempt": attempt, **resp,
-                                 "parsed_ok": parsed is not None})
-                if parsed is not None:
-                    break
             except Exception as exc:  # noqa: BLE001
-                attempts.append({"attempt": attempt, "error":
+                attempts.append({"attempt": len(attempts), "error":
                                  f"{type(exc).__name__}: {str(exc)[:300]}",
-                                 "parsed_ok": False})
+                                 "parsed_ok": False, "usage": None,
+                                 "max_tokens": max_tokens})
+                n_fail += 1
+                continue
+            n_resp += 1
+            parsed = parse_json_reply(resp["text"])
+            # max_tokens per attempt, because a resume can carry an earlier
+            # invocation's attempts forward under a different budget.
+            attempts.append({"attempt": len(attempts), **resp, "max_tokens": max_tokens,
+                             "parsed_ok": answered(parsed, mode)})
+            if answered(parsed, mode):
+                break
+
+        # Superseded, never overwritten: the earlier record moves outside the
+        # raw/*.json glob every reader uses, and the new one points at it.
+        superseded = []
+        if old is not None:
+            sup_dir = outdir / "raw_superseded"
+            sup_dir.mkdir(exist_ok=True)
+            n = 1
+            while (sup_dir / f"{dest.stem}.{n}.json").exists():
+                n += 1
+            dest.rename(sup_dir / f"{dest.stem}.{n}.json")
+            superseded = [*old.get("superseded", []), f"raw_superseded/{dest.stem}.{n}.json"]
 
         dest.write_text(json.dumps({
             "item_id": item_id, "arm": m["arm"], "replicate": m["replicate"],
@@ -570,17 +865,23 @@ def stage_attack(outdir: Path, rows: list[dict], attackers: list[str], judge: st
             "prompt": prompt,          # §11: the FULL request, committed
             "attempts": attempts,      # §11: the FULL response, every attempt
             "parsed": parsed,
+            # One unusable answer whose retry never reached the model. A resume
+            # asks again; until then it scores as a parse failure.
+            **({"retry_owed": True} if n_resp == 1 and not answered(parsed, mode) else {}),
+            **({"superseded": superseded} if superseded else {}),
         }, indent=2) + "\n", encoding="utf-8")
         if breaker is not None:
-            breaker.record(parsed is not None)
-        return {"ok": parsed is not None, "cached": False}
+            breaker.record(answered(parsed, mode))
+        return {"ok": answered(parsed, mode), "cached": False}
 
     with cf.ThreadPoolExecutor(max_workers=workers) as ex:
         res = list(ex.map(work, jobs))
-    ok = sum(1 for r in res if r["ok"])
     cached = sum(1 for r in res if r.get("cached"))
     skipped = sum(1 for r in res if r.get("skipped"))
-    print(f"[attack] {ok}/{len(res)} parsed ({cached} cached)")
+    asked = [r for r in res if not r.get("cached") and not r.get("skipped")]
+    ok = sum(1 for r in asked if r["ok"])
+    print(f"[attack] {ok}/{len(asked)} asked this run parsed ({cached} already final "
+          f"on disk)")
     if skipped:
         print(f"[attack] ABORTED — {skipped} jobs skipped by the parse-failure breaker. "
               f"Fix the cause and resume with --run-id; completed records are cached.")
@@ -588,6 +889,55 @@ def stage_attack(outdir: Path, rows: list[dict], attackers: list[str], judge: st
 
 
 # ------------------------------------------------------------------- main ----
+# A resume that changes these would mix two experiments in one directory.
+RESUME_REFUSES = ("split", "attackers")
+# These legitimately change between invocations (a resume after a spend cap
+# with fewer arms, a larger attacker budget, an added mode), so a change is
+# warned about and recorded, not refused.
+RESUME_WARNS = ("arms", "modes", "attacker_max_tokens", "replicates_llm_translation",
+                "crumb_level", "judge", "source_files", "preregistration_commit",
+                "manifest_sha256", "domains_sha256", "endpoint_host", "rewriter_model",
+                "rewriter_temperature")
+
+
+def write_or_extend_config(outdir: Path, config: dict, allow_drift: bool = False,
+                           record: bool = True) -> dict:
+    """Write config.json for a new run; on a resume, keep it and append.
+
+    config.json used to be rewritten by every invocation, so a resumed run's
+    started_at, commit, arms and attacker budget described the LAST resume
+    rather than the records on disk (20260819T182111Z's config omits an arm it
+    built and attacked). Now the first invocation's config is never changed, and
+    each later invocation is appended to its `resumes` list with the fields that
+    drifted. `record=False` (a dry run) checks a resume without appending it.
+    """
+    path = outdir / "config.json"
+    if not path.exists():
+        path.write_text(json.dumps(config, indent=2) + "\n")
+        return config
+    stored = json.loads(path.read_text())
+    refused = [k for k in RESUME_REFUSES
+               if stored.get(k) is not None and stored.get(k) != config.get(k)]
+    if refused and not allow_drift:
+        raise SystemExit(
+            f"REFUSING TO RESUME {outdir.name}: {', '.join(refused)} differ from its "
+            f"config.json ({', '.join(f'{k}={stored.get(k)!r}' for k in refused)}). "
+            f"Start a new run, or pass --allow-config-drift to record the change.")
+    drift = [k for k in (*RESUME_REFUSES, *RESUME_WARNS) if stored.get(k) != config.get(k)]
+    if drift:
+        print(f"WARNING: resuming {outdir.name} with {', '.join(drift)} different from the "
+              f"first invocation; recorded in config.json 'resumes'", file=sys.stderr)
+    entry = {k: v for k, v in config.items()
+             if k not in ("run_id", "experiment", "domain_split", "source_files")}
+    entry["drift"] = drift
+    if refused:
+        entry["drift_allowed"] = True
+    if record:
+        stored.setdefault("resumes", []).append(entry)
+        path.write_text(json.dumps(stored, indent=2) + "\n")
+    return stored
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--stage", choices=("artifacts", "attack", "all"), default="all")
@@ -622,6 +972,13 @@ def main() -> int:
     ap.add_argument("--no-breaker", action="store_true",
                     help="disable the parse-failure breaker")
     ap.add_argument("--run-id", help="resume an existing run directory")
+    ap.add_argument("--allow-config-drift", action="store_true",
+                    help="resume even though --split or --attackers differ from the run's "
+                         "config.json; the change is recorded in its 'resumes' list")
+    ap.add_argument("--retry-refused", action="store_true",
+                    help="build again the gated husks an earlier invocation saw refused. Off "
+                         "by default: a refusal is a §12 datum, and retrying until a husk "
+                         "passes is a selection effect. The refusal record is kept either way")
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
 
@@ -691,13 +1048,15 @@ def main() -> int:
                                 os.environ.get("LLM_BASE_URL", "")).split("/")[0],
         "rewriter_model": os.environ.get("LLM_MODEL"),
         "rewriter_temperature": os.environ.get("LLM_TEMPERATURE"),
+        "stage": a.stage,
     }
-    (outdir / "config.json").write_text(json.dumps(config, indent=2) + "\n")
+    write_or_extend_config(outdir, config, allow_drift=a.allow_config_drift,
+                           record=not a.dry_run)
     print(f"run: {outdir.relative_to(REPO)}  sources={len(rows)}  arms={list(arms)}")
 
     if a.stage in ("artifacts", "all"):
         stage_artifacts(outdir, rows, a.replicates, a.crumb_level, arms,
-                        a.workers, a.dry_run)
+                        a.workers, a.dry_run, a.retry_refused)
     if a.stage in ("attack", "all"):
         breaker = None if a.no_breaker else ParseFailureBreaker(a.breaker_min, a.breaker_max_fail)
         stage_attack(outdir, rows, attackers, a.judge, arms, a.replicates,
@@ -708,4 +1067,6 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    if sys.argv[1:] == ["--husk-child"]:
+        raise SystemExit(husk_child_main())
     raise SystemExit(main())

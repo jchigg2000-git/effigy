@@ -83,7 +83,8 @@ def permuted(predict, labels: list[str], n: int, observed: float, rng) -> dict:
         "permuted_mean": sum(accs) / len(accs),
         "permuted_lo": accs[int(0.025 * DRAWS)],
         "permuted_hi": accs[int(0.975 * DRAWS) - 1],
-        "p": sum(1 for a in accs if a >= observed) / DRAWS,
+        # (b+1)/(m+1): a Monte Carlo permutation p is never exactly 0 (LIMITATIONS E5).
+        "p": (sum(1 for a in accs if a >= observed) + 1) / (DRAWS + 1),
     }
 
 

@@ -230,7 +230,8 @@ def test_whitespace_only_content_returns_500():
 
 def test_api_status_error_includes_status_in_message():
     # APIStatusError subclasses APIError and carries .status_code; the
-    # production code surfaces that status in the RuntimeError message.
+    # production code surfaces that status in the error message. An upstream
+    # 429 is the provider's quota, not a solution failure, so it maps to 503.
     from openai import APIStatusError
     fake_response = MagicMock()
     fake_response.status_code = 429
@@ -239,8 +240,8 @@ def test_api_status_error_includes_status_in_message():
         instance = MockClient.return_value
         instance.chat.completions.create.side_effect = err
         r = client.post("/husk/llm-translation", json={"input": "x = 1", "crumb_level": 1})
-    assert r.status_code == 500
-    assert r.json()["error"] == "solution_failed"
+    assert r.status_code == 503
+    assert r.json()["error"] == "backend_rate_limited"
     detail = r.json()["detail"]
     assert "429" in detail
     assert "LLM API error" in detail

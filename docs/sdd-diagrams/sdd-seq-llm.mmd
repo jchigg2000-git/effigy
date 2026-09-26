@@ -4,27 +4,44 @@ sequenceDiagram
     participant P as _pick_target
     participant C as OpenAI client
     participant B as LLM backend
+    participant G as _husk_check.check
+
     API->>H: husk(input, crumb_level, options)
-    Note over H: crumb_level discarded
+    Note over H: crumb_level ignored
     H->>P: _pick_target(input, options)
-    alt target_domain set
+    alt options.target_domain
         P-->>H: free-text domain
-    else target_id set
+    else options.target_id
         P-->>H: catalog domain or ValueError
     else default
         P-->>H: sha256(input) mod catalog
     end
-    H->>C: chat.completions.create(system + user)
-    C->>B: HTTP request
-    alt connection or timeout
-        B-->>C: error
-        C-->>H: APIConnectionError / Timeout
-        H-->>API: raise BackendUnavailable (502)
-    else finish_reason == length
-        B-->>C: truncated
-        H-->>API: raise RuntimeError (500)
-    else ok
-        B-->>C: completion
-        H->>H: strip code fence
-        H-->>API: (output, meta)
+    loop attempt 1 to 1 + HUSK_CHECK_RETRIES
+        H->>C: chat.completions.create(system + user, plus a retry nudge after a refusal)
+        C->>B: HTTP request (the SDK itself retries 408, 429 and 5xx twice)
+        alt connection error or timeout
+            C-->>H: APIConnectionError / APITimeoutError
+            H-->>API: raise BackendUnavailable (502 backend_unavailable)
+        else upstream 429
+            C-->>H: APIStatusError 429
+            H-->>API: raise BackendRateLimited (503 backend_rate_limited)
+        else upstream 408 or 5xx
+            C-->>H: APIStatusError
+            H-->>API: raise BackendUnavailable (502 backend_unavailable)
+        else truncated, empty, or other API error
+            H-->>API: raise RuntimeError (500 solution_failed)
+        else completion
+            C-->>H: choice
+            H->>H: _extract_husk keeps the fenced husk, drops commentary
+            H->>G: check(input, husk, suffix)
+            alt passes
+                G-->>H: postcondition report
+            else PassthroughDetected with retries left
+                G-->>H: raise, and the next attempt names what was copied
+            else PassthroughDetected on the last attempt
+                G-->>H: raise
+                H-->>API: fail closed (500 solution_failed)
+            end
+        end
     end
+    H-->>API: (output, meta with postcondition, retries_allowed, usage)

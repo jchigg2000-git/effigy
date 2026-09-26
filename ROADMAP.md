@@ -24,8 +24,87 @@ a parked item as a blocker is misreading this file.
 
 ## §0 Do next
 
-> ### ▶ RESUME HERE — 2026-08-20: **RSCH-1B is ANSWERED, and the answer changes the project.**
-> The architecture is itself domain-informative (+0.24 corrected, p≈0.002), so the invariant the
+> ### ▶ RESUME HERE — 2026-09-26: **Audit. RSCH-1's "gated" `llm-translation` arm ran ungated.**
+> A four-lane audit (solutions, service, statistics, harness) verified 37 findings, each lane
+> re-checked by a second reviewer. 33 shipped, 6 of them in part; 4 are owner decisions. **No cited
+> verdict changes** (E1, E7 and E10 need paid re-runs to confirm). Published figures keep their values, with pointers to `LIMITATIONS.md` errata E1–E17;
+> false statements are struck through with a dated correction. `DECISIONS.md` 2026-09-26.
+>
+> #### What it found — headline first
+> - **E1.** A thread race in `run_rsch1.py` left the gate-off overrides set, so **89/90 "gated"
+>   husks in `20260819T182111Z` were built with the gate's thresholds switched off**, so nothing
+>   could be refused or retried. 39/90 would have been
+>   refused (45/90 with today's module-name check); 2 are the source minus a newline. Every RSCH-1
+>   `llm-translation` figure (65/83, [+0.243, +0.640], +0.439 / +0.479) describes an ungated
+>   rewriter. FAIL stands: on would-pass husks, Kimi 39/48 and DeepSeek 36/51 against blind 10/30.
+> - **E10.** RSCH-1B: 8/60 canonicalised artifacts kept an authored comment; 2 carried ham-radio
+>   vocabulary, and all 4 answers on them were correct. Without those records: +0.220 / +0.224 and
+>   +0.245 / +0.252, all p < 0.01. The conclusion holds.
+> - **E7.** Committed `fpe` Go husks never parsed (18/18 fail `gofmt -e`); `literal-tagging`
+>   swallowed code after a comment apostrophe (8/30); `fpe` left `${...}` names in plain text.
+> - **E13.** The κ worksheet showed the wrong attacker's guess on 57/98 rows; `kappa_judge.py` now
+>   keys on (item, attacker). Smaller: the rest of E1–E17.
+>
+> #### What was fixed
+> - Harness: ungated arm husked in a child process; every husk's gate state checked fail-closed.
+> - Resume re-asks transport failures and owed §6.1 retries; `config.json` is written once with
+>   later invocations appended; gate refusals are kept; superseded records are moved aside.
+> - Token usage recorded on attacker, judge, probe, smell-loop and path-husking calls, and per
+>   rewriter attempt (the rewriter's final-attempt usage was already in artifact metas).
+>   `run_models.py` and `husk_tree.py` still discard it.
+> - Scorer: arms missing from `config.json` are scored, not dropped; coverage against expected
+>   jobs; a no-source gate reads NOT EVALUATED; the hard veto
+>   reaches §3; A1 floor; gate-state banner; §5 skips transport failures; p = (b+1)/(m+1).
+> - Canonicaliser blanks every comment; G2 adds a text-level closed-world scan; G2/G8/G11 false
+>   positives fixed (`--all` 64/64); G4 searches preserved import paths.
+> - `fpe`: husks parse; `${...}` enciphered; linear tokenizer; non-ASCII identifiers enciphered.
+> - `literal-tagging`: no cross-line quotes; linear; runes kept; MIME → MSG; nested templates only
+>   with `options.language`.
+> - Service: 429 → 503, 408/5xx → 502; fenced-husk extraction; reorder trigger; Go detected from
+>   `package`; host-prefixed module names; fast gate on large inputs; no import-time writes;
+>   `example` opt-in. Tests: `husk-api` 69 → 93; new `evals/tests`, 20.
+>
+> #### ⬜ OWNER DECISIONS queued — none blocks another item
+> 1. **Re-run the gated `llm-translation` arm (E1).** The only route to a gated RSCH-1 figure and to
+>    A3's comparison. Calls: 90 husks (+ up to 90 retries), 360 attacker, up to 180 judge. Cost:
+>    the rewriter share is recorded and small (215k prompt + 108k completion tokens on the 7B for
+>    the 90 husks); attacker and judge usage was not recorded, so at RSCH-1's average (~$43 over
+>    1,475 calls) the re-run is **roughly $15**, an estimate rather than a quote. RSCH-1B's
+>    equivalent (E10) is 4 forced-choice calls minimum, 16 for all 8 changed artifacts, under a new
+>    run id.
+> 2. **Re-attack the rebuilt `fpe`, `literal-tagging` and `composed` arms (E7).** Rebuilding needs
+>    no model calls (30 + 30 + 15 artifacts change); the re-attack is 300 attacker calls + up to 150
+>    judge, roughly $13 at the same rate. All three sit at ceiling, so no verdict is expected to
+>    move: worth it only if those arms' committed husks are to be cited as the shipped behaviour.
+> 3. **Amendment A5, the STAT-2 denominator (E4).** DeepSeek `llm-translation` +0.439 → +0.419,
+>    blind p 0.41 → 0.33, 83/125 → 83/129; no verdict. Cost: an amendment and a re-score, no calls.
+> 4. **Gate calibration for copied comments (SVC-2, E16).** About 6 of 93 recorded passing husks
+>    would be refused. Cost: small, but it can only be calibrated on the Go/TS runs.
+> 5. **`literal-tagging` import-graph design (SOL-8).** Keyed import segments, opt-in. Cost: medium;
+>    relative imports need the file path, which the API does not carry.
+> 6. **Cluster-aware intervals (STAT-8).** Replicated-cell Wilson brackets are ~30% too narrow
+>    (Kimi [0.68, 0.86] vs [0.65, 0.91]); §9 registers Wilson, so a descriptive column or a note.
+> 7. **JSX text in `fpe` (SOL-6):** pass it through, or encipher it under a separate key.
+> - Smaller: a stricter PATH rule; prereg notes where A4/A4.1 quote E4/E6 figures; a MIME note in
+>   `corpus/PATHOLOGY.md` P4; regenerating `structure_probes.json`; resuming 182111Z (15 calls);
+>   the Go half of HAR-7 (a shadowed import survives `canon_go.go`, which needs its gitignored
+>   binary rebuilt; the TS/G4 half shipped).
+>
+> #### κ worksheet — regenerated, still awaiting hand labels
+> `evals/runs/20260819T182111Z-rsch1-held-out/kappa_worksheet.jsonl`, same 98 rows. Label
+> `human_label`, then `kappa_judge.py --score`; `--sample` now refuses to overwrite labels.
+>
+> #### Next research action — unchanged
+> **Re-scope `docs/working-paper.md` §4.2 before RSCH-2.** E10 moves RSCH-1B's figures, not its answer.
+>
+> ---
+>
+> ### ▶ PREVIOUS — 2026-08-20: **RSCH-1B is ANSWERED, and the answer changes the project.**
+>
+> *(Kept as written, except for errata pointers and dated strike-throughs added 2026-09-26. The
+> current state is the block above.)*
+>
+> The architecture is itself domain-informative (+0.24 corrected, p≈0.002 *(E10)*), so the invariant the
 > technique must preserve is part of what leaks. **Next action is not RSCH-2 as specified — it is
 > re-scoping `docs/working-paper.md` §4.2 before any verifier is built.**
 >
@@ -49,21 +128,22 @@ a parked item as a blocker is misreading this file.
 >
 > Run `evals/runs/20260820T021753Z-rsch1-held-out`, forced choice, 111 resolved records, **parse
 > failure 0%**. Registered as amendment **A4**, committed before any call was made. (§8 validity
-> gate recorded FAILED — `summary.md` §1, no source or BLIND arm; §3 marks both arms NOT
+> gate recorded FAILED *(E11)* — `summary.md` §1, no source or BLIND arm; §3 marks both arms NOT
 > COMPUTABLE; the corrected figures below are A4.1 permuted-baseline deltas, not §8 verdicts.)
 >
 > | arm | observed | permuted null | **corrected** | p |
 > |---|---:|---:|---:|---:|
-> | `structure-only` | 0.467 / 0.520 | 0.232 / 0.276 | **+0.234 / +0.244** | 0.0014 / 0.0031 |
-> | `structure-only-nonum` | 0.500 / 0.538 | 0.243 / 0.273 | **+0.257 / +0.265** | 0.0008 / 0.0023 |
+> | `structure-only` | 0.467 / 0.520 | 0.232 / 0.276 | **+0.234 / +0.244** *(E10)* | 0.0014 / 0.0031 *(E5, E10)* |
+> | `structure-only-nonum` | 0.500 / 0.538 | 0.243 / 0.273 | **+0.257 / +0.265** *(E10)* | 0.0008 / 0.0023 *(E5, E10)* |
 >
-> Against the RSCH-1 anchors (run `20260819T182111Z`): **BLIND +0.03** (no signal) · **structure-only +0.24** · `llm-translation`
-> **+0.44 / +0.48** · **source +0.67**. **Architecture alone carries roughly half the leak a husk
+> Against the RSCH-1 anchors (run `20260819T182111Z`): **BLIND +0.03** (no signal) · **structure-only +0.24** *(E10)* · `llm-translation`
+> **+0.44 / +0.48** *(E1, E4)* · **source +0.67**. **Architecture alone carries roughly half the leak a husk
 > carries.**
 >
-> The artifact has no identifiers, no string literals, no comments and no JSX text — eleven hard
-> gates enforce it, and three model-free probes find nothing in it (`evals/structure_probes.py`:
-> counters 0.047 vs null 0.165, canonicalised tokens 0.000 vs null 0.154, zero domain-concentrated
+> ~~The artifact has no identifiers, no string literals, no comments and no JSX text — eleven hard
+> gates enforce it,~~ *[2026-09-26: 8 of the 60 artifacts kept one authored comment, which the
+> gates could not see; E10]* and three model-free probes find nothing in it (`evals/structure_probes.py`:
+> counters 0.047 vs null 0.165, canonicalised tokens 0.000 vs null 0.154 *(E12)*, zero domain-concentrated
 > tokens). A reasoning model still recovers the source domain at about twice its own response-bias
 > baseline. **The signal is only reachable by a model that reasons about shape; it is not a
 > vocabulary channel a bag-of-tokens classifier can find.**
@@ -91,7 +171,8 @@ a parked item as a blocker is misreading this file.
 >
 > ### Caveats that travel with the number
 > - **Recognition, not recall.** Twelve options with the right one on the menu. RSCH-1 already
->   showed the two endpoints disagree sharply. **The open-ended endpoint was NOT run** — the owner
+>   showed the two endpoints disagree sharply. ~~**The open-ended endpoint was NOT run**~~
+>   *[2026-09-26: it was started, and stopped after 13 of 120 calls; E11]* — the owner
 >   stopped further spend (2026-08-20). So there is no free-text or hard-veto measurement for these
 >   arms, and no §8 verdict is issued for them.
 > - **A3.2 still binds**: contents only, never paths. Flattering to every arm including these.
@@ -99,16 +180,17 @@ a parked item as a blocker is misreading this file.
 >   n=25/26 per arm rather than 30. All nine were transport failures, split 5/4 across the two arms,
 >   so they are missing coverage rather than a biased exclusion.
 > - Synthetic corpus, so identifier-level re-identification stays untestable by construction.
-> - **This run's own §8 validity gate is recorded FAILED** (`summary.md` §1: no source arm,
+> - **This run's own §8 validity gate is recorded FAILED** *(E11)* (`summary.md` §1: no source arm,
 >   p_source 0/0) and it carried no BLIND arm, so §3 marks both arms NOT COMPUTABLE. The
->   +0.234 / +0.257 figures are A4.1 permuted-baseline corrections, not §8 verdicts.
+>   +0.234 / +0.257 figures *(E10)* are A4.1 permuted-baseline corrections, not §8 verdicts.
 >
 > ### Also settled this session
-> - **The BLIND floor was response bias.** It corrects to **+0.025 / +0.033 at p ≈ 0.40** — no
+> - **The BLIND floor was response bias.** It corrects to **+0.025 / +0.033 at p ≈ 0.40** *(E4)* — no
 >   recoverable signal. `evals/permutation_baseline.py`, folded into `score_rsch1.py` as §2b and
 >   applied retroactively to the RSCH-1 run. RSCH-1's FAIL verdicts stand.
-> - **A mechanical leak channel found, quantified, closed.** The Go module name (which here IS the
->   domain) survived 22 of 90 husks; on those the attacker was right **44/44**, vs 83/125 without.
+> - **A mechanical leak channel found, quantified, ~~closed~~** *[2026-09-26: closed for bare module
+>   names only; a host-prefixed module path escaped it until then; E8]*. The Go module name (which here IS the
+>   domain) survived 22 of 90 husks *(E1)*; on those the attacker was right **44/44**, vs 83/125 *(E4)* without.
 >   Now a fourth trigger in `_husk_check.check` — fires 14/14 on real cases, 0/76 clean. 69 tests
 >   green. **The residual 8 leaks arrive as content (`<h1>qsolog</h1>`) with no import to derive the
 >   name from — a ready-made acceptance test for whatever RSCH-2 becomes.**
@@ -118,27 +200,29 @@ a parked item as a blocker is misreading this file.
 >   instead of inventing `p_blind = 0`.
 >
 > #### Open, cheap, not blocking
-> - **κ worksheet is generated and awaiting the owner** —
+> - **κ worksheet is generated and awaiting the owner** *(regenerated 2026-09-26; E13)* —
 >   `evals/runs/20260819T182111Z-rsch1-held-out/kappa_worksheet.jsonl`, 98 rows. Hand-label
 >   `human_label`, then `kappa_judge.py --score`. **Deliberately not self-labelled.** Until scored,
 >   §6.2 keeps the judge column descriptive only.
 > - **The harness records latency but not token usage**, so run cost can only be estimated from
->   wall time. Worth capturing `usage` from the API response.
-> - **`llm-translation` is bimodal** (judge 86 MATCH / 80 MISS) — a reliability problem, which is
+>   wall time. Worth capturing `usage` from the API response. *[2026-09-26: done, HAR-5; see
+>   `evals/README.md` § Token usage.]*
+> - **`llm-translation` is bimodal** (judge 86 MATCH / 80 MISS *(E1)*) — a reliability problem, which is
 >   what a fail-closed verifier is actually good at.
 > ---
 >
 > #### ✅ DONE: **RSCH-1** — run to a verdict 2026-08-19
 > `evals/runs/20260819T182111Z-rsch1-held-out/summary.md`. Validity gate **passed** (p_source
-> 100%, parse failure 0–2%). **All four solutions FAIL §8.** `llm-translation` 78.3% vs a 33.3%
-> BLIND floor, cluster-bootstrap CI on the difference **[+0.243, +0.640]**. It is nonetheless the
-> only transform doing any work — it roughly halves every leakage measure while `fpe` and
-> `literal-tagging` sit at ceiling on all three endpoints, exactly as §5 predicted in advance.
-> ~$43, 986 attacker calls + 489 judge calls, all raw request/response committed per §11.
+> 100%, parse failure 0–2%). **All four solutions FAIL §8.** `llm-translation` 78.3% *(E1)* vs a 33.3%
+> BLIND floor, cluster-bootstrap CI on the difference **[+0.243, +0.640]** *(E1)*. It is nonetheless the
+> only transform doing any work — it roughly halves every leakage measure *(E1)* while `fpe` and
+> `literal-tagging` sit at ceiling on all three endpoints *(E7)*, exactly as §5 predicted in advance.
+> ~$43, 986 attacker calls *(E2)* + 489 judge calls, all raw request/response committed per §11.
 > **Caveats that travel with the number:** the corpus is synthetic, so identifier-level
 > re-identification — what the threat model actually names — is untestable by construction; and the
 > forced-choice endpoint measures *recognition* (12 options, answer on the menu) not recall, where
-> `llm-translation` scored 31.4% against a source control of 96.4%.
+> ~~`llm-translation` scored 31.4% against a source control of 96.4%~~ *[2026-09-26: those are the
+> partial run's figures; the finished run's recall is 86/173 (49.7%) against 60/60 (100%); E9, E1]*.
 >
 > #### Historical — how RSCH-1 got unblocked
 > `evals/preregistration.md` is committed **unrun** and is the repo's #1 owed item. Four arms
@@ -186,8 +270,11 @@ a parked item as a blocker is misreading this file.
 > **New arm, registered in A3: `llm-translation-ungated`.** The shipped post-condition gate refuses
 > passthrough husks, which silently drops the hardest files from the husk arm and flatters
 > `p_husk` — the exact trap this repo already hit once. Running both arms makes the selection
-> effect measurable. (In the held-out build the gate refused **nothing**, 90/90 ok, so the two arms
-> double as a consistency check.)
+> effect measurable. ~~(In the held-out build the gate refused **nothing**, 90/90 ok, so the two arms
+> double as a consistency check.)~~ *[2026-09-26: false — the gate was not running. A thread race
+> built 89/90 "gated" husks with it off; 39/90 would have been refused on first attempt. The
+> ungated arm was attacked on 4 `meterworks` files only (forced choice on 3), 38 records, so the A3
+> comparison is void for this run; E1, E2.]*
 >
 > **The former blocker, kept for the record:**
 > **⛔ WAS BLOCKING RSCH-1: the corpus was one domain and the design needs six.** Prereg §2 requires
@@ -320,7 +407,8 @@ a parked item as a blocker is misreading this file.
 > run at n=6 to isolate which of v4's additions was working. Neither helped. Pooling all 24 runs of
 > v3-plus-additions against v3's 6: copied span **0.192 vs 0.139, permutation p = 0.0034** — the
 > strongest result of the session. v4's CIK advantage, its only justification, weakened from
-> Fisher p ≈ 0.02 to **p = 0.34** once the extra runs were in. v4 was reverted; v3 ships.
+> Fisher p ≈ 0.02 *(E14: exact two-sided p = 0.043)* to **p = 0.34** once the extra runs were in. v4
+> was reverted; v3 ships.
 >
 > **A measurement caught grading its own subject.** v7/v8 were first measured with the
 > post-condition gate live, which drops refused files from the sample — v7 looked like a decisive
@@ -428,19 +516,21 @@ a parked item as a blocker is misreading this file.
 "Status — honest" section.*
 
 - ✅ **RSCH-1 DONE (2026-08-19)** — the core privacy claim was measured and **fails**.
-  All four solutions FAIL §8; `llm-translation` 78.3% vs a 33.3% BLIND floor, CI [+0.243, +0.640].
+  All four solutions FAIL §8; `llm-translation` 78.3% vs a 33.3% BLIND floor, CI [+0.243, +0.640]
+  *(E1: the arm was built with its gate off)*.
   Run + raw outputs: `evals/runs/20260819T182111Z-rsch1-held-out/`. It measures **problem-domain**
   leakage only — the corpus is synthetic, so identifier-level re-identification is untestable by
   construction.
 - ✅ **RSCH-1B DONE (2026-08-20) — the architecture IS domain-informative.** Registered as
-  amendment A4, committed before any call. Canonicalised source (no identifiers, strings, comments
-  or JSX text; 11 hard gates; 3 model-free probes find nothing) is still re-identified at
-  **+0.234 / +0.244 corrected, p = 0.0014 / 0.0031** — about **half** the leak `llm-translation`
-  carries, against RSCH-1's retroactively-corrected BLIND arm with **no** signal (+0.03, p≈0.40). Numerics do not explain it: the
+  amendment A4, committed before any call. Canonicalised source (~~no identifiers, strings, comments
+  or JSX text~~ *[2026-09-26: 8/60 artifacts kept a comment; E10]*; 11 hard gates; 3 model-free probes find nothing) is still re-identified at
+  **+0.234 / +0.244 corrected, p = 0.0014 / 0.0031** *(E5, E10)* — about **half** the leak `llm-translation`
+  carries *(E1)*, against RSCH-1's retroactively-corrected BLIND arm with **no** signal (+0.03, p≈0.40 *(E4)*). Numerics do not explain it: the
   `-nonum` arm scores the same or higher. Run `evals/runs/20260820T021753Z-rsch1-held-out`; full
   detail and caveats in §0. No source or BLIND arm was run, so the run's §8 validity gate is
-  recorded FAILED and no §8 verdict is issued — the figures are A4.1 permuted-baseline
-  corrections. The open-ended endpoint was also not run (spend stopped).
+  recorded FAILED *(E11)* and no §8 verdict is issued — the figures are A4.1 permuted-baseline
+  corrections. ~~The open-ended endpoint was also not run (spend stopped).~~ *[2026-09-26: it was
+  started and stopped after 13 of 120 calls; E11]*
 - ⬜ **RSCH-2 — NOT "build the verifier as specified". Re-scope §4.2 first.** RSCH-1B changed what
   this item is. `docs/working-paper.md` §4.2 specifies a CPG-isomorphism + anti-pattern-density +
   comment-speech-act checker as the mechanism that enforces the pathology-anchor invariant. That
@@ -450,7 +540,7 @@ a parked item as a blocker is misreading this file.
   pathology and hides the domain"* — and the paper needs to say which side of that trade a caller
   is buying. Still true and still the case FOR a fail-closed mechanism of some kind: `grep` confirms
   nothing in `husk-api/app` implements one, the service is prompt-only, and `llm-translation` is
-  bimodal (judge 86 MATCH / 80 MISS), which is a reliability problem a fail-closed gate is good at.
+  bimodal (judge 86 MATCH / 80 MISS *(E1)*), which is a reliability problem a fail-closed gate is good at.
   Ready-made acceptance tests: the 18/18 identifier survival from the prompt ratchet, and the 8
   residual module-name leaks that arrive as content (`<h1>qsolog</h1>`) with no import to derive
   them from.
@@ -465,7 +555,12 @@ a parked item as a blocker is misreading this file.
 
 ## §2 Open-decisions index
 
-No open decisions. Ratified decisions live in `DECISIONS.md` (append-only; cited by date + title):
+**Open, owner (2026-09-26):** the six items in §0's 2026-09-26 block — re-run the gated
+`llm-translation` arm; amendment A5 for the permutation denominator; gate calibration for copied
+comments; a `literal-tagging` import-graph design; cluster-aware intervals; JSX text in `fpe`. None
+blocks another item.
+
+Ratified decisions live in `DECISIONS.md` (append-only; cited by date + title):
 
 - 2026-04-30 (approx.) — Retire `crumb_level` as `llm-translation`'s target-selection knob
 - 2026-08-07 — Install ROADMAP.md/DECISIONS.md triad; keep build-history handoffs in place
@@ -475,6 +570,7 @@ No open decisions. Ratified decisions live in `DECISIONS.md` (append-only; cited
 - 2026-08-30 — Drop `docs/Effigy_Technical_Abstract.pdf` rather than annotate it
 - 2026-08-31 — Regenerate the one drifted manifest entry, having established it is bookkeeping
 - 2026-09-01 — Publication addendum: references that do not resolve in the published tree
+- 2026-09-26 — Audit fixes ship; affected published figures get errata, not rewrites
 
 ## Appendix — consolidation history
 

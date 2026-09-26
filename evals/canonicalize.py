@@ -384,12 +384,57 @@ MANIFEST = EVALS / "corpus" / "manifest.json"
 _CANON_COMMENT = re.compile(r"^(?://\s*-|/\*\s*-[\s]*\*/)$", re.S)
 _PLACEHOLDER_ONLY = re.compile(r"^[Ii]dent_\d{4}$")
 _STR_ONLY = re.compile(r"^str_\d{4}$")
+# A numeric literal is one lexeme even when it carries letters (0x1F, 1e9, 10n,
+# 1i), so its hex digits and suffixes never read as words.
+_LEXEME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*|\d[0-9A-Za-z_]*(?:\.\d[0-9A-Za-z_]*)?")
+_REGEX_FLAGS = re.compile(r"(/str_\d{4}/)[dgimsuyv]+")
+_RUNE_PLACEHOLDER = re.compile(r"'[A-Za-z0-9]'")
+_NOT_CODE = {"STRING", "CHAR", "REGEX", "TEMPLATE_PART", "JSX_TEXT", "COMMENT"}
 
 
 def _kinds(path: Path, language: str) -> list[str]:
     if language == "go":
         return [t["kind"] for t in go_spans(path)["tokens"]]
     return [s["kind"] for s in ts_spans(path)["spans"]]
+
+
+def unexplained_words(out: str, language: str, allowed: set[str], literals: set[str]) -> list[str]:
+    """Every word in the output that is neither a placeholder nor allowed, found by scanning TEXT.
+
+    G2's span checks re-lex the output with the classifier that produced it, so
+    a comment that classifier never saw is invisible to them as well. This scan
+    trusts no span: the only words it excuses are placeholders, `allowed`, and
+    whatever sits inside a preserved literal such as an external import path.
+    """
+    text = out
+    for lit in sorted(literals, key=len, reverse=True):
+        text = text.replace(lit, " ")
+    if language == "go":
+        text = _RUNE_PLACEHOLDER.sub(" ", text)  # distinct-rune placeholders
+    else:
+        text = _REGEX_FLAGS.sub(r"\1", text)  # flags are syntax, not vocabulary
+    return sorted({w for w in _LEXEME.findall(text)
+                   if not (w[0].isdigit() or w in allowed
+                           or _PLACEHOLDER_ONLY.match(w) or _STR_ONLY.match(w))})
+
+
+def _code_brace_depth(path: Path, language: str) -> int:
+    """max_brace_depth with every literal and comment blanked first.
+
+    counters.py counts the `{` in `"{dollar}"` and in `/[A-Z]{3}/` too, by its
+    own admission. The canonicaliser rightly replaces those literals, so the raw
+    count can drop while the nesting of the code is untouched. Offsets are Go
+    bytes or TS UTF-16 units, hence the raw bytes and the per-language encoding.
+    """
+    if language == "go":
+        spans, enc, unit = go_spans(path)["tokens"], "utf-8", 1
+    else:
+        spans, enc, unit = ts_spans(path)["spans"], "utf-16-le", 2
+    buf = bytearray(path.read_bytes().decode("utf-8").encode(enc))
+    for s in spans:
+        if s["kind"] in _NOT_CODE:
+            buf[s["off"] * unit:s["end"] * unit] = " ".encode(enc) * (s["end"] - s["off"])
+    return counters.count(buf.decode(enc), language)["max_brace_depth"]
 
 
 def _all_leak_terms() -> list[str]:
@@ -426,7 +471,8 @@ def gate(path: Path, language: str, src: str, out: str, census: dict, tmp: Path,
     # comment or a JSX text node.
     allowed = set(census["preserved_tokens"]) | AL.GO_KEYWORDS | AL.GO_PREDECLARED
     allowed_literals = set(census.get("preserved_import_paths", []))
-    out_spans = go_spans(tmp)["tokens"] if language == "go" else ts_spans(tmp)["spans"]
+    out_data = go_spans(tmp) if language == "go" else ts_spans(tmp)
+    out_spans = out_data["tokens"] if language == "go" else out_data["spans"]
     for s in out_spans:
         kind, body = s["kind"], s.get("text", "")
         if kind == "IDENT":
@@ -443,10 +489,20 @@ def gate(path: Path, language: str, src: str, out: str, census: dict, tmp: Path,
                 continue
             if kind == "CHAR" and re.fullmatch(r"'[A-Za-z0-9]'", body):
                 continue  # distinct-rune placeholders, drawn from RUNE_POOL
+            if kind == "REGEX":
+                body = re.sub(r"/[dgimsuyv]*$", "/", body)  # `/str_0001/i`: flags are not words
             words = [w for w in WORD.findall(body)
                      if not (_STR_ONLY.match(w) or _PLACEHOLDER_ONLY.match(w))]
             if words:
                 fails.append(f"G2 literal carries words: {body[:60]!r}")
+    # The same closed world, checked over the raw text rather than the spans,
+    # so a lexer blind spot cannot be shared by the transform and its gate.
+    keywords = AL.GO_KEYWORDS if language == "go" else set(out_data["keywords"])
+    token_words = {w for tok in census["preserved_tokens"] for w in WORD.findall(tok)}  # aria-label
+    specifiers = {s["text"] for s in out_spans if s["kind"] == "MODULE_SPECIFIER" and s.get("external")}
+    stray = unexplained_words(out, language, keywords | token_words, allowed_literals | specifiers)
+    if stray:
+        fails.append(f"G2 words outside the allowlist: {stray[:12]}")
 
     # G3 — leak terms from ALL SIX domains, not just the true one.
     low = out.lower()
@@ -458,13 +514,21 @@ def gate(path: Path, language: str, src: str, out: str, census: dict, tmp: Path,
     # Scanned against the output with every deliberately-preserved token masked
     # out first: `http.Server` is stdlib API, shared by all six domains, and
     # must not read as the file `server.go` leaking its own name.
-    masked = low
-    for tok in sorted(allowed | allowed_literals, key=len, reverse=True):
-        if len(tok) >= 3:
-            masked = masked.replace(tok.lower(), " ")
+    def mask(text: str, keep: set[str]) -> str:
+        for tok in sorted(keep, key=len, reverse=True):
+            if len(tok) >= 3:
+                text = text.replace(tok.lower(), " ")
+        return text
+
+    masked = mask(low, allowed | allowed_literals)
+    # The domain and module names are looked for with import paths left IN. A
+    # third-party path is preserved because all six domains share it; one that
+    # names this domain (`github.com/acme/<module>-shared`) is not shared.
+    masked_paths_in = mask(low, allowed)
     forbidden = {domain_dir, module, path.stem, path.parent.name} - {""}
     for name in sorted(forbidden):
-        if len(name) >= 3 and name.lower() in masked:
+        hay = masked_paths_in if name in (domain_dir, module) else masked
+        if len(name) >= 3 and name.lower() in hay:
             fails.append(f"G4 name survived: {name!r}")
 
     # G6 — token-kind-sequence identity. This is the fidelity proof and the
@@ -504,6 +568,12 @@ def gate(path: Path, language: str, src: str, out: str, census: dict, tmp: Path,
             # counter imprecision, not a fidelity failure: G6 is authoritative.
             blind_delta[k] = [ps[k], po[k]]
             continue
+        if k == "max_brace_depth" and _code_brace_depth(path, language) == _code_brace_depth(tmp, language):
+            # Same imprecision for braces inside literals (`"{dollar}"`, a
+            # `{3}` quantifier). The code's own nesting is equal, so record the
+            # delta; a real loss of nesting still fails below.
+            blind_delta[k] = [ps[k], po[k]]
+            continue
         fails.append(f"G8 BLIND field {k}: {ps[k]} -> {po[k]}")
 
     # G9 — determinism.
@@ -520,7 +590,9 @@ def gate(path: Path, language: str, src: str, out: str, census: dict, tmp: Path,
     cs = counters.count(src, language)
     if cs["string_literals"] > 0 and "str_" not in out:
         fails.append("G11 source had string literals but output has no placeholder")
-    if "//" in src and "// -" not in out and "/* -" not in out:
+    # Comments counted by the lexer: `"//" in src` also fires on a URL in a
+    # string or in JSX text, in a file that has no comment at all.
+    if "COMMENT" in src_kinds and "// -" not in out and "/* -" not in out:
         fails.append("G11 source had comments but output has no blanked comment")
 
     if fails:

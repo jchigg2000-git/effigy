@@ -37,7 +37,7 @@ diagnosis of the husk stays valid for the source.
 |------|------------|
 | **`husk-api/`** | **The product.** A Python 3.11+ / FastAPI service that runs the husking transforms. Everything else in this repo is either a test corpus or design/research material. |
 | `corpus/` | **The test corpus** — code the husker runs *against*, not part of effigy's product. `corpus/stacks/` is a synthetic public-library inter-branch catalog and circulation app (Go 1.22 + chi + SQLite, React/Vite/TypeScript SPA) generated from its own `SPEC.md`. |
-| `evals/` | The evaluation harness and its committed runs. Every empirical claim in this repo is sourced from `evals/runs/`. |
+| `evals/` | The evaluation harness, its offline tests (`evals/tests/`) and its committed runs. Every empirical claim in this repo is sourced from `evals/runs/`. |
 | `docs/` + root `*.md` | Design and research docs (working paper, algorithm catalog, handoffs, architecture diagrams). |
 
 `corpus/stacks/` builds and tests (Go + vitest). The other five domains are **husking input, not
@@ -124,6 +124,11 @@ Contract (`app/contract.py`):
   (int 0–3, default 1), `options` (dict).
 - **`HuskResponse`** — `output`, `solution`, `crumb_level`, `meta` (per-solution
   stats).
+- **`ErrorResponse`** — `error`, `detail`: `404 unknown_solution`, `500
+  solution_failed` (including a husk the post-condition gate refuses), `502
+  backend_unavailable` (model backend unreachable, or an upstream 408/5xx) and
+  `503 backend_rate_limited` (upstream 429), the last two after the OpenAI
+  client's own two retries.
 
 Solutions are auto-discovered `@register`-decorated plugins in
 `app/solutions/`; drop a new file in that directory to add one.
@@ -157,9 +162,10 @@ default.
   both carry a status note pointing at `LIMITATIONS.md`.
 - **`docs/architecture/diagrams/*.mmd`** — context, components, and sequence
   diagrams (Mermaid), with `.svg` renders beside them. Drawn at the initial
-  build: they predate `POST /dehusk` and the post-condition gate, and there is
-  no `literal-tagging` sequence. Where they disagree with the code, the code
-  wins.
+  build; `seq-husk` and `seq-llm` were redrawn on 2026-09-26 for the error
+  mapping (429 → 503, 408/5xx → 502) and the post-condition gate with its retry.
+  There is still no `POST /dehusk` or `literal-tagging` sequence. Where they
+  disagree with the code, the code wins.
 - **`docs/handoffs/01`–`06`** — the build history, one handoff per component
   (buildout, fpe, literal-tagging, llm-translation, frontend, target catalog).
   These are *task briefs written to the agents that built each component*, kept
@@ -180,36 +186,46 @@ effigy is a **feasibility study and design proposal, not a deployment-ready
 system.** Do not read the running service as a hardened product, and do not
 treat any privacy statement here as a result.
 
+A 2026-09-26 audit left every verdict below standing but corrected or
+qualified several published figures. Each carries a pointer such as *(E1)* to
+the errata at the top of `LIMITATIONS.md`; the figure itself is left as
+published. **The largest: RSCH-1's `llm-translation` arm was built with its
+post-condition gate switched off (E1).**
+
 The seven things a reader should know before trusting anything in this repo:
 
 1. **The core privacy claim was measured once, completely, and it fails.** The
    pre-registered experiment (RSCH-1) ran on 2026-08-19 against the six-domain
-   corpus — 986 of 998 attacker calls, all three held-out domains, validity gate
-   passed. **All four solutions fail its §8 criterion**, and all four
-   independently trip its hard leak-term veto. `llm-translation` is the only
-   transform doing any work — it roughly halves every leakage measure — and its
-   husks are still identified **78.3%** of the time (65/83) by the strongest
-   attacker, against a blind arm at 33.3%, cluster-bootstrap 95% CI on the
-   difference **[+0.243, +0.640]**. Two qualifiers travel with that number and
-   are not optional: it is recognition on a twelve-option menu, not recall, so
+   corpus — 986 of 998 attacker calls *(E2)*, all three held-out domains,
+   validity gate passed. **All four solutions fail its §8 criterion**, and all
+   four independently trip its hard leak-term veto. `llm-translation` is the
+   only transform doing any work — it roughly halves every leakage measure
+   *(E1)* — and its husks are still identified **78.3%** of the time (65/83)
+   *(E1, E3)* by the strongest attacker, against a blind arm at 33.3%,
+   cluster-bootstrap 95% CI on the difference **[+0.243, +0.640]** *(E1)*. Two
+   qualifiers travel with that number and are not optional: it is recognition
+   on a twelve-option menu, not recall, so
    quoting it alone overstates the leak; and the corpus is synthetic, so RSCH-1
    measures **problem-domain** leakage only and says nothing about whether a husk
    protects a real organization's identity. The 33.3% blind figure is the
    attacker's own answer bias, not a structural floor.
 2. **The architecture itself leaks — the most consequential limitation here.**
-   Strip every identifier, string literal, comment and JSX text node, leave only
-   control flow, call graph, arity, nesting and coupling, and the same attackers
-   still beat their own permuted baseline by **+0.234 / +0.244** (p = 0.0014 /
-   0.0031) — and by **+0.257 / +0.265** (p = 0.0008 / 0.0023) once every numeric
-   literal is canonicalised too, so this is *not* a "format constants" story that
-   better literal-scrubbing would fix. That is roughly half the leak a husk
-   carries. effigy's premise is that architectural pathology must be preserved;
-   if preserved architecture is itself domain-informative, no verifier enforcing
-   that invariant can fix it. Read it with its hedges: menu recognition only, the
-   open-ended endpoint was never run, and **that run's own §8 validity gate is
-   recorded as failed** — it carried no source or blind arm, so its verdicts are
-   NOT COMPUTABLE and these are permuted-baseline figures, not §8 verdicts.
-   Coverage 111 of 120.
+   Strip every identifier, string literal, ~~comment~~ and JSX text node *[2026-09-26: 8 of 60
+   artifacts kept one comment; E10]*,
+   leave only control flow, call graph, arity, nesting and coupling, and the same
+   attackers still beat their own permuted baseline by **+0.234 / +0.244**
+   (p = 0.0014 / 0.0031) *(E5, E10)* — and by **+0.257 / +0.265** (p = 0.0008 /
+   0.0023) *(E5, E10)* once every numeric literal is canonicalised too, so this is
+   *not* a "format constants" story that better literal-scrubbing would fix. That
+   is roughly half the leak a husk carries *(E1, E10)*. effigy's premise is that
+   architectural pathology must be preserved; if preserved architecture is itself
+   domain-informative, no verifier enforcing that invariant can fix it. Read it
+   with its hedges: menu recognition only, ~~the open-ended endpoint was never
+   run~~ *[2026-09-26: it was started and stopped after 13 of 120 calls — too few
+   to measure; E11]*, and **that run's own §8 validity gate is recorded as
+   failed** *(E11)* — it carried no source or blind arm, so its verdicts are NOT
+   COMPUTABLE and these are permuted-baseline figures, not §8 verdicts. Coverage
+   111 of 120 (forced choice).
 3. **Nothing husks file paths.** RSCH-1 shows its attacker the bytes and the
    language and nothing else — no path, no filename, no directory layout —
    deliberately, and flatteringly to the husk. So no result here may be read as
@@ -225,7 +241,7 @@ The seven things a reader should know before trusting anything in this repo:
    pathology-anchor invariant "a category error." Nothing computes CPG
    isomorphism, anti-pattern density, or comment speech acts. What ships is a
    narrower post-condition that fails closed when a husk comes back substantially
-   as its own input — a floor, not the invariant.
+   as its own input *(E16)* — a floor, not the invariant.
 6. **The evidence base is narrow, and scaling up made it worse.** Three scales of
    one model family (`qwen2.5-coder` at 7B, 14B and 32B) plus a single 8B Llama
    husk, none of them repeated measurements. The 32B returned **42%** of the

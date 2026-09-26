@@ -57,6 +57,7 @@ def permutation_cell(items: list[dict], draws: int = DRAWS, seed: int = SEED) ->
         return {"n": 0}
 
     observed = sum(1 for it in items if it["answer_id"] == it["true_domain_id"]) / n
+    modal_answer, modal_n = collections.Counter(it["answer_id"] for it in items).most_common(1)[0]
 
     # One label per source file, carried to that file's replicates.
     label_of: dict[str, str] = {}
@@ -64,6 +65,14 @@ def permutation_cell(items: list[dict], draws: int = DRAWS, seed: int = SEED) ->
         label_of.setdefault(it["source_path"], it["true_domain_id"])
     files = sorted(label_of)
     labels = [label_of[f] for f in files]
+
+    if len(set(labels)) < 2:
+        # Every file carries one domain, so no permutation changes any label and
+        # the null equals the observed value by construction. "+0.000, p=1" would
+        # read as "no signal beyond response bias" whatever the attacker did.
+        return {"n": n, "n_files": len(files), "observed": observed,
+                "degenerate": "single domain in cell",
+                "modal_answer": modal_answer, "modal_share": modal_n / n, "modal_n": modal_n}
 
     rng = random.Random(seed)
     accs: list[float] = []
@@ -76,7 +85,9 @@ def permutation_cell(items: list[dict], draws: int = DRAWS, seed: int = SEED) ->
 
     mean = statistics.fmean(accs)
     # p is one-sided: how often does pure response bias reach the observed value?
-    p = sum(1 for a in accs if a >= observed) / draws
+    # The +1 counts the observed labelling itself, which is one of the
+    # permutations (Phipson & Smyth 2010): a Monte Carlo p can never be 0.
+    p = (sum(1 for a in accs if a >= observed) + 1) / (draws + 1)
 
     # Analytic cross-check. Under a random label permutation the expected
     # accuracy is sum_d P(answer=d) * P(true=d). If the permutation does not
@@ -84,8 +95,6 @@ def permutation_cell(items: list[dict], draws: int = DRAWS, seed: int = SEED) ->
     ans_share = collections.Counter(it["answer_id"] for it in items)
     true_share = collections.Counter(it["true_domain_id"] for it in items)
     analytic = sum((ans_share[d] / n) * (true_share[d] / n) for d in set(ans_share) | set(true_share))
-
-    modal_answer, modal_n = collections.Counter(it["answer_id"] for it in items).most_common(1)[0]
 
     return {
         "n": n,
@@ -111,9 +120,13 @@ def permutation_cell(items: list[dict], draws: int = DRAWS, seed: int = SEED) ->
 def load_forced_choice(run: Path) -> list[dict]:
     """Forced-choice records with a parsed answer, resolved to a domain id.
 
-    Records whose every attempt transport-failed carry `parsed: null` and have
-    no answer to permute. They are dropped as MISSING, matching how
-    score_rsch1.py already treats them: a coverage gap, never a wrong answer.
+    Every record without an in-range integer choice is dropped as MISSING, as
+    amendment A4.1 registers it ("Records with no parsed choice are dropped").
+    That covers two kinds of record: transport failures, which never reached
+    the model and which score_rsch1.py also excludes; and replies that arrived
+    but did not parse (e.g. empty text at finish_reason=length), which
+    score_rsch1.py §2 scores INCORRECT per §6.1. So a cell's n here can be
+    smaller than §2's, and score_rsch1 §2b says so when it is.
     """
     out, dropped = [], 0
     for p in sorted((run / "raw").glob("*.json")):
@@ -138,7 +151,7 @@ def load_forced_choice(run: Path) -> list[dict]:
             }
         )
     if dropped:
-        print(f"  (dropped {dropped} records with no parsed choice — missing, not wrong)", file=sys.stderr)
+        print(f"  (dropped {dropped} records with no parsed choice as missing)", file=sys.stderr)
     return out
 
 
@@ -221,15 +234,26 @@ def render(report: dict) -> str:
             continue
         arm, atk = key.split("|")
         short = atk.split("/")[-1].split(":")[0]
+        if c.get("degenerate"):
+            L.append(
+                f"| `{arm}` | {short} | {c['n']} | {c['observed']:.3f} | not computable | "
+                f"not computable | — | {c['modal_answer']} {c['modal_n']}/{c['n']} |"
+            )
+            continue
         L.append(
             f"| `{arm}` | {short} | {c['n']} | {c['observed']:.3f} | "
             f"{c['permuted_mean']:.3f} [{c['permuted_lo']:.3f}, {c['permuted_hi']:.3f}] | "
             f"**{c['corrected']:+.3f}** | {c['p']:.4f} | {c['modal_answer']} {c['modal_n']}/{c['n']} |"
         )
 
-    worst = max((c["analytic_gap"] for c in report["cells"].values() if c.get("n")), default=0.0)
+    worst = max((c["analytic_gap"] for c in report["cells"].values() if "analytic_gap" in c), default=0.0)
     L += ["", f"Analytic cross-check `Σ_d P(ans=d)·P(true=d)` agrees with the permuted mean "
               f"to within **{worst:.4f}** across every cell."]
+    degenerate = sorted(k for k, c in report["cells"].items() if c.get("degenerate"))
+    if degenerate:
+        L += ["", "**Not computable:** " + ", ".join(f"`{k}`" for k in degenerate)
+              + " — every source file in the cell carries the same domain, so permuting labels "
+              "changes nothing and the null equals the observed value by construction."]
 
     if report["attribution"]:
         L += ["", "## Leak-channel attribution — own-module name survival", "",
@@ -265,7 +289,7 @@ def selftest() -> int:
     ok = True
     c = cell(lambda f: truth[f])
     print(f"always-correct   obs={c['observed']:.3f} perm={c['permuted_mean']:.3f} p={c['p']:.4f}")
-    ok &= c["observed"] == 1.0 and c["p"] == 0.0
+    ok &= c["observed"] == 1.0 and c["p"] == 1 / (DRAWS + 1)
 
     c = cell(lambda f: "A")
     print(f"always-answers-A obs={c['observed']:.3f} perm={c['permuted_mean']:.3f} p={c['p']:.4f}")

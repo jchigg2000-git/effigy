@@ -27,7 +27,6 @@ from __future__ import annotations
 import argparse
 import concurrent.futures as cf
 import json
-import os
 import sys
 import time
 from pathlib import Path
@@ -83,16 +82,16 @@ def main() -> int:
         dest = out / rel
         dest.parent.mkdir(parents=True, exist_ok=True)
         t0 = time.time()
-        prev = os.environ.get("LLM_MODEL")
-        os.environ["LLM_MODEL"] = a.model
         try:
             # Target is PINNED across the tree. The solution otherwise selects a
             # target by hashing each input, so a multi-file husk scatters across
             # unrelated domains -- one file becomes a recipe manager, the next
             # hotel rooms. Invisible when husking one file; fatal for a tree,
             # because no reviewer can read it as a single system and no
-            # cross-file reference survives.
-            husk, _meta = llm.husk(src, 1, {"target_id": a.target})
+            # cross-file reference survives. The model travels in options too:
+            # restoring LLM_MODEL from one worker thread could put the .env
+            # default back while another thread was about to read it.
+            husk, _meta = llm.husk(src, 1, {"target_id": a.target, "model": a.model})
             dest.write_text(husk, encoding="utf-8")
             r = {"path": art["path"], "dest": str(rel), "ok": True,
                  "in_lines": art["lines"], "out_lines": husk.count("\n") + 1,
@@ -102,11 +101,6 @@ def main() -> int:
                  "in_lines": art["lines"], "out_lines": 0,
                  "latency_s": round(time.time() - t0, 1),
                  "error": f"{type(exc).__name__}: {str(exc)[:140]}"}
-        finally:
-            if prev is None:
-                os.environ.pop("LLM_MODEL", None)
-            else:
-                os.environ["LLM_MODEL"] = prev
         print(f"  {'ok  ' if r['ok'] else 'FAIL'} {r['latency_s']:6.1f}s "
               f"{r['in_lines']:>4}->{r['out_lines']:<4} {rel}"
               f"{'  ' + r['error'] if r['error'] else ''}")

@@ -60,6 +60,9 @@ MANIFEST = EVALS / "corpus" / "manifest.json"
 PATHOLOGY = REPO / "corpus" / "PATHOLOGY.md"
 
 sys.path.insert(0, str(REPO / "husk-api"))
+sys.path.insert(0, str(EVALS))
+
+from run_rsch1 import usage_fields  # noqa: E402
 
 # Domain-neutral smell taxonomy, one entry per planted defect class. Deliberately
 # phrased without library or catalog vocabulary: the evaluator sees a husk that
@@ -142,8 +145,9 @@ def client():
                   api_key=os.environ["LLM_API_KEY"], timeout=300)
 
 
-def diagnose(model: str, code: str, language: str) -> tuple[set[str], str | None]:
-    """Ask the evaluator which smells are present. Returns (present_set, error)."""
+def diagnose(model: str, code: str, language: str) -> tuple[set[str], str | None, dict | None]:
+    """Ask the evaluator which smells are present. Returns (present_set, error,
+    usage); usage is None when the call raised or the response carried none."""
     catalogue = "\n".join(f"- {k}: {v}" for k, v in SMELLS.items())
     try:
         r = client().chat.completions.create(
@@ -153,19 +157,20 @@ def diagnose(model: str, code: str, language: str) -> tuple[set[str], str | None
         )
         raw = (r.choices[0].message.content or "").strip()
     except Exception as exc:  # noqa: BLE001
-        return set(), f"{type(exc).__name__}: {str(exc)[:140]}"
+        return set(), f"{type(exc).__name__}: {str(exc)[:140]}", None
+    usage = usage_fields(r)
 
     raw = re.sub(r"^```(?:json)?|```$", "", raw, flags=re.M).strip()
     m = re.search(r"\{.*\}", raw, re.S)
     if not m:
-        return set(), f"unparseable: {raw[:100]!r}"
+        return set(), f"unparseable: {raw[:100]!r}", usage
     try:
         doc = json.loads(m.group(0))
     except json.JSONDecodeError as e:
-        return set(), f"bad json: {e}"
+        return set(), f"bad json: {e}", usage
     found = {f["smell"] for f in doc.get("findings", [])
              if f.get("present") and f.get("smell") in SMELLS}
-    return found, None
+    return found, None, usage
 
 
 def f1(a: set[str], b: set[str]) -> float:
@@ -208,9 +213,11 @@ def main() -> int:
     # reused across every husker, so adding a husker costs husk+diagnose only.
     print("baseline — diagnosing the real source")
     baseline: dict[str, set[str]] = {}
+    baseline_usage: dict[str, dict | None] = {}
     for art in arts:
         src = (REPO / art["path"]).read_text(encoding="utf-8")
-        found, err = diagnose(a.evaluator, src, art["language"])
+        found, err, usage = diagnose(a.evaluator, src, art["language"])
+        baseline_usage[art["path"]] = usage
         planted = gt[art["path"]]
         if err:
             # A failed baseline is NOT "this file has no smells". Storing an
@@ -239,28 +246,27 @@ def main() -> int:
                "planted": sorted(gt[art["path"]]),
                "baseline_source": sorted(baseline[art["path"]])}
         t0 = time.time()
-        prev = os.environ.get("LLM_MODEL")
-        os.environ["LLM_MODEL"] = model
         try:
-            husk, _ = llm.husk(src, 1, {})
+            # The model travels in options, not LLM_MODEL: jobs for several
+            # huskers share one thread pool, and a per-call write to the process
+            # environment can hand one job another job's model.
+            husk, meta = llm.husk(src, 1, {"model": model})
         except Exception as exc:  # noqa: BLE001
-            os.environ["LLM_MODEL"] = prev or ""
+            report = getattr(exc, "report", None)
             return rec | {"status": "husk_failed",
                           "error": f"{type(exc).__name__}: {str(exc)[:140]}",
-                          "latency_s": round(time.time() - t0, 1)}
-        finally:
-            if prev is None:
-                os.environ.pop("LLM_MODEL", None)
-            else:
-                os.environ["LLM_MODEL"] = prev
+                          "latency_s": round(time.time() - t0, 1),
+                          "husk_usage": report.get("usage") if isinstance(report, dict) else None}
         rec["husk_latency_s"] = round(time.time() - t0, 1)
+        rec["husk_usage"] = meta.get("usage")
 
         name = f"{model.split('/')[-1]}--{Path(art['path']).name}.txt"
         (outdir / "husks" / name).write_text(husk, encoding="utf-8")
         rec["husk_sha256"] = sha256_text(husk)
         rec["husk_lines"] = husk.count("\n") + 1
 
-        found, err = diagnose(a.evaluator, husk, art["language"])
+        found, err, usage = diagnose(a.evaluator, husk, art["language"])
+        rec["diagnose_usage"] = usage
         if err:
             return rec | {"status": "diagnose_failed", "error": err}
         planted = gt[art["path"]]
@@ -305,6 +311,7 @@ def main() -> int:
         "files": [x["path"] for x in arts],
         "manifest_sha256": sha256_text(MANIFEST.read_text()),
         "baseline_source_findings": {k: sorted(v) for k, v in baseline.items()},
+        "baseline_usage": baseline_usage,
         "note": ("Huskers are hosted here as a STAND-IN for cheap LOCAL models. "
                  "In production the husker must run in-tenant; a hosted husker "
                  "leaks the source it exists to protect."),

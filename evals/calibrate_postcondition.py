@@ -33,8 +33,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 
 # Import the production module by path: going through `app.solutions` would pull
-# in openai/dotenv and write the target-catalog JSON as a side effect, and this
-# script must run under a bare interpreter.
+# in openai/dotenv, and this script must run under a bare interpreter.
 _spec = importlib.util.spec_from_file_location(
     "_husk_check", REPO / "husk-api" / "app" / "solutions" / "_husk_check.py")
 hc = importlib.util.module_from_spec(_spec)

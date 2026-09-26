@@ -15,6 +15,11 @@ Independent Researcher
 > carries — which cuts against this document's premise that a verifier enforcing the
 > pathology-anchor invariant would close the gap. The body is preserved as written rather than
 > rewritten. **`LIMITATIONS.md` §2 and §2.0.2 are authoritative; read them first.**
+>
+> *Added 2026-09-26:* `LIMITATIONS.md` now opens with errata from an audit of the code and
+> harness. Both failures above stand. The RSCH-1 `llm-translation` figures were measured on an
+> effectively ungated rewriter (E1), and RSCH-1B's shape-only signal is +0.220 / +0.224 rather
+> than +0.234 / +0.244 once the records that saw a leftover comment are excluded (E10).
 
 ## Abstract
 

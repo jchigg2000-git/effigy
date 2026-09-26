@@ -61,8 +61,14 @@ const isIntrinsic = (tag) => {
   return /^[a-z]/.test(t) && !t.includes(".");
 };
 
+// JSX text is not trivia, but the comment scanner does not know that: asked at
+// the start of `<p>// note</p>`'s text node, it reports `// note` as a comment,
+// which then overlaps the JSX_TEXT span. Filled in by pre() below.
+const jsxTextStarts = new Set();
+
 function addComments(node) {
   const full = node.getFullStart();
+  if (jsxTextStarts.has(full)) return;
   for (const fn of [ts.getLeadingCommentRanges, ts.getTrailingCommentRanges]) {
     const ranges = fn(text, full) || [];
     for (const r of ranges) {
@@ -98,6 +104,7 @@ function collectBindings(node) {
 }
 (function pre(node) {
   if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) collectBindings(node);
+  if (node.kind === ts.SyntaxKind.JsxText) jsxTextStarts.add(node.getFullStart());
   ts.forEachChild(node, pre);
 })(sf);
 
@@ -105,9 +112,18 @@ const moduleSpecifierOffsets = new Set(
   spans.filter((s) => s.kind === "MODULE_SPECIFIER").map((s) => s.off)
 );
 
-(function walk(node) {
+// Comments hang off TOKENS, not nodes. forEachChild never visits punctuation,
+// so a comment whose next token is `)`, `]` or `}` (including the `}` of a JSX
+// `{/* ... */}`) sits at no node's full start, and was once copied through
+// verbatim. getChildren() yields every token; seenComment dedupes. JSDoc
+// children are skipped: their positions lie inside a comment already collected.
+(function comments(node) {
+  if (node.kind >= ts.SyntaxKind.FirstJSDocNode && node.kind <= ts.SyntaxKind.LastJSDocNode) return;
   addComments(node);
+  for (const child of node.getChildren(sf)) comments(child);
+})(sf);
 
+(function walk(node) {
   if (ts.isIdentifier(node) || ts.isPrivateIdentifier(node)) {
     const p = node.parent;
     const rec = {
@@ -155,6 +171,15 @@ const moduleSpecifierOffsets = new Set(
 const syntactic = sf.parseDiagnostics || [];
 const fatal = syntactic.filter((d) => d.code >= 1000 && d.code < 2000);
 
+// The compiler's own keyword table, for the gate's text-level word scan.
+// Language-owned facts, not policy: keywords are never IDENT spans, so without
+// this the gate could not tell `const` from a word that leaked out of a comment.
+const keywords = [];
+for (let k = ts.SyntaxKind.FirstKeyword; k <= ts.SyntaxKind.LastKeyword; k++) {
+  const s = ts.tokenToString(k);
+  if (s) keywords.push(s);
+}
+
 spans.sort((a, b) => a.off - b.off);
 process.stdout.write(
   JSON.stringify({
@@ -162,6 +187,7 @@ process.stdout.write(
     external_bindings: [...externalBindings].sort(),
     relative_bindings: [...relativeBindings].sort(),
     syntax_errors: fatal.map((d) => `TS${d.code}`),
+    keywords,
     typescript_version: ts.version,
   })
 );

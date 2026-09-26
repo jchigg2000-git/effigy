@@ -150,6 +150,204 @@ def scored_choice(rec: dict) -> dict:
                           if 1 <= choice <= len(rec.get("menu_order", [])) else None)}
 
 
+# Mirrors run_rsch1.STOCHASTIC_ARMS: the arms stage_attack caps at the configured
+# replicate count.
+STOCHASTIC_ARMS = ("llm-translation", "llm-translation-ungated")
+
+
+def effective_config(cfg: dict, recs: list[dict]) -> tuple[dict, list[str]]:
+    """The config every section scores against, and the arms config.json omits.
+
+    config.json keeps the FIRST invocation's fields, and each resume is appended to
+    its `resumes` list (run_rsch1.write_or_extend_config). Runs from before that
+    change kept only the LAST invocation's (20260819T182111Z omits an arm it built
+    and attacked). Either way the top-level `arms` can be short, and an arm scored
+    only where it is listed silently drops out of §2-§5. So arms, attackers and
+    modes are the ordered union of the top level, every resume, and what raw/
+    actually holds; the replicate budget is the largest any invocation used.
+    """
+    invocations = [cfg, *cfg.get("resumes", [])]
+
+    def union(key: str, from_recs: str) -> list[str]:
+        seen = [v for inv in invocations for v in inv.get(key) or []]
+        return list(dict.fromkeys([*seen, *(r[from_recs] for r in recs)]))
+
+    eff = dict(cfg)
+    eff["arms"] = union("arms", "arm")
+    eff["attackers"] = union("attackers", "attacker")
+    eff["modes"] = union("modes", "mode")
+    reps = [inv["replicates_llm_translation"] for inv in invocations
+            if inv.get("replicates_llm_translation") is not None]
+    if reps:
+        eff["replicates_llm_translation"] = max(reps)
+    unlisted = [a for a in eff["arms"] if a not in (cfg.get("arms") or [])]
+    return eff, unlisted
+
+
+def expected_coverage(run: Path, cfg: dict, recs: list[dict]) -> dict | None:
+    """(arm, attacker, mode) -> {expected, present, missing}, or None without artifacts.
+
+    Records that were never written are invisible to is_missing(): a stopped,
+    breaker-tripped or partly resumed attack writes nothing for the jobs it never
+    ran. The job set is rebuilt the way run_rsch1.stage_attack builds it, from the
+    non-error artifacts. Arms are the config's plus any present in raw, because
+    config.json's top level can omit an arm a resume built (see effective_config).
+    """
+    metas = [json.loads(p.read_text()) for p in sorted((run / "artifacts").glob("*.meta.json"))]
+    if not metas:
+        return None
+    arms = set(cfg.get("arms", [])) | {r["arm"] for r in recs}
+    attackers = list(dict.fromkeys([*cfg.get("attackers", []), *(r["attacker"] for r in recs)]))
+    modes = list(dict.fromkeys([*cfg.get("modes", []), *(r["mode"] for r in recs)]))
+    reps = cfg.get("replicates_llm_translation")
+    split = set(cfg.get("source_files") or [])
+    keys: dict[str, set] = defaultdict(set)
+    for m in metas:
+        if m.get("error") or not m.get("key") or m.get("arm") not in arms:
+            continue
+        if m["arm"] in STOCHASTIC_ARMS and reps is not None and m.get("replicate", 0) >= reps:
+            continue
+        if split and m.get("source_path") not in split:
+            continue
+        keys[m["arm"]].add(m["key"])
+    cov: dict = {}
+    for arm, ks in keys.items():
+        for atk in attackers:
+            for mode in modes:
+                cov[(arm, atk, mode)] = {"expected": len(ks), "present": 0, "missing": 0}
+    for r in recs:
+        c = cov.get((r["arm"], r["attacker"], r["mode"]))
+        if c is None or r["item_id"] not in keys[r["arm"]]:
+            continue
+        c["present"] += 1
+        c["missing"] += is_missing(r)
+    return cov
+
+
+# run_rsch1.GATE_OFF, as _husk_check records it in postcondition.thresholds. No
+# real gate runs at these values, so a gated-arm artifact carrying any of them
+# was built with the gate (at least partly) off.
+GATE_OFF_THRESHOLDS = {"run_lines": 999999, "run_share": 9.0, "copied_share": 9.0,
+                       "retention": 9.0, "ratio": 9.0}
+
+
+def gate_state_mismatches(run: Path) -> dict[str, tuple[int, int]]:
+    """arm -> (artifacts whose recorded gate state contradicts the arm, artifacts
+    with a recorded gate state), for the two llm-translation arms.
+
+    The ungated arm used to switch the gate off by mutating os.environ from
+    inside a thread pool, which let concurrent gated jobs run with it off too.
+    The recorded thresholds are the only after-the-fact evidence of which state
+    each husk was really built in.
+    """
+    out: dict[str, list[int]] = {}
+    for p in sorted((run / "artifacts").glob("*.meta.json")):
+        m = json.loads(p.read_text())
+        arm = m.get("arm")
+        if m.get("error") or arm not in STOCHASTIC_ARMS:
+            continue
+        th = ((m.get("solution_meta") or {}).get("postcondition") or {}).get("thresholds")
+        if not isinstance(th, dict):
+            continue
+        at_off = [th.get(k) == v for k, v in GATE_OFF_THRESHOLDS.items()]
+        wrong = any(at_off) if arm == "llm-translation" else not all(at_off)
+        c = out.setdefault(arm, [0, 0])
+        c[0] += wrong
+        c[1] += 1
+    return {k: (v[0], v[1]) for k, v in out.items()}
+
+
+def mechanism_buckets(fc: list[dict], copied_share) -> dict:
+    """arm -> {"hit": [...], "miss": [...]} copied-span shares for the husk arms.
+
+    A transport failure never reached the model, so it is neither a right nor a
+    wrong answer (is_missing); a parse failure stays in "miss", per §6.1.
+    """
+    buckets: dict = defaultdict(lambda: {"hit": [], "miss": []})
+    for r in fc:
+        if r["arm"] in ("blind", "source"):
+            continue
+        sc = scored_choice(r)
+        if sc["missing"]:
+            continue
+        cs = copied_share(r["item_id"], r["source_path"])
+        if cs is None:
+            continue
+        buckets[r["arm"]]["hit" if sc["correct"] else "miss"].append(cs)
+    return buckets
+
+
+def _usage(resp) -> dict | None:
+    """Token usage off an OpenAI-style response, every field int-or-None.
+
+    Anything that is not an int (a provider that omits a field, a test double)
+    becomes None, so the payload always serialises and absence never reads as 0.
+    """
+    u = getattr(resp, "usage", None)
+    if u is None:
+        return None
+
+    def _int(v):
+        return v if isinstance(v, int) and not isinstance(v, bool) else None
+
+    details = getattr(u, "completion_tokens_details", None)
+    return {"prompt_tokens": _int(getattr(u, "prompt_tokens", None)),
+            "completion_tokens": _int(getattr(u, "completion_tokens", None)),
+            "total_tokens": _int(getattr(u, "total_tokens", None)),
+            "reasoning_tokens": _int(getattr(details, "reasoning_tokens", None))}
+
+
+USAGE_FIELDS = ("prompt_tokens", "completion_tokens", "reasoning_tokens", "total_tokens")
+
+
+def usage_table(recs: list[dict], judged: dict | None = None,
+                judge_model: str | None = None, metas: list[dict] = ()) -> list[str]:
+    """Token usage summed per (attacker, arm) from each attempt's `usage`, one judge
+    row, and one rewriter row per arm from the artifact metas' solution_meta.usage
+    (llm-translation has recorded that since before RSCH-1). Runs recorded before
+    attacker/judge usage capture say so instead of printing zeros."""
+    rows: dict = defaultdict(lambda: {"calls": 0, "with": 0, **{f: 0 for f in USAGE_FIELDS}})
+
+    def add(key, usage):
+        row = rows[key]
+        row["calls"] += 1
+        if isinstance(usage, dict) and any(isinstance(usage.get(f), int) for f in USAGE_FIELDS):
+            row["with"] += 1
+            for f in USAGE_FIELDS:
+                if isinstance(usage.get(f), int):
+                    row[f] += usage[f]
+
+    for r in recs:
+        for a in r.get("attempts") or []:
+            add((r["attacker"], r["arm"]), a.get("usage"))
+    for p in (judged or {}).values():
+        add((f"{judge_model} (judge)", "all arms"), p.get("usage"))
+    for m in metas:
+        sm = m.get("solution_meta") or {}
+        if "usage" in sm and not m.get("error"):
+            add((f"{sm.get('model') or 'rewriter'} (rewriter)", m.get("arm")), sm.get("usage"))
+
+    L = ["## 7. Token usage (not pre-registered)\n"]
+    if not any(row["with"] for row in rows.values()):
+        L.append("No usage recorded: this run's attempts, judge records and artifact metas "
+                 "predate usage capture, so its cost cannot be read from the run directory.\n")
+        return L
+    atk_rows = [k for k in rows if not k[0].endswith(("(judge)", "(rewriter)"))]
+    if atk_rows and not any(rows[k]["with"] for k in atk_rows):
+        L.append("Attacker and judge calls in this run predate usage capture, so only the "
+                 "rewriter's share of the cost can be read from the run directory.\n")
+    L.append("Summed over every attempt, retries included. A call without a usage record "
+             "(transport failure, or a provider that omits it) is counted in the first column "
+             "and adds nothing to the sums, so those are lower bounds wherever it is below n.\n")
+    L.append("| attacker | arm | calls with usage | prompt | completion | of which reasoning | total |")
+    L.append("|---|---|---:|---:|---:|---:|---:|")
+    for (atk, arm), row in sorted(rows.items()):
+        L.append(f"| `{atk.split('/')[-1]}` | `{arm}` | {row['with']}/{row['calls']} | "
+                 + " | ".join(f"{row[f]:,}" for f in USAGE_FIELDS) + " |")
+    L.append("")
+    return L
+
+
 # ------------------------------------------------- deterministic leak check --
 def leak_precheck(guess_text: str, terms: list[str]) -> list[str]:
     """§6.2 pass 1. Case-insensitive, word-boundary matched, no model."""
@@ -214,10 +412,12 @@ def run_judge(run: Path, recs: list[dict], judge_model: str) -> dict[str, dict]:
 
     def judge_one(job):
         rid, dest, rec, prompt = job
+        usage = None  # unknown, not zero, when the call fails
         try:
             r = client.chat.completions.create(
                 model=judge_model, messages=[{"role": "user", "content": prompt}],
                 max_tokens=4096, temperature=0, response_format=JUDGE_SCHEMA)
+            usage = _usage(r)
             txt = r.choices[0].message.content or ""
             a, b = txt.find("{"), txt.rfind("}")
             parsed = json.loads(txt[a:b + 1]) if a >= 0 and b > a else None
@@ -225,7 +425,7 @@ def run_judge(run: Path, recs: list[dict], judge_model: str) -> dict[str, dict]:
             txt, parsed = f"{type(exc).__name__}: {exc}", None
         payload = {"item_id": rec["item_id"], "attacker": rec["attacker"],
                    "judge": judge_model, "prompt": prompt, "response": txt,
-                   "label": (parsed or {}).get("label")}
+                   "label": (parsed or {}).get("label"), "usage": usage}
         dest.write_text(json.dumps(payload, indent=2) + "\n")
         return rid, payload
 
@@ -246,11 +446,11 @@ def main() -> int:
     run = Path(a.run)
     if not run.is_absolute():
         run = REPO / run
-    cfg = json.loads((run / "config.json").read_text())
     recs = load_raw(run)
     if not recs:
         print("no raw records", file=sys.stderr)
         return 2
+    cfg, unlisted_arms = effective_config(json.loads((run / "config.json").read_text()), recs)
 
     attackers = cfg["attackers"]
     fc = [r for r in recs if r["mode"] == "forced_choice"]
@@ -290,21 +490,71 @@ def main() -> int:
     L: list[str] = []
     W = L.append
     W(f"# RSCH-1 — results\n")
+    # A1 is about the data a run actually holds, not the split it was launched on.
+    n_src_seen = len({r["source_path"] for r in fc if not is_missing(r)})
     W(f"**Run:** `{cfg['run_id']}`  ·  **split:** `{cfg['split']}`  ·  "
-      f"**sources:** {cfg['n_source_files']}")
+      f"**sources:** {cfg['n_source_files']}"
+      + (f" ({n_src_seen} carry an answered forced-choice record)"
+         if n_src_seen != cfg["n_source_files"] else ""))
     W(f"**Pre-registration commit:** `{cfg['preregistration_commit']}` (§12 rule 4)")
     W(f"**Repo commit:** `{cfg['repo_git_commit']}`"
       + ("  ⚠️ **working tree dirty**" if cfg.get("repo_dirty") else ""))
     W(f"**Attackers:** {', '.join(attackers)}  ·  **judge:** {cfg['judge']}")
     W(f"**Rewriter:** {cfg.get('rewriter_model')}  ·  endpoint `{cfg.get('endpoint_host')}`\n")
+    if unlisted_arms:
+        W(f"> ⚠️ **ARMS NOT IN config.json's top level: "
+          f"{', '.join(f'`{a}`' for a in unlisted_arms)}.** A resume (or, before "
+          f"2026-09-26, an overwritten config) built or attacked them. They are scored in every "
+          f"section below like any other arm, not dropped.\n")
     n_missing = sum(1 for r in recs if is_missing(r))
-    if n_missing:
+    cov = expected_coverage(run, cfg, recs) or {}
+    n_absent = sum(max(0, c["expected"] - c["present"]) for c in cov.values())
+    cov_missing = sum(c["missing"] for c in cov.values())
+    if n_absent or cov_missing:
+        n_expected = sum(c["expected"] for c in cov.values())
+        n_answered = sum(c["present"] - c["missing"] for c in cov.values())
+        W(f"> ⚠️ **COVERAGE: {n_answered}/{n_expected} expected calls have a model answer.** "
+          f"This run's artifacts × attackers × modes imply {n_expected} calls: "
+          + " and ".join(x for x in (
+              f"{n_absent} were never written (an attack that stops, trips its breaker or is "
+              f"resumed on a subset writes nothing for the jobs it never ran)" if n_absent else "",
+              f"{cov_missing} never reached the model (transport failure)" if cov_missing else "")
+              if x)
+          + ". They are excluded from every rate below as missing observations rather than "
+          "scored incorrect, because nothing was asked and nothing was answered. **Check the "
+          "per-domain table before reading any aggregate: a domain the run never got to will "
+          "look absent, not clean.**\n")
+        W("| arm | attacker | mode | answered / expected | never written | transport failure |")
+        W("|---|---|---|---:|---:|---:|")
+        for (arm_, atk_, mode_), c in sorted(cov.items()):
+            gap = c["expected"] - c["present"] + c["missing"]
+            if gap > 0:
+                W(f"| `{arm_}` | `{atk_.split('/')[-1]}` | {mode_} | "
+                  f"{c['present'] - c['missing']}/{c['expected']} | "
+                  f"{max(0, c['expected'] - c['present'])} | {c['missing']} |")
+        W("")
+    elif n_missing:
         W(f"> ⚠️ **COVERAGE: {len(recs) - n_missing}/{len(recs)} calls completed; "
-          f"{n_missing} never reached the model** (transport failure — this run hit an "
-          f"account spending cap mid-flight). Those are excluded from every rate below as "
-          f"missing observations rather than scored incorrect, because nothing was asked and "
-          f"nothing was answered. **Check the per-domain table before reading any aggregate: "
-          f"a domain the run never got to will look absent, not clean.**\n")
+          f"{n_missing} never reached the model** (transport failure). Those are excluded from "
+          f"every rate below as missing observations rather than scored incorrect, because "
+          f"nothing was asked and nothing was answered. **Check the per-domain table before "
+          f"reading any aggregate: a domain the run never got to will look absent, not clean.**\n")
+
+    mism = gate_state_mismatches(run)
+    g_bad, g_all = mism.get("llm-translation", (0, 0))
+    u_bad, u_all = mism.get("llm-translation-ungated", (0, 0))
+    if g_bad or u_bad:
+        W("> 🚨 **GATE STATE DOES NOT MATCH THE ARM.**"
+          + (f" **{g_bad}/{g_all} `llm-translation` artifacts were built with the post-condition "
+             "gate OFF**: their recorded thresholds are the neutralised values the "
+             "`llm-translation-ungated` arm uses. Every `llm-translation` figure below therefore "
+             "describes an effectively ungated rewriter, not what a caller of the service "
+             "receives, and husks the gate would have refused are scored as served."
+             if g_bad else "")
+          + (f" {u_bad}/{u_all} `llm-translation-ungated` artifacts record live gate thresholds "
+             "instead, so that arm was partly gated." if u_bad else "")
+          + " Scored as recorded so the run stays reproducible; a true gated figure needs a "
+          "re-run.\n")
 
     # ---- 1. VALIDITY GATE, evaluated first -----------------------------------
     W("## 1. Validity gate (§8) — evaluated first\n")
@@ -312,6 +562,7 @@ def main() -> int:
     W("| attacker | p_source | parse failure (all arms) | gate |")
     W("|---|---|---|---|")
     gate_ok = True
+    gate_failed = False
     for atk in attackers:
         k, n = agg((atk, "source"))
         p, lo, hi = wilson(k, n)
@@ -320,14 +571,45 @@ def main() -> int:
         pf = pf_k / pf_n if pf_n else 0.0
         ok = (p >= 0.90) and (pf <= 0.05)
         gate_ok &= ok
+        if n == 0 and pf <= 0.05:
+            # No source records is not a failed control, it is an absent one.
+            W(f"| `{atk}` | — | {rate(pf_k, pf_n)} | NOT EVALUATED — no source arm in this run |")
+            continue
+        gate_failed |= not ok
         W(f"| `{atk}` | {rate(k, n)} [{lo:.2f}, {hi:.2f}] | {rate(pf_k, pf_n)} | "
           f"{'✅ pass' if ok else '❌ FAIL'} |")
     W("")
-    if not gate_ok:
+    gate_why = "validity gate failed" if gate_failed else "validity gate not evaluated"
+    if gate_failed:
         W("> **GATE FAILED.** Per §8 no verdict is issued for any arm. An attacker that "
           "cannot identify the domain from the unmodified original means the task or the "
           "labels are broken, and every husk number below would be measuring the harness "
           "rather than the husk.\n")
+    elif not gate_ok:
+        W("> **GATE NOT EVALUATED — no source arm in this run.** Per §8 no verdict is issued "
+          "for any arm. This is not a failed gate: the control that checks the task and the "
+          "labels was never run, so this run says nothing about them either way.\n")
+
+    # A1: fewer than 3 held-out domains carrying data is INCONCLUSIVE on power
+    # grounds, whatever the numbers. Counted per arm on domains where both the
+    # source control and the arm have an answered forced-choice record.
+    def domains_with_data(arm: str) -> set:
+        return {d for (_, a_), row in per_domain.items() if a_ == arm for d in row}
+
+    a1_short: dict[str, int] = {}
+    src_doms = domains_with_data("source")
+    if src_doms:
+        for arm in cfg["arms"]:
+            if arm not in ("blind", "source") and domains_with_data(arm):
+                nd = len(src_doms & domains_with_data(arm))
+                if nd < 3:
+                    a1_short[arm] = nd
+    if a1_short:
+        W("> **A1 — fewer than 3 domains carry data** for "
+          + ", ".join(f"`{a_}` ({nd})" for a_, nd in a1_short.items())
+          + ". Amendment A1 reports a confirmatory run with fewer than 3 held-out domains as "
+          "INCONCLUSIVE on power grounds regardless of its numbers, so no PASS or FAIL is "
+          "issued for those arms.\n")
 
     # ---- 2. Arm B, forced choice --------------------------------------------
     W("## 2. Arm B — forced choice (pre-registered primary endpoint, §6.1)\n")
@@ -382,15 +664,40 @@ def main() -> int:
           "the observed value.\n")
         W("| arm | attacker | n | observed | permuted null | **corrected** | p | modal answer |")
         W("|---|---|---:|---:|---:|---:|---:|---|")
+        n_differs = []
         for key, c in sorted(rep["cells"].items()):
             if not c.get("n"):
                 continue
             arm_, atk_ = key.split("|")
-            W(f"| `{arm_}` | {atk_.split('/')[-1].split(':')[0]} | {c['n']} | {c['observed']:.3f} "
+            short = atk_.split('/')[-1].split(':')[0]
+            n2 = agg((atk_, arm_))[1]
+            if n2 != c["n"]:
+                n_differs.append((arm_, short, n2, c["n"]))
+            if c.get("degenerate"):
+                W(f"| `{arm_}` | {short} | {c['n']} | {c['observed']:.3f} "
+                  f"| not computable | **not computable** | — "
+                  f"| {c['modal_answer']} {c['modal_n']}/{c['n']} |")
+                continue
+            W(f"| `{arm_}` | {short} | {c['n']} | {c['observed']:.3f} "
               f"| {c['permuted_mean']:.3f} [{c['permuted_lo']:.2f}, {c['permuted_hi']:.2f}] "
               f"| **{c['corrected']:+.3f}** | {c['p']:.4f} "
               f"| {c['modal_answer']} {c['modal_n']}/{c['n']} |")
         W("")
+        if any(c.get("degenerate") for c in rep["cells"].values()):
+            W("*not computable*: every source file in the cell carries one domain, so permuting "
+              "labels changes nothing and the null equals the observed value by construction.\n")
+        if n_differs:
+            # A4.1 as registered drops every record with no parsed choice; §2
+            # scores an answered-but-unparseable reply incorrect (§6.1). Until an
+            # amendment reconciles them, the two n's are stated side by side.
+            W("> **n here is not §2's n** for " + "; ".join(
+                f"`{a_}` / {s_}: " + (f"n excludes {n2 - n1} answered-but-unparseable "
+                                      f"record{'s' if n2 - n1 != 1 else ''} that §2 scores "
+                                      f"incorrect ({n1} here, {n2} in §2)"
+                                      if n2 > n1 else f"{n1} here, {n2} in §2")
+                for a_, s_, n2, n1 in n_differs)
+              + ". A4.1 drops a forced-choice record with no parsed choice as missing; §2 "
+              "follows §6.1 and counts it as a wrong answer.\n")
         W("Full detail, including the analytic cross-check and the leak-channel attribution, "
           "is in `permutation.md` beside this file.\n")
     except Exception as exc:  # noqa: BLE001 — never let the correction break the report
@@ -425,6 +732,35 @@ def main() -> int:
             W(f"| `{arm}` | `{atk.split('/')[-1]}` | " + " | ".join(cells) + " |")
     W("")
 
+    # ---- 4.1 computed ahead of the verdicts ------------------------------------
+    # §8's hard veto overrides any Arm B verdict, so it has to be known before the
+    # verdict table is written. It is still rendered in §4.1, where it belongs.
+    veto: dict[str, bool] = {}
+    veto_rows = []
+    man = None
+    for arm in cfg["arms"]:
+        for atk in attackers:
+            rs = [r for r in oe if r["arm"] == arm and r["attacker"] == atk
+                  and not is_missing(r)]
+            if not rs:
+                continue
+            if man is None:
+                man = json.loads((EVALS / "corpus" / "manifest.json").read_text())
+            terms_by_dom = {d["true_domain_id"]: d.get("leak_terms", [])
+                            for d in man["domains"].values() if isinstance(d, dict)}
+            hits = sum(1 for r in rs
+                       if leak_precheck(open_ended_text(r),
+                                        terms_by_dom.get(r["true_domain_id"], [])))
+            frac = hits / len(rs)
+            fired = frac >= 0.10 and arm not in ("blind", "source")
+            veto[arm] = veto.get(arm, False) or fired
+            veto_rows.append((arm, atk, hits, len(rs), fired))
+
+    def veto_issued(arm: str) -> bool:
+        # A failed gate issues no verdict for any arm (§8), and A1 none for a
+        # short arm; the veto is a verdict like any other.
+        return veto.get(arm, False) and gate_ok and arm not in a1_short
+
     # ---- 4. Verdicts ---------------------------------------------------------
     W("## 3. Verdicts (§8)\n")
     W("| solution | p_husk (strongest attacker) | p_blind (same attacker) | attacker | "
@@ -454,6 +790,12 @@ def main() -> int:
             # measured, and a committed summary.md is exactly where such a
             # number gets quoted later. Refuse instead, and point at the
             # correction that IS valid for a run like this.
+            if veto_issued(arm):
+                # The Arm A veto needs no BLIND baseline.
+                verdicts[arm] = "**FAIL** (hard veto, Arm A)"
+                W(f"| `{arm}` | {rate(hk, hn)} | — | `{best_atk.split('/')[-1]}` | — | "
+                  f"{verdicts[arm]} — no BLIND arm, so Arm B issues nothing here. |")
+                continue
             verdicts[arm] = "NOT COMPUTABLE"
             W(f"| `{arm}` | {rate(hk, hn)} | — | `{best_atk.split('/')[-1]}` | — | "
               "**NOT COMPUTABLE — no BLIND arm in this run.** Read §2b: these arms are "
@@ -466,7 +808,9 @@ def main() -> int:
                          agg((y, arm))[0] / max(1, agg((y, arm))[1]))
                      for x in attackers for y in attackers)
         if not gate_ok:
-            v = "INCONCLUSIVE — validity gate failed"
+            v = f"INCONCLUSIVE — {gate_why}"
+        elif arm in a1_short:
+            v = "INCONCLUSIVE — A1: fewer than 3 domains carry data"
         elif spread > 0.20:
             v = "INCONCLUSIVE — attackers differ by > 0.20"
         elif hi <= 0.10 and p_h <= 0.25:
@@ -475,6 +819,8 @@ def main() -> int:
             v = "**FAIL**"
         else:
             v = "INCONCLUSIVE"
+        if veto_issued(arm) and v != "**FAIL**":
+            v = "**FAIL** (hard veto, Arm A)"
         verdicts[arm] = v
         W(f"| `{arm}` | {rate(hk, hn)} | {rate(bk, bn)} | `{best_atk.split('/')[-1]}` | "
           f"[{lo:+.3f}, {hi:+.3f}] | {v} |")
@@ -487,30 +833,22 @@ def main() -> int:
     W("### 4.1 Deterministic leak-term pre-check — no model, fully reproducible\n")
     W("| arm | attacker | guesses containing a source-domain leak term | veto |")
     W("|---|---|---|---|")
-    veto = {}
-    for arm in cfg["arms"]:
-        for atk in attackers:
-            rs = [r for r in oe if r["arm"] == arm and r["attacker"] == atk
-                  and not is_missing(r)]
-            if not rs:
-                continue
-            man = json.loads((EVALS / "corpus" / "manifest.json").read_text())
-            terms_by_dom = {d["true_domain_id"]: d.get("leak_terms", [])
-                            for d in man["domains"].values() if isinstance(d, dict)}
-            hits = sum(1 for r in rs
-                       if leak_precheck(open_ended_text(r),
-                                        terms_by_dom.get(r["true_domain_id"], [])))
-            frac = hits / len(rs)
-            fired = frac >= 0.10 and arm not in ("blind", "source")
-            veto[arm] = veto.get(arm, False) or fired
-            W(f"| `{arm}` | `{atk.split('/')[-1]}` | {rate(hits, len(rs))} | "
-              f"{'🚫 **FAIL — hard veto**' if fired else '—'} |")
+    for arm, atk, hits, n_rs, fired in veto_rows:
+        if arm in ("blind", "source"):
+            cell = "—"
+        elif not gate_ok:
+            cell = f"not issued ({gate_why.replace('validity ', '')})"
+        elif arm in a1_short:
+            cell = "not issued (A1: fewer than 3 domains)"
+        else:
+            cell = "🚫 **FAIL — hard veto**" if fired else "—"
+        W(f"| `{arm}` | `{atk.split('/')[-1]}` | {rate(hits, n_rs)} | {cell} |")
     W("")
-    if any(veto.values()):
+    if any(veto_issued(k) for k in veto):
         W("> **Hard veto fired (§8).** A solution whose open-ended guesses hit its own "
           "source-domain leak terms on ≥ 10% of items is **FAIL regardless of its "
           "forced-choice result**. Solutions vetoed: "
-          + ", ".join(f"`{k}`" for k, v in veto.items() if v) + "\n")
+          + ", ".join(f"`{k}`" for k in veto if veto_issued(k)) + "\n")
 
     # ---- 6. Judge ------------------------------------------------------------
     if not a.no_judge:
@@ -595,24 +933,16 @@ def main() -> int:
                 return None
             return cache[item_id]
 
-        buckets: dict = defaultdict(lambda: {"hit": [], "miss": []})
-        for r in fc:
-            if r["arm"] in ("blind", "source"):
-                continue
-            cs = copied_share(r["item_id"], r["source_path"])
-            if cs is None:
-                continue
-            sc = scored_choice(r)
-            buckets[r["arm"]]["hit" if sc["correct"] else "miss"].append(cs)
+        buckets = mechanism_buckets(fc, copied_share)
         W("| arm | mean copied-span share when attacker was RIGHT | when WRONG | n right / n wrong |")
         W("|---|---|---|---|")
         for arm in cfg["arms"]:
             b = buckets.get(arm)
             if not b or not (b["hit"] or b["miss"]):
                 continue
-            mh = sum(b["hit"]) / len(b["hit"]) if b["hit"] else float("nan")
-            mm = sum(b["miss"]) / len(b["miss"]) if b["miss"] else float("nan")
-            W(f"| `{arm}` | {mh:.3f} | {mm:.3f} | {len(b['hit'])} / {len(b['miss'])} |")
+            mh = f"{sum(b['hit']) / len(b['hit']):.3f}" if b["hit"] else "—"
+            mm = f"{sum(b['miss']) / len(b['miss']):.3f}" if b["miss"] else "—"
+            W(f"| `{arm}` | {mh} | {mm} | {len(b['hit'])} / {len(b['miss'])} |")
         W("")
         W("A higher figure in the first column than the second means the attacker succeeded "
           "disproportionately on husks that had returned more of their own source verbatim — "
@@ -644,6 +974,8 @@ def main() -> int:
       "difference of ~0.20–0.25 and **cannot resolve differences below ~0.10**. A null "
       "result therefore means *\"no leak detectable at this corpus scale\"* — **not** that "
       "the husk is private.\n")
+    art_metas = [json.loads(q.read_text()) for q in sorted((run / "artifacts").glob("*.meta.json"))]
+    L.extend(usage_table(recs, None if a.no_judge else judged, cfg["judge"], art_metas))
 
     out = run / "summary.md"
     out.write_text("\n".join(L) + "\n")

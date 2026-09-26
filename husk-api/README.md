@@ -22,7 +22,16 @@ install spelled for `pip install -r`.
 
 The UI is live as soon as uvicorn is running — there is no frontend build
 step. `static/` (index.html, app.js, style.css) is hand-authored and mounted
-directly via `StaticFiles` (`app/main.py`).
+directly via `StaticFiles` (`app/main.py`), and only if the directory exists.
+A built wheel carries the same files as `app/static`.
+
+Importing the app writes nothing to disk, so it starts on a read-only
+filesystem. `static/llm-translation-targets.json` is committed rather than
+regenerated at import; after editing the target catalog, regenerate it with
+
+    .venv/bin/python -c 'from app.solutions.llm_translation import _write_catalog_json as w; w()'
+
+and `tests/test_service_hardening.py` fails if the file drifts from the catalog.
 
 ## API
 
@@ -44,9 +53,20 @@ directly via `StaticFiles` (`app/main.py`).
       "options":     {}                     // solution-specific, optional
     }
 
-Responses: `200` with `{output, solution, crumb_level, meta, reidentify_map}`;
-`404` `unknown_solution`; `502` `backend_unavailable` (e.g. LLM endpoint
-unreachable); `500` `solution_failed`.
+Responses:
+
+| Status | `error` | When |
+| ------ | ------- | ---- |
+| `200` | — | `{output, solution, crumb_level, meta, reidentify_map}` |
+| `404` | `unknown_solution` | No solution registered under that slug |
+| `502` | `backend_unavailable` | LLM endpoint unreachable or timed out, or it returned 408 or 5xx |
+| `503` | `backend_rate_limited` | LLM endpoint returned 429 |
+| `500` | `solution_failed` | Anything else: a post-condition refusal, a truncated or empty response, commentary outside a single fenced husk, or another upstream status (a 403 spending cap, 400, 401) |
+
+The OpenAI client retries timeouts, 408, 429 and 5xx twice on its own before
+any of these, so a hung backend costs up to 3 × `LLM_TIMEOUT_SECONDS` (540 s
+at the default) before the `502`. Before 2026-09-26 an upstream 429 or 5xx
+came back as the service's own `500`.
 
 ### Round-trip: `options.emit_map` + `POST /dehusk`
 
@@ -88,7 +108,39 @@ Registered solutions (see `GET /solutions` for the live list):
 | `fpe`            | Format-Preserving Encryption (O1)       | Deterministic, length-preserving identifier rewrite. |
 | `literal-tagging`| String-Literal Type-Class Tagging (I3)  | Replaces each string literal with a typed placeholder. |
 | `llm-translation`| LLM Domain Translation (I4)             | Translates the code into another domain, preserving pathology. Needs an LLM backend — see Config. |
-| `example`        | Passthrough Example                     | Reference template (`_example.py`); reverses the input. |
+| `example`        | Passthrough Example                     | **Test-only, off by default.** Reference template (`_example.py`); reverses the input. Registered only when `HUSK_ENABLE_EXAMPLE=1` is in the process environment. |
+
+`example` is off by default because a reversed string is a trivially
+reversible "husk" and has no place on the public API. Setting
+`HUSK_ENABLE_EXAMPLE=1` in `husk-api/.env` has no effect: `_example.py` is
+imported before `llm-translation` loads `.env`. `tests/conftest.py` sets it
+before importing the app, so the contract tests still drive the registry
+through it.
+
+What each solution adds to `meta`, beyond its counts:
+
+- `fpe` — `pseudonym_collisions` counts two identifiers that would share a
+  pseudonym, and since 2026-09-26 also a crumb-3 pseudonym equal to a token
+  left in plain text; with `options.emit_map` either one is refused.
+  `non_ascii_identifiers` counts distinct non-ASCII identifiers enciphered
+  (always present, 0 for ASCII input). Some pseudonyms changed on 2026-09-26,
+  so a map saved earlier under the same `FPE_KEY` goes stale for those tokens
+  ([LIMITATIONS.md](../LIMITATIONS.md) §6).
+- `literal-tagging` — set `options.language` to `js`, `jsx`, `ts`, `tsx`,
+  `javascript` or `typescript` to have a nested template literal tagged as one
+  literal. Without it the first inner backtick ends the literal, as before,
+  because a Go raw string containing `${` would otherwise swallow the code
+  after it.
+- `llm-translation` — `meta.postcondition` is the gate's full report, now
+  with `retries_allowed`. `meta.usage` is summed over every post-condition
+  attempt, with `reasoning_tokens`, and `meta.usage_attempts` lists each
+  attempt; both appear only when the backend reported usage. When the model
+  wrapped the husk in a fence with commentary around it, the commentary is
+  dropped and counted in `meta.discarded_outside_fence_chars`; any other
+  layout of fences is refused (`500`). Above 30,000 characters the gate skips
+  the exact similarity ratio when a cheap upper bound shows it cannot reach
+  `HUSK_CHECK_RATIO`, and reports `similarity_ratio: null` with
+  `similarity_ratio_upper_bound`; the verdict is the same either way.
 
 ## Config (.env)
 
@@ -154,21 +206,46 @@ Loosening these disables it.
 | `HUSK_CHECK_RUN_SHARE` | `0.15` | ...or this share of the input's code lines |
 | `HUSK_CHECK_COPIED_SHARE` | `0.35` | Total copied-span share that fails the husk |
 | `HUSK_CHECK_RETENTION` | `0.92` | Identifier retention that fails the husk |
-| `HUSK_CHECK_RATIO` | `0.95` | Whole-file similarity that fails the husk |
-| `HUSK_CHECK_MIN_LINES` | `12` | Inputs shorter than this skip the gate entirely |
+| `HUSK_CHECK_RATIO` | `0.95` | Whole-file similarity, or share of output code lines found verbatim in the input, that fails the husk (either one, together with `RETENTION`) |
+| `HUSK_CHECK_MIN_LINES` | `12` | Inputs with fewer *code* lines than this (comments and docstrings not counted) are never failed by the similarity triggers; the module-name check still runs |
 | `HUSK_CHECK_MODULE_NAMES` | `1` | `0` disables the input-module-name check |
 | `HUSK_CHECK_RETRIES` | `1` | Retries before the gate raises |
+
+Two things the gate does not see, both open
+([LIMITATIONS.md](../LIMITATIONS.md) §5): a comment or docstring copied word
+for word, because every line measure runs on code with prose stripped; and an
+input under `HUSK_CHECK_MIN_LINES` code lines, which can come back
+byte-identical with a `200`. The module-name check reads Go import paths: bare
+module names, and the org and repo segments of a host-prefixed path when an
+import has an `internal/` segment. It applies Go rules whenever the input has a
+`package` clause, whatever `options.suffix` says.
+
+Other variables:
+
+| Variable | Default | Effect |
+|---|---|---|
+| `HUSK_ENABLE_EXAMPLE` | unset | `1` registers the test-only `example` solution. Read from the process environment only; `.env` is loaded too late. |
 
 ## Test
 
     pytest
+
+93 tests, offline: model clients are mocked, and `tests/conftest.py` strips
+every `HUSK_CHECK_*` and `LLM_*` variable, plus `FPE_KEY`, `FPE_DEMO_KEY`,
+`FPE_ALLOW_EPHEMERAL_KEY` and `EFFIGY_ENV`, that a local `.env` would set, so
+the suite runs against the documented defaults.
+By file: `test_llm_translation.py` 26, `test_fpe.py` 17, `test_dehusk.py` 16,
+`test_literal_tagging.py` 15, `test_service_hardening.py` 11,
+`test_contract.py` 6.
 
 ## Adding a solution
 
 Drop a file into `app/solutions/` that uses `@register(...)` from
 `app.registry`. It is auto-discovered at import (`app/solutions/__init__.py`)
 and immediately available at `/husk/<slug>`. See `app/solutions/_example.py`
-for the template.
+for the template (a real solution applies `@register` unconditionally). A new
+*subpackage* of `app`, as opposed to a new file, must also be added to the
+explicit `packages` list in `pyproject.toml`, or a built wheel will leave it out.
 
 ## Scripts
 

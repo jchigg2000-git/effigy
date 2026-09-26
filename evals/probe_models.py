@@ -47,6 +47,9 @@ REPO = Path(__file__).resolve().parent.parent
 CATALOG = REPO / "husk-api" / "static" / "llm-translation-models.json"
 RUNS = REPO / "evals" / "runs"
 
+sys.path.insert(0, str(REPO / "evals"))
+from run_rsch1 import usage_fields  # noqa: E402
+
 PROBE_PROMPT = "Reply with exactly: OK"
 PROBE_MAX_TOKENS = 16
 
@@ -117,6 +120,7 @@ def probe(client_factory, model_id: str) -> dict:
             "served_model": getattr(r, "model", None),
             "finish_reason": finish,
             "sample": text.strip()[:60],
+            "usage": usage_fields(r),
             "error": None,
         }
     except Exception as exc:  # noqa: BLE001 — a failure is the datum
@@ -131,6 +135,7 @@ def probe(client_factory, model_id: str) -> dict:
             "served_model": None,
             "finish_reason": None,
             "sample": None,
+            "usage": None,
             "error": msg[:200].replace("\n", " "),
         }
 

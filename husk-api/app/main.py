@@ -15,7 +15,16 @@ from app.registry import get, all_solutions
 
 # Solutions can raise this to surface a 502 (e.g. LLM endpoint unreachable).
 class BackendUnavailable(Exception):
-    pass
+    status_code = 502
+    error = "backend_unavailable"
+
+
+# The upstream model provider throttled the request (HTTP 429) and its client's
+# own retries did not clear it. 503 tells the caller to back off and retry; a
+# 500 would blame the solution for the provider's quota.
+class BackendRateLimited(BackendUnavailable):
+    status_code = 503
+    error = "backend_rate_limited"
 
 
 app = FastAPI(title="Husk API", version="0.1.0")
@@ -56,6 +65,7 @@ def list_solutions():
     404: {"model": ErrorResponse},
     500: {"model": ErrorResponse},
     502: {"model": ErrorResponse},
+    503: {"model": ErrorResponse},
 })
 def husk(slug: str, req: HuskRequest):
     sol = get(slug)
@@ -68,8 +78,8 @@ def husk(slug: str, req: HuskRequest):
         output, meta = sol.fn(req.input, req.crumb_level, req.options)
     except BackendUnavailable as e:
         return JSONResponse(
-            status_code=502,
-            content=ErrorResponse(error="backend_unavailable", detail=str(e)).model_dump(),
+            status_code=e.status_code,
+            content=ErrorResponse(error=e.error, detail=str(e)).model_dump(),
         )
     except Exception as e:
         return JSONResponse(
@@ -116,6 +126,10 @@ def dehusk(req: DehuskRequest):
 
 
 # Static UI mount. static/ holds the hand-authored UI (index.html, app.js, style.css).
-_static_dir = Path(__file__).resolve().parent.parent / "static"
-_static_dir.mkdir(exist_ok=True)
-app.mount("/ui", StaticFiles(directory=str(_static_dir), html=True), name="ui")
+# A source checkout or editable install serves husk-api/static; a built wheel
+# carries the same files as app/static (pyproject.toml). Nothing is created here:
+# importing the app must not write to disk, so without the files there is no /ui.
+_here = Path(__file__).resolve().parent
+_static_dir = next((d for d in (_here / "static", _here.parent / "static") if d.is_dir()), None)
+if _static_dir is not None:
+    app.mount("/ui", StaticFiles(directory=str(_static_dir), html=True), name="ui")

@@ -14,7 +14,10 @@ sequenceDiagram
     else found
         R-->>API: Solution
         API->>S: fn(input, crumb_level, options)
-        alt BackendUnavailable
+        alt BackendRateLimited
+            S-->>API: raise
+            API-->>UI: 503 backend_rate_limited
+        else BackendUnavailable
             S-->>API: raise
             API-->>UI: 502 backend_unavailable
         else other exception

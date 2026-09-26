@@ -12,13 +12,14 @@ wire for contract uniformity but is IGNORED by this solution — see handoff 06.
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 from typing import Any
 
-from openai import OpenAI, APIConnectionError, APITimeoutError, APIError
+from openai import OpenAI, APIConnectionError, APITimeoutError, APIError, APIStatusError
 
 from app.registry import register
-from app.solutions._husk_check import PassthroughDetected, check
+from app.solutions._husk_check import PassthroughDetected, check, has_go_package_clause
 
 
 # Load husk-api/.env into the process environment if present. The host app
@@ -96,20 +97,25 @@ def _pick_target(source: str, options: dict) -> tuple[str, str | None]:
     return entry["domain"], entry["id"]
 
 
-def _write_catalog_json() -> None:
-    static_dir = Path(__file__).resolve().parent.parent.parent / "static"
-    static_dir.mkdir(exist_ok=True)
-    path = static_dir / "llm-translation-targets.json"
+def _catalog_json() -> str:
+    """The UI's target list (static/llm-translation-targets.json), derived from
+    _TARGET_CATALOG."""
     payload = {"targets": [{"id": e["id"], "label": e["label"]} for e in _TARGET_CATALOG]}
-    body = json.dumps(payload, indent=2) + "\n"
-    # This file is git-TRACKED. Write only when the content actually changes, so
-    # merely importing this module (a test run, `--help`, any tooling that loads
-    # the solutions package) cannot dirty the working tree.
+    return json.dumps(payload, indent=2) + "\n"
+
+
+def _write_catalog_json() -> None:
+    """Regenerate the committed targets JSON after editing _TARGET_CATALOG:
+    `.venv/bin/python -c 'from app.solutions.llm_translation import _write_catalog_json as w; w()'`
+
+    Not called at import. An import that writes into the install directory fails
+    on a read-only filesystem, and tests/test_service_hardening.py already fails
+    when the committed file drifts from the catalog.
+    """
+    path = Path(__file__).resolve().parent.parent.parent / "static" / "llm-translation-targets.json"
+    body = _catalog_json()
     if not path.exists() or path.read_text() != body:
         path.write_text(body)
-
-
-_write_catalog_json()
 
 
 # The prompt is measured, not decorative. Its previous form said "DO NOT: Refactor
@@ -203,13 +209,48 @@ def _make_client() -> OpenAI:
     return OpenAI(base_url=base_url, api_key=api_key, timeout=timeout)
 
 
+def _usage(resp) -> dict | None:
+    """Token usage off one response, every field int-or-None. Anything that is
+    not an int (a provider that omits a field, a test double) becomes None, so
+    meta always serialises and absence never reads as 0."""
+    u = getattr(resp, "usage", None)
+    if u is None:
+        return None
+
+    def _int(v):
+        return v if isinstance(v, int) and not isinstance(v, bool) else None
+
+    details = getattr(u, "completion_tokens_details", None)
+    return {"prompt_tokens": _int(getattr(u, "prompt_tokens", None)),
+            "completion_tokens": _int(getattr(u, "completion_tokens", None)),
+            "total_tokens": _int(getattr(u, "total_tokens", None)),
+            "reasoning_tokens": _int(getattr(details, "reasoning_tokens", None))}
+
+
+def _sum_usage(per_attempt: list[dict | None]) -> dict | None:
+    """Per-field sum over every post-condition attempt, since a refused attempt
+    is billed like any other. A field any attempt did not report is None: a
+    partial sum would understate the cost. None when no attempt reported usage."""
+    if all(u is None for u in per_attempt):
+        return None
+    fields = ("prompt_tokens", "completion_tokens", "total_tokens", "reasoning_tokens")
+    out: dict[str, int | None] = {}
+    for f in fields:
+        vals = [u.get(f) if u else None for u in per_attempt]
+        out[f] = sum(vals) if all(isinstance(v, int) for v in vals) else None
+    return out
+
+
 def _complete(client, model: str, messages: list, temperature: float,
-              max_tokens: int) -> tuple[str, object]:
+              max_tokens: int, source: str = "") -> tuple[str, dict | None, int]:
     """One completion, checked for liveness only. Split out of husk() so the
-    post-condition retry does not duplicate any of it."""
+    post-condition retry does not duplicate any of it.
+
+    Returns (husk text, usage, characters of model commentary discarded from
+    around a fenced husk)."""
     # Deferred import to avoid a circular import at module-load time:
     # app.main imports app.solutions (which imports this module).
-    from app.main import BackendUnavailable
+    from app.main import BackendUnavailable, BackendRateLimited
 
     try:
         resp = client.chat.completions.create(
@@ -222,13 +263,22 @@ def _complete(client, model: str, messages: list, temperature: float,
         raise BackendUnavailable(
             f"LLM backend unreachable at {os.environ.get('LLM_BASE_URL', 'http://localhost:11434/v1')}: {e}"
         ) from e
+    except APIStatusError as e:
+        # Surface the real upstream status code so it isn't swallowed by the
+        # generic message. By the time one arrives here the OpenAI client has
+        # already retried 408/429/5xx itself (its default max_retries is 2), so
+        # these are the provider's failures, not this solution's: they map to
+        # the host's 503/502 rather than 500 solution_failed.
+        status = e.status_code
+        msg = f"LLM API error (status {status}): {e}"
+        if status == 429:
+            raise BackendRateLimited(msg) from e
+        if isinstance(status, int) and (status == 408 or status >= 500):
+            raise BackendUnavailable(msg) from e
+        raise RuntimeError(msg) from e
     except APIError as e:
-        # Other API errors — let the host turn them into 500s. Surface the
-        # real upstream status code when present (APIStatusError subclasses
-        # carry .status_code) so it isn't swallowed by the generic message.
-        status = getattr(e, "status_code", None)
-        prefix = f"LLM API error (status {status})" if status is not None else "LLM API error"
-        raise RuntimeError(f"{prefix}: {e}") from e
+        # Other API errors — let the host turn them into 500s.
+        raise RuntimeError(f"LLM API error: {e}") from e
 
     # Some OpenAI-compatible backends return an empty choices list on certain error/moderation
     # conditions; surface it explicitly rather than letting resp.choices[0] raise a bare IndexError.
@@ -247,23 +297,25 @@ def _complete(client, model: str, messages: list, temperature: float,
         )
 
     raw_content = choice.message.content
+    husk_text, discarded = _extract_husk(raw_content or "", source)
 
     # Empty/None content is not a successful husk — returning "" downstream
-    # looks like success. Surface it explicitly instead.
-    if raw_content is None or not raw_content.strip():
+    # looks like success. Surface it explicitly instead. Checked after fence
+    # extraction, so an empty fenced block is caught too.
+    if not husk_text.strip():
         raise RuntimeError(
             f"LLM returned empty content (model={model}, "
             f"finish_reason={getattr(choice, 'finish_reason', None)!r})"
         )
 
-    return _strip_code_fence(raw_content.strip()), getattr(resp, "usage", None)
+    return husk_text, _usage(resp), discarded
 
 
 def _infer_suffix(code: str) -> str:
     """Guess the comment/string syntax family. Only three answers matter to the
     post-condition: hash comments, slash comments, or triple-quoted blocks."""
     head = code[:4000]
-    if "package " in head and "func " in head:
+    if ("package " in head and "func " in head) or has_go_package_clause(head):
         return ".go"
     if any(t in head for t in ("=> ", "const ", "interface ", "export ", "function ")) \
             and "def " not in head:
@@ -316,15 +368,18 @@ def husk(input: str, crumb_level: int, options: dict) -> tuple[str, dict]:
 
     client = _make_client()
     attempts: list[dict] = []
+    usage_attempts: list[dict | None] = []
     try:
         for attempt in range(retries + 1):
-            output_text, usage = _complete(
+            output_text, usage, discarded = _complete(
                 client, model, messages,
                 # Nudge temperature on retry: repeating a sampling that just
                 # produced a copy, at the same temperature, mostly reproduces it.
                 temperature if attempt == 0 else min(temperature + 0.3, 1.0),
                 max_tokens,
+                input,
             )
+            usage_attempts.append(usage)
             try:
                 report = check(input, output_text, suffix)
             except PassthroughDetected as e:
@@ -333,7 +388,11 @@ def husk(input: str, crumb_level: int, options: dict) -> tuple[str, dict]:
                                  "reasons": reasons})
                 if attempt == retries:
                     # Fail closed. The alternative is handing back source code
-                    # labelled as a husk, which the caller cannot detect.
+                    # labelled as a husk, which the caller cannot detect. The
+                    # tokens it cost and the retry budget it ran under travel
+                    # with the refusal, so a caller recording it can account for both.
+                    e.report["retries_allowed"] = retries
+                    e.report["usage"] = _sum_usage(usage_attempts)
                     raise
                 messages = messages + [
                     {"role": "assistant", "content": output_text},
@@ -347,6 +406,9 @@ def husk(input: str, crumb_level: int, options: dict) -> tuple[str, dict]:
         # (responses are fully materialized for these non-streaming calls) so we don't leak fds.
         client.close()
 
+    # HUSK_CHECK_RETRIES is read here, not by the gate, so it is not among the
+    # gate's thresholds. Recorded beside them so gate state can be audited whole.
+    report["retries_allowed"] = retries
     meta: dict[str, Any] = {
         "model": model,
         "base_url": os.environ.get("LLM_BASE_URL", "http://localhost:11434/v1"),
@@ -359,13 +421,62 @@ def husk(input: str, crumb_level: int, options: dict) -> tuple[str, dict]:
     }
     if attempts:
         meta["postcondition_retries"] = attempts
-    if usage is not None:
-        meta["usage"] = {
-            "prompt_tokens": getattr(usage, "prompt_tokens", None),
-            "completion_tokens": getattr(usage, "completion_tokens", None),
-            "total_tokens": getattr(usage, "total_tokens", None),
-        }
+    if discarded:
+        meta["discarded_outside_fence_chars"] = discarded
+    total = _sum_usage(usage_attempts)
+    if total is not None:
+        # Every attempt, refused ones included: a retry is billed like the first call.
+        meta["usage"] = total
+        meta["usage_attempts"] = usage_attempts
     return output_text, meta
+
+
+# A Markdown fence line. The open may carry an info string (```go); a close is bare.
+_FENCE_LINE = re.compile(r"^```[^`]*$")
+_BARE_FENCE = re.compile(r"^```\s*$")
+
+
+def _is_preamble(line: str) -> bool:
+    """A line of model prose ("Here is the translated code:"), not code."""
+    s = line.strip()
+    return (len(s.split()) >= 3 and s.endswith((":", ".", "!"))
+            and not any(c in s for c in "{};="))
+
+
+def _extract_husk(text: str, source: str) -> tuple[str, int]:
+    """The husk inside a model response, and how many characters of commentary
+    around it were discarded.
+
+    The system prompt forbids preambles and fences, but a prompt does not
+    enforce a property, and small models add both: "Here is the translated
+    code:", a fenced block, then a note that can name the very identifiers the
+    husk renamed. So when the response carries fence lines and the input has
+    none of its own, the fences are formatting and the husk is what they wrap.
+    Anything that is not one fenced block behind at most a short prose preamble
+    is refused rather than guessed at. An input with fence lines of its own
+    keeps the plain unwrap, since an honest husk of it carries them over.
+    """
+    s = text.strip()
+    lines = s.split("\n")
+    fences = [i for i, ln in enumerate(lines) if _FENCE_LINE.match(ln.rstrip())]
+    if not fences or any(_FENCE_LINE.match(ln.rstrip()) for ln in source.splitlines()):
+        return _strip_code_fence(s), 0
+    first = fences[0]
+    if first == 0 and (len(fences) == 1 or fences[1] == len(lines) - 1):
+        # The whole response is one fenced block.
+        return _strip_code_fence(s), 0
+    preamble = [ln for ln in lines[:first] if ln.strip()]
+    if (len(fences) > 2 or len(preamble) > 3 or not all(map(_is_preamble, preamble))
+            or (len(fences) == 2 and not _BARE_FENCE.match(lines[fences[1]].rstrip()))):
+        raise RuntimeError(
+            "LLM returned text outside a single fenced husk, which the post-condition "
+            "cannot vet; refusing to guess which part is the husk")
+    close = fences[1] if len(fences) == 2 else len(lines)
+    body = "\n".join(lines[first + 1:close])
+    if len(fences) == 1 and body.endswith("```"):
+        body = body[:-3]
+    discarded = sum(len(ln) for ln in lines[:first] + lines[close + 1:])
+    return body.rstrip(), discarded
 
 
 def _strip_code_fence(s: str) -> str:

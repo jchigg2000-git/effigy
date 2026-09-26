@@ -34,6 +34,11 @@ import re
 # Above this size difflib's ratio gets expensive and the cheaper line-level
 # signals are sufficient on their own; ratio is reported as None.
 _RATIO_MAX_CHARS = 200_000
+# Between this size and the cap above, the exact character ratio costs seconds
+# to minutes of CPU per attempt. check() then computes it only when its cheap
+# upper bound (quick_ratio) could reach the threshold; below that the trigger
+# cannot fire, so skipping it changes no verdict.
+_RATIO_EXACT_CHARS = 30_000
 
 _TRIPLE = ("'''", '"""')
 _IDENT = re.compile(r"[A-Za-z_][A-Za-z0-9_]{3,}")
@@ -159,9 +164,14 @@ def copied_spans(src_code: list[str], husk_code: list[str],
     source — 72 lines — in spans of 5 to 14, and a longest-run trigger set at 20
     saw nothing wrong with it.
     """
-    return [b.size for b in difflib.SequenceMatcher(
+    return [b.size for b in _line_blocks(src_code, husk_code) if b.size >= min_run]
+
+
+def _line_blocks(src_code: list[str], husk_code: list[str]) -> list:
+    """In-order runs of identical code lines. The one line-level diff that both
+    span measures read; inspect() builds it once rather than once per measure."""
+    return difflib.SequenceMatcher(
         None, src_code, husk_code, autojunk=False).get_matching_blocks()
-        if b.size >= min_run]
 
 
 def longest_identical_run(src_code: list[str], husk_code: list[str]) -> int:
@@ -176,15 +186,18 @@ def longest_identical_run(src_code: list[str], husk_code: list[str]) -> int:
     """
     if not src_code or not husk_code:
         return 0
-    best = 0
-    for block in difflib.SequenceMatcher(
-            None, src_code, husk_code, autojunk=False).get_matching_blocks():
-        best = max(best, block.size)
-    return best
+    return max(b.size for b in _line_blocks(src_code, husk_code))
 
 
-def inspect(source: str, husk: str, suffix: str = ".py") -> dict:
-    """Measure how much of `source` survived into `husk`. No verdict, just facts."""
+def inspect(source: str, husk: str, suffix: str = ".py",
+            ratio_floor: float | None = None) -> dict:
+    """Measure how much of `source` survived into `husk`. No verdict, just facts.
+
+    `ratio_floor` is what check() passes: the ratio threshold it will compare
+    against. Above _RATIO_EXACT_CHARS the exact ratio is then only computed when
+    its upper bound can reach the floor, and is otherwise reported as None with
+    the bound alongside. Callers that omit it get the exact ratio, as before.
+    """
     src_code = strip_prose(source, suffix)
     husk_code = strip_prose(husk, suffix)
 
@@ -192,16 +205,27 @@ def inspect(source: str, husk: str, suffix: str = ".py") -> dict:
     retention = (len(src_idents & content_idents(husk_code)) / len(src_idents)
                  if src_idents else 0.0)
 
-    verbatim = sum(1 for ln in husk_code if ln in set(src_code))
-    run = longest_identical_run(src_code, husk_code)
-    spans = copied_spans(src_code, husk_code)
+    src_lines = set(src_code)
+    verbatim = sum(1 for ln in husk_code if ln in src_lines)
+    blocks = _line_blocks(src_code, husk_code)
+    run = max(b.size for b in blocks) if src_code and husk_code else 0
+    spans = [b.size for b in blocks if b.size >= SPAN_MIN]
     copied = sum(spans)
 
     ratio: float | None = None
-    if max(len(source), len(husk)) <= _RATIO_MAX_CHARS:
-        ratio = difflib.SequenceMatcher(None, source, husk).ratio()
+    upper: float | None = None
+    size = max(len(source), len(husk))
+    if size <= _RATIO_MAX_CHARS:
+        sm = difflib.SequenceMatcher(None, source, husk)
+        if ratio_floor is not None and size > _RATIO_EXACT_CHARS:
+            upper = sm.quick_ratio()
+            # Compared rounded, as the trigger compares the rounded ratio.
+            if round(upper, 3) >= ratio_floor:
+                ratio, upper = sm.ratio(), None
+        else:
+            ratio = sm.ratio()
 
-    return {
+    report = {
         "src_code_lines": len(src_code),
         "husk_code_lines": len(husk_code),
         "similarity_ratio": round(ratio, 3) if ratio is not None else None,
@@ -213,6 +237,9 @@ def inspect(source: str, husk: str, suffix: str = ".py") -> dict:
         "copied_span_lines": copied,
         "copied_span_share": round(copied / len(src_code), 3) if src_code else 0.0,
     }
+    if upper is not None:
+        report["similarity_ratio_upper_bound"] = round(upper, 3)
+    return report
 
 
 # Go stdlib path roots, used only to tell an own-module import from a stdlib one.
@@ -233,6 +260,17 @@ backend frontend web http json
 
 _GO_IMPORT_LINE = re.compile(r'^\s*(?:_\s+|\.\s+|[A-Za-z_]\w*\s+)?"([^"]+)"\s*$', re.M)
 
+# Every Go file opens with a package clause, and it is the one line a Go file
+# cannot omit: types-only files have no `func`, and long import or const blocks
+# can push the first one far down. The optional trailing comment admits the
+# legal `package math // import "math"` form. Java's `package a.b;` does not match.
+_GO_PACKAGE_CLAUSE = re.compile(r"(?m)^package\s+[A-Za-z_]\w*\s*(?://.*)?$")
+
+
+def has_go_package_clause(text: str) -> bool:
+    """True when `text` carries a Go package clause, whatever it was labelled."""
+    return _GO_PACKAGE_CLAUSE.search(text) is not None
+
 
 def own_module_names(source: str, suffix: str = ".py") -> set[str]:
     """Module names the INPUT imports from itself.
@@ -248,13 +286,28 @@ def own_module_names(source: str, suffix: str = ".py") -> set[str]:
     Deliberately Go-only and deliberately conservative: an import path whose
     first segment contains a dot is third-party, one in the stdlib root set is
     stdlib, and a generic first segment is not evidence.
+
+    The one exception is a host-prefixed path (github.com/org/repo/...) with an
+    `internal` segment. The Go compiler refuses to import .../internal/... from
+    outside the tree rooted at internal's parent, so such a path is the
+    importer's own module whatever its host. Real modules are nearly always
+    host-prefixed, and without this the check only ever saw bare module names.
+    Only the org and repo segments are taken: deeper directories are too often
+    generic words.
     """
     if suffix != ".go":
         return set()
     names = set()
     for m in _GO_IMPORT_LINE.finditer(source):
-        first = m.group(1).split("/")[0]
-        if "." in first or first in _GO_STDLIB_ROOTS:
+        segs = m.group(1).split("/")
+        first = segs[0]
+        if first in _GO_STDLIB_ROOTS:
+            continue
+        if "." in first:
+            if "internal" in segs[1:]:
+                for seg in segs[1:min(3, segs.index("internal", 1))]:
+                    if "." not in seg and len(seg) >= 4 and seg.lower() not in _GENERIC_MODULE_NAMES:
+                        names.add(seg)
             continue
         if len(first) >= 4 and first.lower() not in _GENERIC_MODULE_NAMES:
             names.add(first)
@@ -290,7 +343,7 @@ def check(source: str, husk: str, suffix: str = ".py") -> dict:
     """Measure, then judge. Returns the report; raises PassthroughDetected when
     the husk is substantially its input.
 
-    Two independent triggers, either of which fails the husk:
+    Three independent triggers, any of which fails the husk:
 
       * a single unbroken run of identical code lines — `run_lines` of them, or
         `run_share` of the source — which is direct evidence that a span of the
@@ -303,9 +356,12 @@ def check(source: str, husk: str, suffix: str = ".py") -> dict:
         measure. One observed instance scored 0% domain-vocabulary retention and
         zero leak terms while returning 26 consecutive lines of the caller's
         source, including a live URL path inside a regex;
-      * `retention` of the source's own identifiers surviving AND a whole-text
-        similarity above `ratio` — the diffuse version of the same thing, for
-        output that was reordered rather than copied wholesale.
+      * `retention` of the source's own identifiers surviving AND either a
+        whole-text similarity above `ratio`, or at least `ratio` of the husk's
+        code lines found verbatim in the source. The similarity half catches
+        diffuse copying; it cannot catch reordering, because moving whole
+        functions drives whole-text similarity down. The verbatim share ignores
+        order, so a husk that is the source's own lines rearranged still fails.
 
     Files below `min_code_lines` are reported and never failed: at that size the
     input and any honest husk of it are similar for reasons that have nothing to
@@ -313,12 +369,15 @@ def check(source: str, husk: str, suffix: str = ".py") -> dict:
     correct husk.
     """
     t = _thresholds()
-    report = inspect(source, husk, suffix)
+    report = inspect(source, husk, suffix, ratio_floor=t["ratio"])
     report["thresholds"] = t
 
     # Checked before the size guard: a surviving module name is a leak outright,
-    # not a similarity that small files trip by coincidence.
-    leaked = sorted(n for n in own_module_names(source, suffix)
+    # not a similarity that small files trip by coincidence. A Go package clause
+    # selects Go import rules whatever `suffix` says, so a caller that guessed the
+    # language wrong does not silently switch this check off.
+    mod_suffix = ".go" if has_go_package_clause(source) else suffix
+    leaked = sorted(n for n in own_module_names(source, mod_suffix)
                     if re.search(rf"\b{re.escape(n)}\b", husk, re.I)) if t["module_names"] else []
     report["leaked_module_names"] = leaked
     if leaked:
@@ -351,12 +410,16 @@ def check(source: str, husk: str, suffix: str = ".py") -> dict:
             f"{report['copied_span_lines']} code lines "
             f"({report['copied_span_share']:.0%} of the input) are returned unchanged "
             f"across {report['copied_spans']} spans")
-    if (report["ident_retention"] >= t["retention"]
-            and report["similarity_ratio"] is not None
-            and report["similarity_ratio"] >= t["ratio"]):
-        reasons.append(
-            f"{report['ident_retention']:.0%} of the input's identifiers survive "
-            f"and the texts are {report['similarity_ratio']:.0%} similar")
+    if report["ident_retention"] >= t["retention"]:
+        if report["similarity_ratio"] is not None and report["similarity_ratio"] >= t["ratio"]:
+            reasons.append(
+                f"{report['ident_retention']:.0%} of the input's identifiers survive "
+                f"and the texts are {report['similarity_ratio']:.0%} similar")
+        elif report["code_verbatim"] >= t["ratio"]:
+            reasons.append(
+                f"{report['ident_retention']:.0%} of the input's identifiers survive "
+                f"and {report['code_verbatim']:.0%} of the output's code lines appear "
+                f"verbatim in the input, in whatever order")
 
     if reasons:
         report["verdict"] = "passthrough"

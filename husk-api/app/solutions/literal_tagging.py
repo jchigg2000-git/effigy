@@ -12,16 +12,116 @@ from app.registry import register
 
 
 # Order matters: triple-quoted before single, to avoid mismatching.
-_LITERAL_RE = re.compile(
-    r"""
-    (?P<triple_d>\"\"\"(?:\\.|[^\\])*?\"\"\")    |   # triple double-quoted
-    (?P<triple_s>'''(?:\\.|[^\\])*?''')          |   # triple single-quoted
-    (?P<dq>"(?:\\.|[^"\\])*")                    |   # double-quoted
-    (?P<sq>'(?:\\.|[^'\\])*')                    |   # single-quoted
-    (?P<bt>`(?:\\.|[^`\\])*`)                        # backtick (template literal)
-    """,
-    re.VERBOSE | re.DOTALL,
+# _iter_literals tries these in order at each opener.
+_BRANCHES = (
+    ('"""', re.compile(r'"""(?:\\.|[^\\])*?"""', re.DOTALL)),  # triple double-quoted
+    ("'''", re.compile(r"'''(?:\\.|[^\\])*?'''", re.DOTALL)),  # triple single-quoted
+    ('"', re.compile(r'"(?:\\.|[^"\\])*"', re.DOTALL)),         # double-quoted
+    # Single-quoted literals may not cross a raw newline (Go, JS/TS, Python and
+    # C-family all forbid it). Without the ban an apostrophe in a comment
+    # ("Don't") pairs with a quote lines later and swallows the code between.
+    # Cost: a multi-line single-quoted Ruby/PHP/shell string is left untagged.
+    # Double quotes still cross lines: Rust, Ruby, PHP and shell allow it.
+    ("'", re.compile(r"'(?:\\.|[^'\\\n])*'", re.DOTALL)),      # single-quoted
+    ("`", re.compile(r"`(?:\\.|[^`\\])*`", re.DOTALL)),         # backtick (template literal)
 )
+_OPENER_RE = re.compile(r"[\"'`]")
+# How far an unterminated single-quoted literal reads before it stops.
+_SQ_RUN_RE = re.compile(r"'(?:\\.|[^'\\\n])*", re.DOTALL)
+
+# Languages whose backticks are template literals with ${...} interpolation.
+_JS_LANGUAGES = frozenset({"js", "jsx", "ts", "tsx", "javascript", "typescript"})
+
+
+def _template_end(s: str, i: int) -> int:
+    """Index just past the JS template literal opened by the backtick at s[i],
+    or -1 if it never closes. Tracks ${...} so a template nested inside an
+    interpolation stays part of the outer literal. Iterative, so deep nesting
+    cannot hit the recursion limit."""
+    n = len(s)
+    # -1 marks template text; k >= 0 marks a ${...} at brace depth k.
+    stack = [-1]
+    j = i + 1
+    while j < n:
+        c = s[j]
+        if stack[-1] < 0:
+            if c == "\\":
+                j += 2
+                continue
+            if c == "`":
+                stack.pop()
+                j += 1
+                if not stack:
+                    return j
+                continue
+            if c == "$" and s.startswith("{", j + 1):
+                stack.append(0)
+                j += 2
+                continue
+        elif c in "\"'":
+            # Skip a quoted string inside ${...} so its braces and backticks
+            # do not count. A quote that does not close on its own line was not
+            # a string opener (a regex like /'/g, or a comment's apostrophe), and
+            # scanning on would swallow the code after the template, so give up
+            # and let the caller use the plain first-backtick rule.
+            j += 1
+            while j < n and s[j] != c and s[j] != "\n":
+                j += 2 if s[j] == "\\" else 1
+            if j >= n or s[j] != c:
+                return -1
+        elif c == "`":
+            stack.append(-1)
+        elif c == "{":
+            stack[-1] += 1
+        elif c == "}":
+            if stack[-1] == 0:
+                stack.pop()
+            else:
+                stack[-1] -= 1
+        j += 1
+    return -1
+
+
+def _iter_literals(s: str, js_templates: bool = False):
+    """Yield (start, end) for each literal, left to right.
+
+    Gives the same spans as one alternation of _BRANCHES under re.sub, which is
+    quadratic on an unterminated quote: the engine retries at every later
+    escaped quote and rescans to the end each time, so a 200 KB request took
+    minutes. Each branch reads `\\.` pairs and single characters, so a branch
+    that cannot close from one opener cannot close from a later opener before
+    the point where it stopped. Remembering that point keeps the scan linear.
+    """
+    n = len(s)
+    dead_until = [0] * len(_BRANCHES)
+    pos = 0
+    while True:
+        m = _OPENER_RE.search(s, pos)
+        if m is None:
+            return
+        i = m.start()
+        end = -1
+        for b, (opener, rx) in enumerate(_BRANCHES):
+            if i < dead_until[b] or not s.startswith(opener, i):
+                continue
+            if opener == "`" and js_templates:
+                end = _template_end(s, i)
+                if end >= 0:
+                    break
+                # Unterminated: use the plain backtick rule from here on, so
+                # a failed scan to the end of input is paid only once.
+                js_templates = False
+            hit = rx.match(s, i)
+            if hit:
+                end = hit.end()
+                break
+            # Only the single-quoted branch can stop before the end of input.
+            dead_until[b] = _SQ_RUN_RE.match(s, i).end() if opener == "'" else n
+        if end < 0:
+            pos = i + 1
+        else:
+            yield i, end
+            pos = end
 
 
 def _strip_quotes(lit: str) -> tuple[str, str]:
@@ -51,6 +151,20 @@ _SQL_KEYWORDS_RE = re.compile(
     r"\b(SELECT|INSERT|UPDATE|DELETE|FROM|WHERE|JOIN|CREATE\s+TABLE)\b",
     re.IGNORECASE,
 )
+# MIME types ("application/json") match _PATH_RE but are not paths. Dots are
+# allowed only in the vnd./prs./x. subtype trees, so "image/logo.png" stays a
+# PATH. They go to MSG, an existing class (handoff 03: no silent new classes).
+_MIME_RE = re.compile(
+    r"^(?:application|audio|font|image|message|model|multipart|text|video)/"
+    r"(?:(?:vnd|prs|x)\.[A-Za-z0-9.+\-]+|[A-Za-z0-9+\-]+)(?:\s*;.*)?$",
+    re.IGNORECASE,
+)
+# One character or one escape in single quotes: a Go/C/Java rune or char. A
+# placeholder there makes a multi-character rune, which does not compile, and
+# a single character says next to nothing about the source.
+_RUNE_RE = re.compile(
+    r"[^\\'\n]|\\(?:[abfnrtv\\'\"0]|x[0-9A-Fa-f]{2}|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8}|[0-7]{3})"
+)
 
 
 def _classify(content: str) -> str:
@@ -67,6 +181,8 @@ def _classify(content: str) -> str:
         return "KEY"
     if _SQL_KEYWORDS_RE.search(s):
         return "SQL"
+    if _MIME_RE.match(s):
+        return "MSG"
     if _PATH_RE.match(s):
         return "PATH"
     if _SECRET_HIGH_ENTROPY_RE.match(s) and not s.isalpha():
@@ -140,7 +256,7 @@ def _format_placeholder(klass: str, idx: int, crumb_level: int, content: str) ->
 
 
 def _replace_literals(
-    input_str: str, crumb_level: int, emit_map: bool = False
+    input_str: str, crumb_level: int, emit_map: bool = False, js_templates: bool = False
 ) -> tuple[str, dict[str, int], dict[str, str]]:
     indices: dict[tuple[str, str], int] = {}
     counters: dict[str, int] = {}
@@ -148,9 +264,10 @@ def _replace_literals(
     # placeholder -> original literal content (built only when emit_map is set).
     reidentify_map: dict[str, str] = {}
 
-    def replace(m: re.Match) -> str:
-        lit = m.group(0)
+    def replace(lit: str) -> str:
         content, quote = _strip_quotes(lit)
+        if quote == "'" and _RUNE_RE.fullmatch(content):
+            return lit
         klass = _classify(content)
         by_class[klass] = by_class.get(klass, 0) + 1
         key = ("LIT" if crumb_level == 0 else klass, content)
@@ -165,8 +282,13 @@ def _replace_literals(
             reidentify_map[placeholder] = content
         return f"{quote}{placeholder}{quote}"
 
-    output = _LITERAL_RE.sub(replace, input_str)
-    return output, by_class, reidentify_map
+    parts, last = [], 0
+    for start, end in _iter_literals(input_str, js_templates):
+        parts.append(input_str[last:start])
+        parts.append(replace(input_str[start:end]))
+        last = end
+    parts.append(input_str[last:])
+    return "".join(parts), by_class, reidentify_map
 
 
 @register(
@@ -176,7 +298,13 @@ def _replace_literals(
 )
 def husk(input: str, crumb_level: int, options: dict) -> tuple[str, dict]:
     emit_map = bool(options.get("emit_map"))
-    output, by_class, reidentify_map = _replace_literals(input, crumb_level, emit_map)
+    # Nested template literals are tracked only when the caller says the input
+    # is JS/TS. Go raw strings are backticked too, and a stray "${" in one
+    # would send the scanner on through the code after it.
+    language = str(options.get("language") or "").lower().lstrip(".")
+    output, by_class, reidentify_map = _replace_literals(
+        input, crumb_level, emit_map, language in _JS_LANGUAGES
+    )
     meta = {
         "literals_by_class": by_class,
         "total_literals_replaced": sum(by_class.values()),

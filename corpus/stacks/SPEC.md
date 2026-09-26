@@ -437,7 +437,9 @@ strings alone. Four sub-classes, all required:
 The MIME strings and the HTTP-method literal are specifically required because the evaluation
 recorded them as a **misclassification** case: `application/json` matches a path-shaped pattern
 and gets tagged as a path, and bare method names are indistinguishable from prose. Removing them
-removes a documented finding.
+removes a documented finding. *(2026-09-26: `literal-tagging` now classifies MIME types as `MSG`,
+so the MIME half of that finding is fixed in the husker; the literals stay, as the regression
+input and the record of what was measured. `LIMITATIONS.md` §10.)*
 
 ### P5 — The large file: SQL assembled by string concatenation across optional filters
 

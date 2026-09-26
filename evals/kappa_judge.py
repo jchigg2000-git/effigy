@@ -41,6 +41,17 @@ def load_judged(run: Path) -> list[dict]:
     return [json.loads(p.read_text()) for p in sorted((run / "judge").glob("*.json"))]
 
 
+def _rel(p: Path) -> Path:
+    return p.relative_to(REPO) if p.is_relative_to(REPO) else p
+
+
+def _pair(rec: dict) -> tuple[str, str]:
+    """Judge and raw records are per (item, attacker): each item is attacked by
+    every panel model, so the item id alone names two different guesses. Keyed
+    on record contents rather than file names so no sanitiser has to agree."""
+    return rec["item_id"], rec["attacker"]
+
+
 def cmd_sample(run: Path) -> int:
     judged = load_judged(run)
     if not judged:
@@ -48,34 +59,51 @@ def cmd_sample(run: Path) -> int:
         return 2
     menu = {o["id"]: o for o in json.loads(
         (REPO / "evals" / "domains.json").read_text())["options"]}
-    raw = {p.stem: json.loads(p.read_text())
-           for p in sorted((run / "raw").glob("*open_ended*.json"))}
+    raw = {}
+    for p in sorted((run / "raw").glob("*open_ended*.json")):
+        v = json.loads(p.read_text())
+        if v.get("mode") == "open_ended":
+            raw[_pair(v)] = v
 
     n = max(1, round(len(judged) * SAMPLE_FRACTION))
     rng = random.Random(SEED)
     picked = rng.sample(sorted(judged, key=lambda d: d["item_id"]), n)
 
     out = run / "kappa_worksheet.jsonl"
+    if out.exists() and any((json.loads(l).get("human_label") or "").strip()
+                            for l in out.read_text().splitlines() if l.strip()):
+        # Re-sampling rewrites every row; hand labels are the one input here that
+        # cannot be regenerated.
+        print(f"{_rel(out)} already carries human labels; refusing to overwrite it",
+              file=sys.stderr)
+        return 2
+    rows = []
+    for rec in picked:
+        src = raw.get(_pair(rec))
+        if src is None:
+            # Never fall back to another attacker's guess: that row would ask
+            # the human to label a guess the judge never saw.
+            raise SystemExit(f"no open-ended raw record for {_pair(rec)}")
+        truth_id = src.get("true_domain_id", "?")
+        truth = menu.get(truth_id, {})
+        parsed = src.get("parsed") or {}
+        rows.append({
+            "item_id": rec["item_id"],
+            "attacker": rec["attacker"],
+            "truth_label": truth.get("label", truth_id),
+            "truth_description": truth.get("description", ""),
+            "guess_domain": parsed.get("domain", ""),
+            "guess_identifiers": parsed.get("specific_identifiers", []),
+            # judge_label is DELIBERATELY ABSENT — see module docstring.
+            "human_label": "",
+        })
     with out.open("w") as fh:
-        for rec in picked:
-            src = next((v for k, v in raw.items() if k.startswith(rec["item_id"])), {})
-            truth_id = src.get("true_domain_id", "?")
-            truth = menu.get(truth_id, {})
-            parsed = src.get("parsed") or {}
-            fh.write(json.dumps({
-                "item_id": rec["item_id"],
-                "attacker": rec["attacker"],
-                "truth_label": truth.get("label", truth_id),
-                "truth_description": truth.get("description", ""),
-                "guess_domain": parsed.get("domain", ""),
-                "guess_identifiers": parsed.get("specific_identifiers", []),
-                # judge_label is DELIBERATELY ABSENT — see module docstring.
-                "human_label": "",
-            }) + "\n")
+        for row in rows:
+            fh.write(json.dumps(row) + "\n")
     print(f"sampled {n}/{len(judged)} judge records ({SAMPLE_FRACTION:.0%}, seed {SEED})")
-    print(f"-> {out.relative_to(REPO)}")
+    print(f"-> {_rel(out)}")
     print(f"\nFill in \"human_label\" on every row with one of: {' | '.join(LABELS)}")
-    print("Then: python3 evals/kappa_judge.py --score", run.relative_to(REPO))
+    print("Then: python3 evals/kappa_judge.py --score", _rel(run))
     return 0
 
 
@@ -101,7 +129,7 @@ def cmd_score(run: Path) -> int:
         print(f"no worksheet at {ws}; run --sample first", file=sys.stderr)
         return 2
     rows = [json.loads(l) for l in ws.read_text().splitlines() if l.strip()]
-    judged = {r["item_id"]: r for r in load_judged(run)}
+    judged = {_pair(r): r for r in load_judged(run)}
 
     pairs, unlabelled, bad = [], 0, []
     for r in rows:
@@ -112,7 +140,9 @@ def cmd_score(run: Path) -> int:
         if h not in LABELS:
             bad.append((r["item_id"], h))
             continue
-        j = judged.get(r["item_id"], {}).get("label")
+        if _pair(r) not in judged:
+            raise SystemExit(f"no judge record for worksheet row {_pair(r)}")
+        j = judged[_pair(r)].get("label")
         if j in LABELS:
             pairs.append((h, j))
 
@@ -143,7 +173,7 @@ def cmd_score(run: Path) -> int:
                          for (h, j), c in Counter(pairs).items()}}
     (run / "kappa.json").write_text(json.dumps(doc, indent=2) + "\n")
     print(json.dumps(doc, indent=2))
-    print(f"\n-> {(run / 'kappa.json').relative_to(REPO)}")
+    print(f"\n-> {_rel(run / 'kappa.json')}")
     return 0
 
 

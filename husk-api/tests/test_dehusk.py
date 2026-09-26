@@ -149,14 +149,13 @@ def test_fpe_full_roundtrip():
     assert dbody["substitutions"] == 2
 
 
-def test_fpe_digit_leading_pseudonym_full_roundtrip():
-    # Force a digit-leading pseudonym through the real API: husk candidate
-    # identifiers until fpe emits a pseudonym starting with a digit (the cipher
-    # is deterministic per process, and ~1/6 of first characters are digits, so
-    # this terminates almost immediately), then dehusk a diagnosis that
-    # references it and assert the original identifier is restored.
-    pseudo = original = None
-    rmap = None
+def test_fpe_no_digit_leading_pseudonym_and_legacy_map_roundtrip():
+    # This test used to hunt for a digit-leading fpe pseudonym and assert that it
+    # round-tripped, which pinned the defect: a digit-leading name is not an
+    # identifier, so no husk containing one parsed. fpe no longer emits them, so
+    # the same 200 candidates must now yield none. Maps made before that change
+    # can still hold digit-leading keys, so /dehusk keeps restoring them, with
+    # the same token-boundary guard.
     for i in range(200):
         src = f"def sample_fn_{i}(arg_val_{i}):\n    return arg_val_{i}"
         hr = client.post("/husk/fpe", json={
@@ -164,12 +163,9 @@ def test_fpe_digit_leading_pseudonym_full_roundtrip():
         })
         assert hr.status_code == 200, hr.text
         rmap = hr.json()["reidentify_map"]
-        digit_leading = {p: o for p, o in rmap.items() if p[0].isdigit()}
-        if digit_leading:
-            pseudo, original = next(iter(digit_leading.items()))
-            break
-    assert pseudo is not None, "no digit-leading fpe pseudonym found in 200 candidates"
+        assert not any(p[0].isdigit() for p in rmap), rmap
 
+    pseudo, original = "9qXz", "sample_fn_0"
     diagnosis = (
         f"The function {pseudo} is unsafe, but prefix{pseudo} and "
         f"{pseudo}9suffix must be left alone."

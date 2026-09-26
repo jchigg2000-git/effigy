@@ -135,19 +135,15 @@ def evaluate_case(model: str, art: dict) -> dict:
         "input_lines": art["lines"],
     }
     t0 = time.time()
-    prev = os.environ.get("LLM_MODEL")
-    os.environ["LLM_MODEL"] = model
     try:
-        out, _meta = llm.husk(src, 1, {})
+        # The model travels in options, not LLM_MODEL: jobs for several models
+        # share one thread pool, and a per-call write to the process environment
+        # can hand one job another job's model.
+        out, _meta = llm.husk(src, 1, {"model": model})
     except Exception as exc:  # noqa: BLE001
         rec |= {"gate": "returned_code", "failure": f"{type(exc).__name__}: {str(exc)[:150]}",
                 "latency_s": round(time.time() - t0, 1)}
         return rec
-    finally:
-        if prev is None:
-            os.environ.pop("LLM_MODEL", None)
-        else:
-            os.environ["LLM_MODEL"] = prev
 
     rec["latency_s"] = round(time.time() - t0, 1)
     rec["output_sha256"] = sha256_text(out)
