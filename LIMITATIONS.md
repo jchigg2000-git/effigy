@@ -757,7 +757,8 @@ more. What the fixed defects did to committed husks is erratum E7.
 - **Nested template literals are one literal — only when the request sets `options.language`** to
   js, jsx, ts, tsx, javascript or typescript. Without it the old first-backtick rule applies,
   because a Go raw string containing `${` would otherwise swallow the code after it. Neither the UI
-  nor the evals harness sends `options.language`.
+  nor the evals harness sends `options.language`. *[2026-10-01: the UI now does, from its Language
+  menu; the harness still does not.]*
 - **`fpe` enciphers non-ASCII identifiers** (through the keyed HMAC fallback, counted in
   `meta.non_ascii_identifiers`), and `this.#field` no longer hides the rest of its line.
 
@@ -798,7 +799,8 @@ more. What the fixed defects did to committed husks is erratum E7.
   from a leading `#!` line, and a nested template literal is one literal; with `go`/`golang`, `#` is
   code and a backtick raw string passes through verbatim, `${...}` included. `meta.lexer` says
   which rules ran. C `#define`/`#include` and Rust `#[attr]` lines still pass through verbatim,
-  under every setting, and neither the UI nor the evals harness sends `options.language`.
+  under every setting. The UI sends `options.language` from its Language menu (since
+  2026-10-01; unset by default); the evals harness does not.
 - `fpe` now leaves two-letter string prefixes (`rf"..."`, `Rb'...'`) and the TS contextual keywords
   `keyof`, `readonly`, `declare` and `satisfies` as they are; each used to be enciphered and break
   the parse. *[2026-10-01: from crumb 1 it also spares Go's predeclared types and builtins

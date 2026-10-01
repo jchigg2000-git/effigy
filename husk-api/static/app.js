@@ -8,6 +8,8 @@ const els = {
   solutionDesc: $("solution-desc"),
   crumb: $("crumb"),
   crumbLabel: $("crumb-label"),
+  language: $("language"),
+  languageHint: $("language-hint"),
   targetId: $("target-id"),
   target: $("target"),
   model: $("model"),
@@ -32,6 +34,7 @@ const CRUMB_LABEL_DEFAULT = "Crumb level";
 const CRUMB_LABEL_LLM = "Crumb level (ignored for this solution)";
 const MODEL_HINT_LLM = "$ cheapest → $$$$ priciest (per-token price)";
 const MODEL_HINT_NON_LLM = "Switch Solution to “LLM Domain Translation” to pick a model.";
+const LANGUAGE_HINT_LLM = "Ignored by LLM Domain Translation.";
 
 function setStatus(text, kind) {
   els.status.textContent = text;
@@ -53,6 +56,15 @@ function syncTargetEnabled() {
     els.modelHint.classList.toggle("warn", !isLlm);
   }
   els.crumbLabel.textContent = isLlm ? CRUMB_LABEL_LLM : CRUMB_LABEL_DEFAULT;
+  // options.language drives fpe's and literal-tagging's tokenizers only.
+  els.language.disabled = isLlm;
+  if (els.languageHint) {
+    if (!els.languageHint.dataset.defaultHtml) {
+      els.languageHint.dataset.defaultHtml = els.languageHint.innerHTML;
+    }
+    if (isLlm) els.languageHint.textContent = LANGUAGE_HINT_LLM;
+    else els.languageHint.innerHTML = els.languageHint.dataset.defaultHtml;
+  }
 }
 
 async function loadTargetCatalog() {
@@ -143,6 +155,8 @@ function buildOptions() {
     }
     const model = els.model.value;
     if (model) opts.model = model;
+  } else if (els.language.value) {
+    opts.language = els.language.value;
   }
   // Opt-in re-identification map. Reversible solutions (fpe, literal-tagging)
   // honour this; others ignore it harmlessly.

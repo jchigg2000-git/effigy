@@ -216,3 +216,21 @@ def test_large_honest_husk_skips_the_exact_ratio():
     assert report["similarity_ratio_upper_bound"] < report["thresholds"]["ratio"]
     # Small inputs keep the exact figure.
     assert check(_SOURCE, _GOOD_HUSK, ".py")["similarity_ratio"] is not None
+
+
+def test_ui_language_choices_are_ones_the_solutions_recognise():
+    # The UI never sent options.language, so fpe's and literal-tagging's
+    # language rules were unreachable from it. Every choice it now offers must
+    # select a real lexer, or the menu would silently fall back to the default.
+    import re
+
+    from app.solutions import fpe, literal_tagging
+
+    html = (HUSK_API / "static" / "index.html").read_text()
+    select = re.search(r'<select id="language">(.*?)</select>', html, re.S).group(1)
+    values = [v for v in re.findall(r'<option value="([^"]*)"', select) if v]
+    assert values
+    for v in values:
+        assert fpe._lexer_for({"language": v}).name != "default", v
+    assert {"js", "jsx", "ts", "tsx"} & set(values) <= literal_tagging._JS_LANGUAGES
+    assert "opts.language = els.language.value" in (HUSK_API / "static" / "app.js").read_text()

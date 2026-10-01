@@ -138,7 +138,8 @@ What each solution adds to `meta`, beyond its counts:
   backtick raw string passes through verbatim, `${...}` included. Any other
   value, or none, keeps the language-blind rules, where both `//` and `#`
   start a comment. `meta.lexer` names the rules used (`default`, `python`,
-  `js` or `go`).
+  `js` or `go`). The UI's Language menu sends this option for both
+  solutions.
 - `literal-tagging` — set `options.language` to `js`, `jsx`, `ts`, `tsx`,
   `javascript` or `typescript` to have a nested template literal tagged as one
   literal. Without it the first inner backtick ends the literal, as before,
@@ -244,12 +245,12 @@ Other variables:
 
     pytest
 
-101 tests, offline: model clients are mocked, and `tests/conftest.py` strips
+102 tests, offline: model clients are mocked, and `tests/conftest.py` strips
 every `HUSK_CHECK_*` and `LLM_*` variable, plus `FPE_KEY`, `FPE_DEMO_KEY`,
 `FPE_ALLOW_EPHEMERAL_KEY` and `EFFIGY_ENV`, that a local `.env` would set, so
 the suite runs against the documented defaults.
 By file: `test_llm_translation.py` 27, `test_fpe.py` 22, `test_dehusk.py` 18,
-`test_literal_tagging.py` 17, `test_service_hardening.py` 11,
+`test_literal_tagging.py` 17, `test_service_hardening.py` 12,
 `test_contract.py` 6.
 
 ## Adding a solution
