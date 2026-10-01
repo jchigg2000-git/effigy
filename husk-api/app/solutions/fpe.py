@@ -48,7 +48,9 @@ _TOKEN_RE = re.compile(
     r"|//[^\n]*"                    # // line comment
     r"|(?<!\.)\#[^\n]*"             # # line comment (Python, shell), but not JS `this.#field`
     r"|(?<!\w)\d\w*"                # number (0x1F, 0o755, 1_000); its tail is not an identifier
-    r"|[^\W\d]\w+"                  # identifier (2+ chars, so `i`/`x` are never clobbered)
+    # identifier (2+ chars, so `i`/`x` are never clobbered), except a two-letter string
+    # prefix (Python/Rust rf, Rb, br, ...) glued to its quote, which is part of the literal
+    r"|(?![rRbBfFuU]{2}['\"])[^\W\d]\w+"
 )
 
 # Body of each quoted literal up to, not including, its closing quote. A body
@@ -176,6 +178,8 @@ _BASELINE_KEYWORDS = frozenset({
     # Go and Python reserved words; enciphering one breaks the parse.
     "go", "defer", "map", "chan", "select", "goto", "fallthrough", "range", "type",
     "assert", "del", "global", "nonlocal",
+    # TypeScript contextual keywords; enciphering one breaks the parse.
+    "keyof", "readonly", "declare", "satisfies",
 })
 
 _STDLIB_NAMES = frozenset({

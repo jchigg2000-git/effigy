@@ -794,10 +794,11 @@ more. What the fixed defects did to committed husks is erratum E7.
 - `fpe`'s comment syntax is language-blind: Python `//` floor division and a TS `#private`
   declaration hide the rest of the line from encipherment, and C `#define`/`#include` and Rust
   `#[attr]` lines pass through verbatim. Fixing it needs `options.language`.
-- `fpe` enciphers Python two-character string prefixes (`rf"..."`), which breaks the parse (the 4
-  remaining repo `.py` failures); does not spare TS contextual keywords (`keyof`, `readonly`,
-  `declare`, `satisfies`); still splits a nested template at the inner backtick; and does not
-  encipher interpolation inside double-quoted strings or Python f-strings.
+- `fpe` now leaves two-letter string prefixes (`rf"..."`, `Rb'...'`) and the TS contextual keywords
+  `keyof`, `readonly`, `declare` and `satisfies` as they are; each used to be enciphered and break
+  the parse. It still enciphers TS primitive type names (`string`, `number`) at every crumb level
+  and splits a nested template at the inner backtick, and does not encipher interpolation inside
+  double-quoted strings or Python f-strings.
 - A short `fpe` pseudonym can equal an ordinary word (`id`, `OR`) inside a literal, comment or
   diagnosis, and `/dehusk` then rewrites that word. Husk → dehusk of the husk text is exact in 1869
   of 1920 cases (8 keys × 80 files × crumbs 0–2), up from 1644.

@@ -206,3 +206,20 @@ def test_fpe_unterminated_quote_is_linear():
     out = _post({"input": src, "crumb_level": 1})["output"]
     assert time.perf_counter() - t0 < 2
     assert out == src
+
+
+def test_fpe_spares_ts_contextual_keywords_and_string_prefixes():
+    # SOL-5: keyof/readonly/declare/satisfies were enciphered, and a two-letter
+    # string prefix (rf"...", Rb'...') was read as an identifier; both broke the parse.
+    src = (
+        "declare const widgetCount: number;\n"
+        "class Box { readonly width: number; }\n"
+        "type K = keyof Box;\n"
+        "const cfg = widgetCount satisfies number;\n"
+        "msg = rf\"{widgetCount}\"\n"
+        "raw = Rb'x'\n"
+    )
+    out = _post({"input": src, "crumb_level": 1})["output"]
+    for kept in ("declare const", "readonly ", "keyof ", " satisfies ", 'rf"{widgetCount}"', "Rb'x'"):
+        assert kept in out, (kept, out)
+    assert "widgetCount" not in out.replace('rf"{widgetCount}"', "")
