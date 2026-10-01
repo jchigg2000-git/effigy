@@ -798,7 +798,13 @@ more. What the fixed defects did to committed husks is erratum E7.
   `keyof`, `readonly`, `declare` and `satisfies` as they are; each used to be enciphered and break
   the parse. It still enciphers TS primitive type names (`string`, `number`) at every crumb level
   and splits a nested template at the inner backtick, and does not encipher interpolation inside
-  double-quoted strings or Python f-strings.
+  double-quoted strings (Ruby `#{}`, Kotlin/shell `${}`, C# `$"{}"`).
+- *[2026-10-01]* **`fpe` enciphers the expressions in Python f- and t-string replacement fields**
+  (`f"{invoice.amount_due!r:>{width}}"`, any prefix case, `'''`/`"""` included); the literal
+  text, `{{`/`}}`, `\N{...}`, the conversion and the format-spec text stay verbatim. Every such
+  name used to pass through in plain text: 378 of 378 in `husk-api`'s and `evals`' own Python,
+  0 after. Those 30 husks still all parse, Go/TS husks are byte-identical, and husk → dehusk
+  exactness is unchanged.
 - A short `fpe` pseudonym can equal an ordinary word (`id`, `OR`) inside a literal, comment or
   diagnosis, and `/dehusk` then rewrites that word. Husk → dehusk of the husk text is exact in 1869
   of 1920 cases (8 keys × 80 files × crumbs 0–2), up from 1644.

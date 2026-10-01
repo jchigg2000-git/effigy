@@ -15,7 +15,9 @@ The one exception is the code inside a backtick literal's ${...}: that is
 JavaScript, not literal text, so it is enciphered like the rest of the file.
 Go raw strings have no interpolation, but the tokenizer cannot tell them apart,
 so a Go raw string containing ${...} has the identifiers inside it enciphered
-too.
+too. The same holds for the replacement fields of a Python f-string or t-string
+(f"{order.total!r:>{width}}"): the expressions are code and are enciphered,
+while the literal text, the conversion and the format-spec text stay verbatim.
 
 Crumb levels control which tokens are spared (kept as-is) vs ciphered.
 """
@@ -49,9 +51,16 @@ _TOKEN_RE = re.compile(
     r"|(?<!\.)\#[^\n]*"             # # line comment (Python, shell), but not JS `this.#field`
     r"|(?<!\w)\d\w*"                # number (0x1F, 0o755, 1_000); its tail is not an identifier
     # identifier (2+ chars, so `i`/`x` are never clobbered), except a two-letter string
-    # prefix (Python/Rust rf, Rb, br, ...) glued to its quote, which is part of the literal
-    r"|(?![rRbBfFuU]{2}['\"])[^\W\d]\w+"
+    # prefix (Python/Rust rf, Rb, br, rt, ...) glued to its quote, which is part of the literal
+    r"|(?![rRbBfFuUtT]{2}['\"])[^\W\d]\w+"
 )
+
+# A Python f-string or t-string prefix (f, rf, Fr, t, tR, ...). It is not a
+# token of its own: the one-letter forms are too short for the identifier
+# branch, and the two-letter forms are excluded from it above.
+_FIELD_PREFIX_RE = re.compile(r"[fFtT][rR]?|[rR][fFtT]")
+# The same prefix at the head of a token _substitute hands to replace().
+_FIELD_HEAD_RE = re.compile(r"(?:[fFtT][rR]?|[rR][fFtT])(?=['\"])")
 
 # Body of each quoted literal up to, not including, its closing quote. A body
 # is consumed one escape pair or one other character at a time, so the literal
@@ -62,6 +71,10 @@ _QUOTE_BODY = {
     # Python ''' string. It needs its own branch because a '...' literal stops
     # at a newline; """ strings already pair up through the '"' branch.
     "'''": re.compile(r"(?:[^\\']|\\.|'(?!''))*", re.DOTALL),
+    # Python """ string, scanned as one literal only for an f- or t-string, whose
+    # replacement fields have to be found inside the whole of it. Any other """
+    # string still pairs up through the '"' branch.
+    '"""': re.compile(r'(?:[^\\"]|\\.|"(?!""))*', re.DOTALL),
     # Single-quoted string / Go rune. A raw newline ends it: Go, JS/TS, Python
     # and C do not allow one there, and without the stop an apostrophe in a
     # comment or JSX text paired with a quote lines later and hid the code between.
@@ -93,8 +106,21 @@ def _span_end(text: str, start: int, opener: str, dead: dict[str, int], end: int
     return -1
 
 
+def _field_prefix_len(text: str, start: int) -> int:
+    """Length of the f-/t-string prefix glued to the quote at text[start], or 0."""
+    for n in (2, 1):
+        b = start - n
+        if (b >= 0 and _FIELD_PREFIX_RE.fullmatch(text, b, start)
+                and (b == 0 or not (text[b - 1].isalnum() or text[b - 1] == "_"))):
+            return n
+    return 0
+
+
 def _substitute(text: str, replace: Callable[[str], str]) -> str:
-    """Pass every token in `text` through replace(); keep the text between tokens."""
+    """Pass every token in `text` through replace(); keep the text between tokens.
+
+    An f- or t-string reaches replace() with its prefix (f"...", rt'''...''').
+    """
     out: list[str] = []
     dead: dict[str, int] = {}
     kept = pos = 0
@@ -102,14 +128,18 @@ def _substitute(text: str, replace: Callable[[str], str]) -> str:
         start, stop = m.span()
         opener = m.group("open")
         if opener is not None:
+            prefix = _field_prefix_len(text, start) if opener in ("'''", '"', "'") else 0
+            if prefix and text.startswith('"""', start):
+                opener = '"""'
             stop = _span_end(text, start, opener, dead, len(text))
-            if stop < 0 and opener == "'''":
-                stop = _span_end(text, start, "'", dead, len(text))
+            if stop < 0 and opener in ("'''", '"""'):
+                stop = _span_end(text, start, opener[0], dead, len(text))
             if stop < 0:
                 # Unterminated: the opener is ordinary text and scanning resumes
                 # right after it, exactly as a failed regex alternative would.
                 pos = start + 1
                 continue
+            start -= prefix
         out.append(text[kept:start])
         out.append(replace(text[start:stop]))
         kept = pos = stop
@@ -161,6 +191,107 @@ def _map_interpolations(template: str, fn: Callable[[str], str]) -> str:
         out.append("${" + fn(template[body:k]))
         i = k
     out.append("`")
+    return "".join(out)
+
+
+# f-/t-string literal text up to the next replacement field: {{ and }} are
+# escaped braces, and outside a raw string \N{...} is a named character escape.
+_FIELD_TEXT_RE = re.compile(r"(?:[^{}\\]|\{\{|\}\}|\\N\{[^}\n]*\}|\\[^{}]|\\)*")
+_FIELD_TEXT_RAW_RE = re.compile(r"(?:[^{}]|\{\{|\}\})*")
+# Expression code inside a replacement field, up to the next character that can
+# open a string, change the bracket depth, or end the expression.
+_FIELD_CODE_RE = re.compile(r"[^'\"()\[\]{}!:]*")
+# A conversion (!r, !s, !a) up to the format spec or the closing brace.
+_FIELD_CONVERSION_RE = re.compile(r"![^:{}]*")
+# Format-spec text up to a nested field or the closing brace.
+_FIELD_SPEC_RE = re.compile(r"[^{}]*")
+# Python nests replacement fields in a format spec at most two deep.
+_FIELD_MAX_DEPTH = 2
+
+
+def _map_field(lit: str, i: int, end: int, fn: Callable[[str], str],
+               dead: dict[str, int], nest: int) -> tuple[str, int] | None:
+    """Rewrite the replacement field opening at lit[i] == "{": fn on the
+    expression and on any expression nested in its format spec, the conversion
+    and format-spec text verbatim. Returns (rewritten field, index after it), or
+    None when the field does not close before `end`."""
+    k = body = i + 1
+    depth = 0
+    while True:
+        k = _FIELD_CODE_RE.match(lit, k, end).end()
+        if k >= end:
+            return None
+        ch = lit[k]
+        if ch in "'\"":
+            stop = _span_end(lit, k, ch, dead, end)
+            if stop < 0:
+                return None
+            k = stop
+            continue
+        if ch in "([{":
+            depth += 1
+        elif depth:
+            if ch in ")]}":
+                depth -= 1
+        elif ch == "}" or ch == ":" or (ch == "!" and not lit.startswith("!=", k)):
+            break
+        k += 1
+    parts = ["{", fn(lit[body:k])]
+    if lit[k] == "!":
+        stop = _FIELD_CONVERSION_RE.match(lit, k, end).end()
+        parts.append(lit[k:stop])
+        k = stop
+    if k < end and lit[k] == ":":
+        parts.append(":")
+        k += 1
+        while k < end:
+            stop = _FIELD_SPEC_RE.match(lit, k, end).end()
+            parts.append(lit[k:stop])
+            k = stop
+            if k >= end or lit[k] == "}":
+                break
+            if nest >= _FIELD_MAX_DEPTH:
+                return None
+            nested = _map_field(lit, k, end, fn, dead, nest + 1)
+            if nested is None:
+                return None
+            parts.append(nested[0])
+            k = nested[1]
+    if k >= end or lit[k] != "}":
+        return None
+    parts.append("}")
+    return "".join(parts), k + 1
+
+
+def _map_fields(tok: str, prefix: int, fn: Callable[[str], str]) -> str:
+    """Apply fn to the expressions in each replacement field of an f-/t-string
+    token (prefix and quotes included) and keep its literal text verbatim. A
+    field that does not close leaves the rest of the literal verbatim."""
+    quote = tok[prefix:prefix + 3] if tok.startswith(('"""', "'''"), prefix) else tok[prefix]
+    if len(tok) < prefix + 2 * len(quote):
+        return tok
+    text_re = _FIELD_TEXT_RAW_RE if "r" in tok[:prefix].lower() else _FIELD_TEXT_RE
+    out = [tok[:prefix + len(quote)]]
+    dead: dict[str, int] = {}
+    end = len(tok) - len(quote)
+    i = prefix + len(quote)
+    while i < end:
+        j = text_re.match(tok, i, end).end()
+        out.append(tok[i:j])
+        if j >= end:
+            break
+        if tok[j] == "}":
+            # A lone } (not valid Python): keep it and carry on.
+            out.append("}")
+            i = j + 1
+            continue
+        field = _map_field(tok, j, end, fn, dead, 1)
+        if field is None:
+            out.append(tok[j:end])
+            break
+        out.append(field[0])
+        i = field[1]
+    out.append(tok[end:])
     return "".join(out)
 
 
@@ -399,6 +530,8 @@ def husk(input: str, crumb_level: int, options: dict) -> tuple[str, dict]:
         first = tok[0]
         if first == "`" and "${" in tok:
             return _map_interpolations(tok, lambda code: _substitute(code, replace))
+        if first in "fFtTrR" and (head := _FIELD_HEAD_RE.match(tok)):
+            return _map_fields(tok, head.end(), lambda code: _substitute(code, replace))
         # Strings, comments and numbers: pass through verbatim
         if not (first.isalpha() or first == "_"):
             return tok

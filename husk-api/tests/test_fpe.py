@@ -220,6 +220,38 @@ def test_fpe_spares_ts_contextual_keywords_and_string_prefixes():
         "raw = Rb'x'\n"
     )
     out = _post({"input": src, "crumb_level": 1})["output"]
-    for kept in ("declare const", "readonly ", "keyof ", " satisfies ", 'rf"{widgetCount}"', "Rb'x'"):
+    for kept in ("declare const", "readonly ", "keyof ", " satisfies ", 'rf"{', "Rb'x'"):
         assert kept in out, (kept, out)
-    assert "widgetCount" not in out.replace('rf"{widgetCount}"', "")
+    assert "widgetCount" not in out
+
+
+FSTRING_SRC = r'''line = f"Total {invoice.amount_due!r:>{col_width}} for {acct_id:,.2f} {{as-is}}"
+note = f"{ledger['key}']}" + rt'{tmpl_val}' + F"""x
+{multi_val}"""
+doc = f"""say "hi" to {greet_name}""" + "{plain_field}"
+esc = f"\N{EM DASH} {dash_val} \{slash_val} {a_val != b_val}"
+'''
+
+
+def test_fpe_enciphers_fstring_replacement_fields():
+    # SOL-5: an f-string passed through verbatim like any literal, so every name
+    # in its replacement fields stayed in plain text (378 of 378 in husk-api's and
+    # evals' own Python). The fields are code; the text, conversion and format
+    # spec around them are not, and a plain "{...}" string is still a literal.
+    import ast
+    import warnings
+
+    body = _post({"input": FSTRING_SRC, "crumb_level": 1, "options": {"emit_map": True}})
+    out = body["output"]
+    for name in ("invoice", "amount_due", "col_width", "acct_id", "ledger", "tmpl_val",
+                 "multi_val", "greet_name", "dash_val", "slash_val", "a_val", "b_val"):
+        assert name not in out, (name, out)
+    for kept in ("Total {", "!r:>{", ":,.2f}", "{{as-is}}", "['key}']", 'say "hi" to {',
+                 '"{plain_field}"', r"\N{EM DASH} {", " != "):
+        assert kept in out, (kept, out)
+    assert len(out) == len(FSTRING_SRC)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", SyntaxWarning)   # the deliberate "\{"
+        ast.parse(out)
+    r = client.post("/dehusk", json={"input": out, "map": body["reidentify_map"]})
+    assert r.json()["output"] == FSTRING_SRC
