@@ -285,3 +285,19 @@ def test_fpe_options_language_sets_comment_syntax():
     assert "`SELECT ${COL_NAME} FROM t`" in body["output"]   # a Go raw string has no ${}
     assert "meterRead" not in body["output"]
     assert _post({"input": go, "crumb_level": 1, "options": {"language": "cobol"}})["meta"]["lexer"] == "default"
+
+
+def test_fpe_spares_go_and_ts_builtin_types_from_crumb_1():
+    # L1 spares the language's own names, but Go's predeclared types and TS's
+    # primitives were enciphered at every level, so `(id string) (Holding, error)`
+    # read as three unknown types (1,398 of 18,659 enciphered corpus tokens).
+    src = (
+        "func Get(id string, n int64) (Holding, error) { b := make([]byte, n); return nil, err }\n"
+        "function total(xs: number[], ok: boolean): bigint | undefined { return unknownThing }\n"
+    )
+    out = _post({"input": src, "crumb_level": 1})["output"]
+    for kept in (" string, n int64)", ", error)", "make([]byte", ": number[]", ": boolean", "bigint | undefined"):
+        assert kept in out, (kept, out)
+    for name in ("Holding", "unknownThing"):
+        assert name not in out
+    assert "string" not in _post({"input": src, "crumb_level": 0})["output"]   # L0 spares keywords only

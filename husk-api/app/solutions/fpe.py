@@ -385,6 +385,14 @@ _STDLIB_NAMES = frozenset({
     "Component", "Fragment", "render", "props", "state",
     "DataFrame", "Series", "ndarray", "Tensor", "nn", "torch", "tf", "np", "pd",
     "main", "init", "setup", "teardown", "open", "read", "write", "close",
+    # Go predeclared types and builtins, and TS primitive types: the language's
+    # own names, as L1 spares them. Enciphered, `(id string) (Holding, error)`
+    # read as three unknown types and hid every error-handling path.
+    "string", "error", "byte", "rune", "uint", "uintptr", "any", "comparable",
+    "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64",
+    "float32", "float64", "complex64", "complex128",
+    "append", "make", "cap", "panic", "recover", "iota",
+    "number", "boolean", "bigint", "symbol", "unknown", "never", "undefined",
 })
 
 _GENERIC_DOMAIN_NOUNS = frozenset({

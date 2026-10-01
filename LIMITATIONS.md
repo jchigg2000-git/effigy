@@ -801,9 +801,12 @@ more. What the fixed defects did to committed husks is erratum E7.
   under every setting, and neither the UI nor the evals harness sends `options.language`.
 - `fpe` now leaves two-letter string prefixes (`rf"..."`, `Rb'...'`) and the TS contextual keywords
   `keyof`, `readonly`, `declare` and `satisfies` as they are; each used to be enciphered and break
-  the parse. It still enciphers TS primitive type names (`string`, `number`) at every crumb level
-  and, without a JS/TS `options.language`, splits a nested template at the inner backtick, and does
-  not encipher interpolation inside
+  the parse. *[2026-10-01: from crumb 1 it also spares Go's predeclared types and builtins
+  (`string`, `error`, `int64`, `byte`, `make`, `append`, ...) and TS's primitive types (`number`,
+  `boolean`, `undefined`, ...), as L1 specifies; they had been enciphered at every level — 1,398 of
+  18,659 enciphered corpus tokens. Crumb 0 still enciphers them.]* Without a JS/TS
+  `options.language` it splits a nested template at the inner backtick, and it does not encipher
+  interpolation inside
   double-quoted strings (Ruby `#{}`, Kotlin/shell `${}`, C# `$"{}"`).
 - *[2026-10-01]* **`fpe` enciphers the expressions in Python f- and t-string replacement fields**
   (`f"{invoice.amount_due!r:>{width}}"`, any prefix case, `'''`/`"""` included); the literal
