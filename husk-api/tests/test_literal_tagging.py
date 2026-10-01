@@ -127,6 +127,19 @@ def test_mime_type_is_not_a_path():
     )
 
 
+def test_dates_and_everyday_slash_pairs_are_not_paths():
+    # SOL-7: "and/or", "N/A", "km/h", dates and fractions matched the path pattern.
+    src = (
+        'a("and/or"); b("N/A"); c("km/h"); d("09/26/2026"); e("1/2"); '
+        'f("src/lib"); g("v1/2.json")'
+    )
+    out = _post({"input": src, "crumb_level": 1})["output"]
+    assert out == (
+        'a("<MSG:0>"); b("<MSG:1>"); c("<MSG:2>"); d("<MSG:3>"); e("<MSG:4>"); '
+        'f("<PATH:0>"); g("<PATH:1>")'
+    )
+
+
 def test_unterminated_quote_is_linear():
     # SOLV-1: the old alternation regex rescanned to the end from every
     # escaped quote, so this took ~40 s. Nothing terminates, so nothing changes.

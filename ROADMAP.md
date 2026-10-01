@@ -85,8 +85,8 @@ a parked item as a blocker is misreading this file.
 > 6. **Cluster-aware intervals (STAT-8).** Replicated-cell Wilson brackets are ~30% too narrow
 >    (Kimi [0.68, 0.86] vs [0.65, 0.91]); §9 registers Wilson, so a descriptive column or a note.
 > 7. **JSX text in `fpe` (SOL-6):** pass it through, or encipher it under a separate key.
-> - Smaller: a stricter PATH rule; prereg notes where A4/A4.1 quote E4/E6 figures; a MIME note in
->   `corpus/PATHOLOGY.md` P4; regenerating `structure_probes.json`; resuming 182111Z (15 calls);
+> - Smaller: prereg notes where A4/A4.1 quote E4/E6 figures; regenerating
+>   `structure_probes.json`; resuming 182111Z (15 calls);
 >   the Go half of HAR-7 (a shadowed import survives `canon_go.go`, which needs its gitignored
 >   binary rebuilt; the TS/G4 half shipped).
 >

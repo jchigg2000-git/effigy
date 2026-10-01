@@ -224,7 +224,7 @@ implemented (`ROADMAP.md` §0).
 | SOL-4 | nested template literals split into invalid JS | fixed, opt-in | §10 |
 | SOL-5 | `fpe` comment rules are language-blind; non-ASCII identifiers passed through | part | §10 |
 | SOL-6 | `fpe` enciphers JSX text with the code's key | owner | §10 |
-| SOL-7 | MIME types (and `and/or`, dates) classified as `PATH` | part (MIME) | §10 |
+| SOL-7 | MIME types (and `and/or`, dates) classified as `PATH` | fixed | §10 |
 | SOL-8 | import specifiers become per-call placeholders; the import graph is unrecoverable | owner | §10 |
 | SOLV-1 | quadratic tokenizers: one 200 KB request took minutes | fixed | §10 |
 | SOLV-2 | `literal-tagging` turned Go/C rune literals into multi-character runes | fixed | E7 |
@@ -784,9 +784,11 @@ more. What the fixed defects did to committed husks is erratum E7.
   `EventDetail.tsx` husk). `literal-tagging` leaves the same prose verbatim. No regex-only fix is
   safe; the owner has to choose between passing JSX text through and enciphering it under a
   separate key (`ROADMAP.md` §0).
-- `literal-tagging` still classes `and/or`, `N/A`, `km/h`, `yes/no` and date-shaped literals as
-  PATH, and an extensionless two-segment path whose first segment is a MIME top-level word
-  (`model/user`) is now MSG.
+- `literal-tagging` now classes digit-only slash literals (`09/26/2026`, `1/2`) and a short
+  fixed list of everyday pairs (`and/or`, `N/A`, `km/h`, `yes/no`, `on/off`, `true/false`,
+  `w/o`, `he/she`, `mi/h`) as MSG, not PATH. Any other two-word slash literal is still PATH, and
+  an extensionless two-segment path whose first segment is a MIME top-level word (`model/user`)
+  is MSG. No committed corpus or eval literal changes class.
 - An apostrophe can still pair with a quote later on the same line (`// Don't use 'x'`); the corpus
   has none.
 - `fpe`'s comment syntax is language-blind: Python `//` floor division and a TS `#private`

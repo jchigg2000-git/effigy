@@ -230,7 +230,7 @@ Other variables:
 
     pytest
 
-93 tests, offline: model clients are mocked, and `tests/conftest.py` strips
+94 tests, offline: model clients are mocked, and `tests/conftest.py` strips
 every `HUSK_CHECK_*` and `LLM_*` variable, plus `FPE_KEY`, `FPE_DEMO_KEY`,
 `FPE_ALLOW_EPHEMERAL_KEY` and `EFFIGY_ENV`, that a local `.env` would set, so
 the suite runs against the documented defaults.

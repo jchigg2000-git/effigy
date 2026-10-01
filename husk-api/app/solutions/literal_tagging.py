@@ -159,6 +159,14 @@ _MIME_RE = re.compile(
     r"(?:(?:vnd|prs|x)\.[A-Za-z0-9.+\-]+|[A-Za-z0-9+\-]+)(?:\s*;.*)?$",
     re.IGNORECASE,
 )
+# Slash-joined shorthand that is not a path: dates and fractions ("09/26/2026",
+# "1/2") and a short list of everyday pairs ("and/or", "N/A", "km/h", "yes/no").
+# Dots stay out of both arms, so "v1/2.json" and "src/lib" are still PATH. They
+# go to MSG, an existing class (handoff 03: no silent new classes).
+_SLASH_SHORTHAND_RE = re.compile(
+    r"^(?:\d+(?:/\d+)+|and/or|n/a|km/h|mi/h|yes/no|on/off|true/false|w/o|he/she)$",
+    re.IGNORECASE,
+)
 # One character or one escape in single quotes: a Go/C/Java rune or char. A
 # placeholder there makes a multi-character rune, which does not compile, and
 # a single character says next to nothing about the source.
@@ -182,6 +190,8 @@ def _classify(content: str) -> str:
     if _SQL_KEYWORDS_RE.search(s):
         return "SQL"
     if _MIME_RE.match(s):
+        return "MSG"
+    if _SLASH_SHORTHAND_RE.match(s):
         return "MSG"
     if _PATH_RE.match(s):
         return "PATH"
