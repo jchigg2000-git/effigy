@@ -34,6 +34,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 MANIFEST = REPO / "evals" / "corpus" / "manifest.json"
 sys.path.insert(0, str(REPO / "husk-api"))
+sys.path.insert(0, str(REPO / "evals"))
 
 
 def main() -> int:
@@ -50,6 +51,7 @@ def main() -> int:
     from dotenv import load_dotenv  # noqa: PLC0415
     load_dotenv(REPO / "husk-api" / ".env")
     import app.solutions.llm_translation as llm  # noqa: PLC0415
+    from run_rsch1 import refusal_usage  # noqa: PLC0415
 
     if a.src:
         root = Path(a.src).resolve()
@@ -91,16 +93,18 @@ def main() -> int:
             # cross-file reference survives. The model travels in options too:
             # restoring LLM_MODEL from one worker thread could put the .env
             # default back while another thread was about to read it.
-            husk, _meta = llm.husk(src, 1, {"target_id": a.target, "model": a.model})
+            husk, meta = llm.husk(src, 1, {"target_id": a.target, "model": a.model})
             dest.write_text(husk, encoding="utf-8")
             r = {"path": art["path"], "dest": str(rel), "ok": True,
                  "in_lines": art["lines"], "out_lines": husk.count("\n") + 1,
-                 "latency_s": round(time.time() - t0, 1), "error": None}
+                 "latency_s": round(time.time() - t0, 1), "error": None,
+                 "usage": meta.get("usage")}
         except Exception as exc:  # noqa: BLE001
             r = {"path": art["path"], "dest": str(rel), "ok": False,
                  "in_lines": art["lines"], "out_lines": 0,
                  "latency_s": round(time.time() - t0, 1),
-                 "error": f"{type(exc).__name__}: {str(exc)[:140]}"}
+                 "error": f"{type(exc).__name__}: {str(exc)[:140]}",
+                 "usage": refusal_usage(exc)}
         print(f"  {'ok  ' if r['ok'] else 'FAIL'} {r['latency_s']:6.1f}s "
               f"{r['in_lines']:>4}->{r['out_lines']:<4} {rel}"
               f"{'  ' + r['error'] if r['error'] else ''}")

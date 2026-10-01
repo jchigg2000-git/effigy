@@ -740,6 +740,16 @@ def usage_fields(resp) -> dict | None:
             "reasoning_tokens": as_int(getattr(details, "reasoning_tokens", None))}
 
 
+def refusal_usage(exc: BaseException) -> dict | None:
+    """Tokens a refused husk was billed for, off the service's refusal report.
+
+    None when the exception carries no report or the report carries no usage:
+    absence is not zero. Shared by the scripts that call the rewriter directly.
+    """
+    report = getattr(exc, "report", None)
+    return report.get("usage") if isinstance(report, dict) else None
+
+
 def stage_attack(outdir: Path, rows: list[dict], attackers: list[str], judge: str,
                  arms: tuple[str, ...], reps: int, workers: int, dry: bool,
                  max_tokens: int = 16000,

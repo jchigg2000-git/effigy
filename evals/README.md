@@ -71,14 +71,14 @@ was written plus a `DISCARDED.md`; a resume since 2026-09-26 can also write `raw
 
 ## Tests
 
-`evals/tests/` holds 20 offline tests of the runner, the scorer and the canonicaliser. No test
+`evals/tests/` holds 22 offline tests of the runner, the scorer and the canonicaliser. No test
 makes a network call: every model client is replaced by a stub, and where a test sets an endpoint
 it is a closed local port. Run them from the repo root with the `husk-api` virtualenv, which has
 pytest; `conftest.py` puts `evals/` on `sys.path`, the way the scripts import each other.
 
     husk-api/.venv/bin/python -m pytest -q evals/tests
 
-Four of the 18 skip on a fresh clone: two need Node and `corpus/stacks/app/node_modules/typescript`
+Four of the 22 skip on a fresh clone: two need Node and `corpus/stacks/app/node_modules/typescript`
 (`npm ci --prefix corpus/stacks/app`), and two need the gitignored `evals/canon/canon_go` binary and
 `gofmt`. Each test fails on the code as it stood before the 2026-09-26 fix it covers.
 
@@ -88,6 +88,7 @@ Four of the 18 skip on a fresh clone: two need Node and `corpus/stacks/app/node_
 | `test_harness_attack_resume.py` | a transport failure neither spends the §6.1 retry nor stays cached |
 | `test_harness_resume_provenance.py` | a resume keeps the first `config.json`; gate refusals are kept and retried errors preserved |
 | `test_harness_usage.py` | attempts record token usage as int-or-null, without changing scoring |
+| `test_models_tree_usage.py` | `run_models.py` cases and `husk_tree.py` files record the rewriter's usage, refusals included |
 | `test_scoring_kappa.py` | each κ worksheet row shows its own attacker's guess and label |
 | `test_scoring_permutation.py` | p = (b+1)/(m+1); a single-domain cell is not computable |
 | `test_scoring_summary.py` | coverage, NOT EVALUATED gate, A1 floor, hard veto, gate-state banner, §2b note, §5, §7 |
@@ -142,9 +143,10 @@ provider sent none or the call raised; absence is not zero.
 | `probe_models.py` | `usage` on each `probe.json` row |
 | `husk_paths.py` | `mapping_usage` in `_path_map.json` |
 | `run_smell_loop.py` | `husk_usage` and `diagnose_usage` per case; `baseline_usage` in `config.json` |
+| `run_models.py` | `usage` on each row of `cases.jsonl` (summed over post-condition attempts; a refusal's usage when the service reported it) |
+| `husk_tree.py` | `usage` on each file row of `_husk_manifest.json`, same rule |
 
-`run_models.py` and `husk_tree.py` call the rewriter but still discard its meta, so their usage is
-not persisted. The committed runs predate this for attacker and judge calls, which record latency
+The committed runs predate this for attacker and judge calls, which record latency
 only; their artifact metas do carry the rewriter's final-attempt `solution_meta.usage`, which
 `score_rsch1.py` §7 now sums as a rewriter row. The OpenAI client still retries twice underneath,
 and those retries are not recorded separately.

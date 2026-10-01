@@ -59,6 +59,7 @@ sys.path.insert(0, str(REPO / "husk-api"))
 sys.path.insert(0, str(EVALS))
 
 import counters  # noqa: E402
+from run_rsch1 import refusal_usage  # noqa: E402
 
 REASONING_MARKERS = ("<think>", "</think>", "<PAD>", "<|")
 
@@ -139,13 +140,16 @@ def evaluate_case(model: str, art: dict) -> dict:
         # The model travels in options, not LLM_MODEL: jobs for several models
         # share one thread pool, and a per-call write to the process environment
         # can hand one job another job's model.
-        out, _meta = llm.husk(src, 1, {"model": model})
+        out, meta = llm.husk(src, 1, {"model": model})
     except Exception as exc:  # noqa: BLE001
+        # A refused husk was still billed; None when the service did not say.
         rec |= {"gate": "returned_code", "failure": f"{type(exc).__name__}: {str(exc)[:150]}",
-                "latency_s": round(time.time() - t0, 1)}
+                "latency_s": round(time.time() - t0, 1), "usage": refusal_usage(exc)}
         return rec
 
     rec["latency_s"] = round(time.time() - t0, 1)
+    # Summed over post-condition attempts; None when the provider sent no usage block.
+    rec["usage"] = meta.get("usage")
     rec["output_sha256"] = sha256_text(out)
     rec["output_lines"] = out.count("\n") + 1
 

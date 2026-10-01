@@ -50,8 +50,8 @@ a parked item as a blocker is misreading this file.
 > - Resume re-asks transport failures and owed §6.1 retries; `config.json` is written once with
 >   later invocations appended; gate refusals are kept; superseded records are moved aside.
 > - Token usage recorded on attacker, judge, probe, smell-loop and path-husking calls, and per
->   rewriter attempt (the rewriter's final-attempt usage was already in artifact metas).
->   `run_models.py` and `husk_tree.py` still discard it.
+>   rewriter attempt (the rewriter's final-attempt usage was already in artifact metas), and since
+>   2026-10-01 on `run_models.py` cases and `husk_tree.py` files.
 > - Scorer: arms missing from `config.json` are scored, not dropped; coverage against expected
 >   jobs; a no-source gate reads NOT EVALUATED; the hard veto
 >   reaches §3; A1 floor; gate-state banner; §5 skips transport failures; p = (b+1)/(m+1).
