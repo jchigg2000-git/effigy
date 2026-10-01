@@ -255,3 +255,33 @@ def test_fpe_enciphers_fstring_replacement_fields():
         ast.parse(out)
     r = client.post("/dehusk", json={"input": out, "map": body["reidentify_map"]})
     assert r.json()["output"] == FSTRING_SRC
+
+
+def test_fpe_options_language_sets_comment_syntax():
+    # SOL-5: the tokenizer took both // and # as line comments in every language,
+    # so Python floor division and a TS #private field hid the rest of their line
+    # from encipherment (37 of 4,059 code names in this repo's own Python stayed
+    # in plain text). options.language now picks the language's own syntax.
+    py = "per_batch = items_sold // batch_size  # floor\n"
+    out = _post({"input": py, "crumb_level": 1})["output"]
+    assert "batch_size" in out                       # language-blind default: unchanged
+    body = _post({"input": py, "crumb_level": 1, "options": {"language": "Python"}})
+    assert "batch_size" not in body["output"] and "# floor" in body["output"]
+    assert body["meta"]["lexer"] == "python"
+
+    ts = (
+        "#!/usr/bin/env node\n"
+        "class Meter { #readingCache = 0; }\n"
+        "const s = `a${isLive ? `b${innerVal}c}` : outerVal}d`;\n"
+    )
+    out = _post({"input": ts, "crumb_level": 1, "options": {"language": ".tsx"}})["output"]
+    assert out.startswith("#!/usr/bin/env node\n")
+    for name in ("readingCache", "isLive", "innerVal", "outerVal"):
+        assert name not in out, (name, out)
+    assert "`a${" in out and "c}` : " in out and "}d`;" in out
+
+    go = "var q = `SELECT ${COL_NAME} FROM t` // raw string\nx := meterRead\n"
+    body = _post({"input": go, "crumb_level": 1, "options": {"language": "go"}})
+    assert "`SELECT ${COL_NAME} FROM t`" in body["output"]   # a Go raw string has no ${}
+    assert "meterRead" not in body["output"]
+    assert _post({"input": go, "crumb_level": 1, "options": {"language": "cobol"}})["meta"]["lexer"] == "default"

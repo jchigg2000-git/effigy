@@ -29,9 +29,12 @@ import hmac
 import hashlib
 import re
 import string
+import dataclasses
+from dataclasses import dataclass
 from typing import Callable
 
 from app.registry import register
+from app.solutions.literal_tagging import _JS_LANGUAGES, _template_end
 
 
 # Tokenizer: matches strings, comments, numbers and identifiers in priority order.
@@ -45,15 +48,58 @@ from app.registry import register
 # scanned by _span_end. In a single alternation, re.sub retried an unterminated
 # opener at every later opener, each retry scanning to the end of the input, so
 # one 200 KB request of escaped quotes held the process for minutes.
-_TOKEN_RE = re.compile(
-    r"(?P<open>'''|[`\"']|/\*)"     # quoted literal or /* block comment */
-    r"|//[^\n]*"                    # // line comment
-    r"|(?<!\.)\#[^\n]*"             # # line comment (Python, shell), but not JS `this.#field`
-    r"|(?<!\w)\d\w*"                # number (0x1F, 0o755, 1_000); its tail is not an identifier
-    # identifier (2+ chars, so `i`/`x` are never clobbered), except a two-letter string
-    # prefix (Python/Rust rf, Rb, br, rt, ...) glued to its quote, which is part of the literal
-    r"|(?![rRbBfFuUtT]{2}['\"])[^\W\d]\w+"
-)
+def _token_re(slash_comments: bool, hash_comments: bool) -> re.Pattern[str]:
+    return re.compile(
+        r"(?P<open>'''|[`\"']|/\*)"     # quoted literal or /* block comment */
+        + (r"|//[^\n]*" if slash_comments else "")   # // line comment
+        # # line comment (Python, shell), but not JS `this.#field`; where # is
+        # code, only a #! line at the very start is a comment
+        + (r"|(?<!\.)\#[^\n]*" if hash_comments else r"|\A\#![^\n]*")
+        + r"|(?<!\w)\d\w*"              # number (0x1F, 0o755, 1_000); its tail is not an identifier
+        # identifier (2+ chars, so `i`/`x` are never clobbered), except a two-letter string
+        # prefix (Python/Rust rf, Rb, br, rt, ...) glued to its quote, which is part of the literal
+        + r"|(?![rRbBfFuUtT]{2}['\"])[^\W\d]\w+"
+    )
+
+
+# Without options.language both comment syntaxes apply, so Python floor division
+# (a // b) and a JS #private declaration hide the rest of their line.
+_TOKEN_RE = _token_re(slash_comments=True, hash_comments=True)
+
+
+@dataclass(frozen=True)
+class _Lexer:
+    """What options.language changes about tokenizing."""
+    name: str
+    token_re: re.Pattern[str]
+    # A template literal nested in a ${...} stays part of the outer one.
+    js_templates: bool = False
+    # The code in a backtick literal's ${...} is enciphered. Go's raw strings
+    # have no interpolation, so under "go" they pass through like any literal.
+    backtick_interpolation: bool = True
+
+
+_DEFAULT_LEXER = _Lexer("default", _TOKEN_RE)
+_LEXERS = {
+    **dict.fromkeys(("py", "pyi", "pyw", "python"),
+                    _Lexer("python", _token_re(slash_comments=False, hash_comments=True))),
+    **dict.fromkeys(_JS_LANGUAGES,
+                    _Lexer("js", _token_re(slash_comments=True, hash_comments=False),
+                           js_templates=True)),
+    **dict.fromkeys(("go", "golang"),
+                    _Lexer("go", _token_re(slash_comments=True, hash_comments=False),
+                           backtick_interpolation=False)),
+}
+
+
+# How deep a template literal nested in ${...} is still tracked as one literal.
+_MAX_NESTING = 32
+
+
+def _lexer_for(options: dict) -> _Lexer:
+    """The lexer for options.language, spelled as literal-tagging takes it (any
+    case, an optional leading dot). Unknown or absent: the language-blind default."""
+    return _LEXERS.get(str(options.get("language") or "").lower().lstrip("."), _DEFAULT_LEXER)
 
 # A Python f-string or t-string prefix (f, rf, Fr, t, tR, ...). It is not a
 # token of its own: the one-letter forms are too short for the identifier
@@ -116,22 +162,31 @@ def _field_prefix_len(text: str, start: int) -> int:
     return 0
 
 
-def _substitute(text: str, replace: Callable[[str], str]) -> str:
+def _substitute(text: str, replace: Callable[[str], str],
+                lexer: _Lexer = _DEFAULT_LEXER) -> str:
     """Pass every token in `text` through replace(); keep the text between tokens.
 
     An f- or t-string reaches replace() with its prefix (f"...", rt'''...''').
     """
     out: list[str] = []
     dead: dict[str, int] = {}
+    js_templates = lexer.js_templates
     kept = pos = 0
-    while (m := _TOKEN_RE.search(text, pos)) is not None:
+    while (m := lexer.token_re.search(text, pos)) is not None:
         start, stop = m.span()
         opener = m.group("open")
         if opener is not None:
             prefix = _field_prefix_len(text, start) if opener in ("'''", '"', "'") else 0
             if prefix and text.startswith('"""', start):
                 opener = '"""'
-            stop = _span_end(text, start, opener, dead, len(text))
+            stop = -1
+            if opener == "`" and js_templates:
+                stop = _template_end(text, start)
+                # Unterminated: the plain first-backtick rule from here on, so a
+                # failed scan to the end of the input is paid only once.
+                js_templates = stop >= 0
+            if stop < 0:
+                stop = _span_end(text, start, opener, dead, len(text))
             if stop < 0 and opener in ("'''", '"""'):
                 stop = _span_end(text, start, opener[0], dead, len(text))
             if stop < 0:
@@ -149,14 +204,18 @@ def _substitute(text: str, replace: Callable[[str], str]) -> str:
 
 # Literal text of a template, up to the next ${ (or the end).
 _TEMPLATE_TEXT_RE = re.compile(r"(?:[^\\$]|\\.|\$(?!\{))*", re.DOTALL)
-# Code inside ${...}, up to the next quote or brace.
+# Code inside ${...}, up to the next quote or brace (or backtick, for JS).
 _INTERPOLATION_CODE_RE = re.compile(r"[^'\"{}]*")
+_INTERPOLATION_CODE_JS_RE = re.compile(r"[^'\"{}`]*")
 
 
-def _map_interpolations(template: str, fn: Callable[[str], str]) -> str:
+def _map_interpolations(template: str, fn: Callable[[str], str],
+                        js_templates: bool = False) -> str:
     """Apply fn to the code inside each ${...} of a backtick literal token and keep
     the literal text around it verbatim. Braces inside quoted strings in that
-    code do not count towards finding the closing brace."""
+    code do not count towards finding the closing brace, nor, with js_templates,
+    braces inside a nested template literal."""
+    code_re = _INTERPOLATION_CODE_JS_RE if js_templates else _INTERPOLATION_CODE_RE
     out = ["`"]
     dead: dict[str, int] = {}
     end = len(template) - 1          # the closing backtick
@@ -169,8 +228,12 @@ def _map_interpolations(template: str, fn: Callable[[str], str]) -> str:
         out.append(template[i:j])
         body = k = j + 2
         depth = 0
-        while (k := _INTERPOLATION_CODE_RE.match(template, k, end).end()) < end:
+        while (k := code_re.match(template, k, end).end()) < end:
             ch = template[k]
+            if ch == "`":
+                stop = _template_end(template, k)
+                k = stop if 0 <= stop < end else end
+                continue
             if ch in "'\"":
                 stop = _span_end(template, k, ch, dead, end)
                 k = stop if stop >= 0 else k + 1
@@ -524,14 +587,29 @@ def husk(input: str, crumb_level: int, options: dict) -> tuple[str, dict]:
     # Only the JSON boolean true opts in: the map re-identifies the source, so
     # a string such as "false" must not switch it on by being truthy.
     emit_map = options.get("emit_map") is True
+    lexer = _lexer_for(options)
+    flat = dataclasses.replace(lexer, js_templates=False)
+
+    nesting = 0
+
+    def substitute_code(code: str) -> str:
+        """Encipher the code inside a ${...} or an f-string field. Past
+        _MAX_NESTING levels a nested template ends at its first backtick, which
+        bounds the recursion on adversarial input."""
+        nonlocal nesting
+        nesting += 1
+        try:
+            return _substitute(code, replace, lexer if nesting < _MAX_NESTING else flat)
+        finally:
+            nesting -= 1
 
     def replace(tok: str) -> str:
         nonlocal skipped, replaced, collisions, non_ascii
         first = tok[0]
-        if first == "`" and "${" in tok:
-            return _map_interpolations(tok, lambda code: _substitute(code, replace))
+        if first == "`" and "${" in tok and lexer.backtick_interpolation:
+            return _map_interpolations(tok, substitute_code, lexer.js_templates)
         if first in "fFtTrR" and (head := _FIELD_HEAD_RE.match(tok)):
-            return _map_fields(tok, head.end(), lambda code: _substitute(code, replace))
+            return _map_fields(tok, head.end(), substitute_code)
         # Strings, comments and numbers: pass through verbatim
         if not (first.isalpha() or first == "_"):
             return tok
@@ -570,7 +648,7 @@ def husk(input: str, crumb_level: int, options: dict) -> tuple[str, dict]:
         replaced += 1
         return seen[tok]
 
-    output = _substitute(input, replace)
+    output = _substitute(input, replace, lexer)
 
     # The cipher never lands on a word the fixed lists spare, but the crumb-3
     # heuristic spares arbitrary short tokens, so a pseudonym can still equal a
@@ -592,6 +670,7 @@ def husk(input: str, crumb_level: int, options: dict) -> tuple[str, dict]:
         "key_id": key_id,
         "pseudonym_collisions": collisions,
         "non_ascii_identifiers": non_ascii,
+        "lexer": lexer.name,
     }
     if key_id == "ephemeral":
         meta["key_warning"] = (

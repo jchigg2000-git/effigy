@@ -130,7 +130,15 @@ What each solution adds to `meta`, beyond its counts:
   The expressions inside a Python f-string's or t-string's replacement fields
   (`f"{order.total!r:>{width}}"`) are code and are enciphered, as `${...}` in
   a backtick literal is; the literal text, conversion and format-spec text
-  around them stay verbatim.
+  around them stay verbatim. `options.language` (as `literal-tagging` takes
+  it, plus `python`/`py` and `go`/`golang`) picks the language's comment
+  syntax: under `python` a `//` is floor division, not a comment; under a
+  JS/TS name a `#` is code (`#private` fields) apart from a leading `#!`
+  line, and a nested template literal stays one literal; under `go` a
+  backtick raw string passes through verbatim, `${...}` included. Any other
+  value, or none, keeps the language-blind rules, where both `//` and `#`
+  start a comment. `meta.lexer` names the rules used (`default`, `python`,
+  `js` or `go`).
 - `literal-tagging` — set `options.language` to `js`, `jsx`, `ts`, `tsx`,
   `javascript` or `typescript` to have a nested template literal tagged as one
   literal. Without it the first inner backtick ends the literal, as before,
@@ -236,11 +244,11 @@ Other variables:
 
     pytest
 
-99 tests, offline: model clients are mocked, and `tests/conftest.py` strips
+100 tests, offline: model clients are mocked, and `tests/conftest.py` strips
 every `HUSK_CHECK_*` and `LLM_*` variable, plus `FPE_KEY`, `FPE_DEMO_KEY`,
 `FPE_ALLOW_EPHEMERAL_KEY` and `EFFIGY_ENV`, that a local `.env` would set, so
 the suite runs against the documented defaults.
-By file: `test_llm_translation.py` 27, `test_fpe.py` 20, `test_dehusk.py` 18,
+By file: `test_llm_translation.py` 27, `test_fpe.py` 21, `test_dehusk.py` 18,
 `test_literal_tagging.py` 17, `test_service_hardening.py` 11,
 `test_contract.py` 6.
 

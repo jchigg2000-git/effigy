@@ -222,7 +222,7 @@ implemented (`ROADMAP.md` §0).
 | SOL-2 | `fpe` Go husks never parsed (digit-leading pseudonyms, unspared keywords, enciphered number tails) | fixed | E7, §6 |
 | SOL-3 | `fpe` left names inside `${...}` in plain text beside their pseudonyms | fixed | E7 |
 | SOL-4 | nested template literals split into invalid JS | fixed, opt-in | §10 |
-| SOL-5 | `fpe` comment rules are language-blind; non-ASCII identifiers passed through | part | §10 |
+| SOL-5 | `fpe` comment rules are language-blind; non-ASCII identifiers passed through | fixed, opt-in *(2026-10-01)* | §10 |
 | SOL-6 | `fpe` enciphers JSX text with the code's key | owner | §10 |
 | SOL-7 | MIME types (and `and/or`, dates) classified as `PATH` | fixed | §10 |
 | SOL-8 | import specifiers become per-call placeholders; the import graph is unrecoverable | owner | §10 |
@@ -791,13 +791,19 @@ more. What the fixed defects did to committed husks is erratum E7.
   is MSG. No committed corpus or eval literal changes class.
 - An apostrophe can still pair with a quote later on the same line (`// Don't use 'x'`); the corpus
   has none.
-- `fpe`'s comment syntax is language-blind: Python `//` floor division and a TS `#private`
-  declaration hide the rest of the line from encipherment, and C `#define`/`#include` and Rust
-  `#[attr]` lines pass through verbatim. Fixing it needs `options.language`.
+- `fpe`'s comment syntax is language-blind **unless the request sets `options.language`**
+  *[2026-10-01]*. Without it, Python `//` floor division and a TS `#private` declaration hide the
+  rest of the line from encipherment (37 of 4,059 code names in this repo's own Python). With
+  `python`/`py`, `//` is code; with a JS/TS name (as `literal-tagging` takes it), `#` is code apart
+  from a leading `#!` line, and a nested template literal is one literal; with `go`/`golang`, `#` is
+  code and a backtick raw string passes through verbatim, `${...}` included. `meta.lexer` says
+  which rules ran. C `#define`/`#include` and Rust `#[attr]` lines still pass through verbatim,
+  under every setting, and neither the UI nor the evals harness sends `options.language`.
 - `fpe` now leaves two-letter string prefixes (`rf"..."`, `Rb'...'`) and the TS contextual keywords
   `keyof`, `readonly`, `declare` and `satisfies` as they are; each used to be enciphered and break
   the parse. It still enciphers TS primitive type names (`string`, `number`) at every crumb level
-  and splits a nested template at the inner backtick, and does not encipher interpolation inside
+  and, without a JS/TS `options.language`, splits a nested template at the inner backtick, and does
+  not encipher interpolation inside
   double-quoted strings (Ruby `#{}`, Kotlin/shell `${}`, C# `$"{}"`).
 - *[2026-10-01]* **`fpe` enciphers the expressions in Python f- and t-string replacement fields**
   (`f"{invoice.amount_due!r:>{width}}"`, any prefix case, `'''`/`"""` included); the literal
