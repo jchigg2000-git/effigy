@@ -390,7 +390,9 @@ def husk(input: str, crumb_level: int, options: dict) -> tuple[str, dict]:
     replaced = 0
     collisions = 0
     non_ascii = 0
-    emit_map = bool(options.get("emit_map"))
+    # Only the JSON boolean true opts in: the map re-identifies the source, so
+    # a string such as "false" must not switch it on by being truthy.
+    emit_map = options.get("emit_map") is True
 
     def replace(tok: str) -> str:
         nonlocal skipped, replaced, collisions, non_ascii

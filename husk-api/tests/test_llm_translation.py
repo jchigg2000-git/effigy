@@ -419,3 +419,25 @@ def test_module_name_check_is_disablable():
                                    "HUSK_CHECK_COPIED_SHARE": "9",
                                    "HUSK_CHECK_RETENTION": "9"}):
         assert check(_GO_SOURCE, husk, ".go")["leaked_module_names"] == []
+
+
+def test_undotted_suffix_option_reaches_the_gate_dotted():
+    """options.suffix "ts" (no dot, any case) used to match no syntax family,
+    so the gate stripped prose with Python rules on TypeScript input."""
+    import app.solutions.llm_translation as lt
+
+    seen = []
+    real_check = lt.check
+
+    def spy(source, husk, suffix=".py"):
+        seen.append(suffix)
+        return real_check(source, husk, suffix)
+
+    with patch.object(lt, "check", spy), \
+            patch("app.solutions.llm_translation.OpenAI") as MockClient:
+        MockClient.return_value.chat.completions.create.side_effect = [
+            _mock_completion(_GOOD_HUSK)]
+        r = client.post("/husk/llm-translation", json={
+            "input": _SOURCE, "crumb_level": 1, "options": {"suffix": " TS "}})
+    assert r.status_code == 200, r.text
+    assert seen == [".ts"]

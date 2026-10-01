@@ -311,6 +311,17 @@ def _complete(client, model: str, messages: list, temperature: float,
     return husk_text, _usage(resp), discarded
 
 
+def _normalize_suffix(value: Any) -> str | None:
+    """Turn a caller's options.suffix ("ts", ".TS", " go ") into the dotted,
+    lower-case form the gate keys on. Without this, "ts" silently matched no
+    syntax family and the gate stripped prose with Python rules. Non-strings
+    and blanks return None so the suffix is inferred instead."""
+    if not isinstance(value, str) or not value.strip():
+        return None
+    s = value.strip().lower()
+    return s if s.startswith(".") else "." + s
+
+
 def _infer_suffix(code: str) -> str:
     """Guess the comment/string syntax family. Only three answers matter to the
     post-condition: hash comments, slash comments, or triple-quoted blocks."""
@@ -359,7 +370,8 @@ def husk(input: str, crumb_level: int, options: dict) -> tuple[str, dict]:
     # The wire contract is a bare string with no filename, so the comment syntax
     # has to be inferred or the post-condition strips prose with the wrong rules
     # on Go/TS input. options.suffix overrides when the caller knows.
-    suffix = (options.get("suffix") if isinstance(options, dict) else None) or _infer_suffix(input)
+    suffix = _normalize_suffix(options.get("suffix") if isinstance(options, dict) else None) \
+        or _infer_suffix(input)
 
     messages = [
         {"role": "system", "content": _SYSTEM_PROMPT},

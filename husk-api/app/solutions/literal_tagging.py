@@ -307,7 +307,8 @@ def _replace_literals(
     description="Replaces every string literal with a typed placeholder. Repeated literals → repeated tags.",
 )
 def husk(input: str, crumb_level: int, options: dict) -> tuple[str, dict]:
-    emit_map = bool(options.get("emit_map"))
+    # Only the JSON boolean true opts in (see fpe.husk).
+    emit_map = options.get("emit_map") is True
     # Nested template literals are tracked only when the caller says the input
     # is JS/TS. Go raw strings are backticked too, and a stray "${" in one
     # would send the scanner on through the code after it.

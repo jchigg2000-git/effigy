@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -83,6 +84,18 @@ def test_reverse_substitute_placeholder_style_key():
 
 def test_fpe_no_map_by_default():
     r = client.post("/husk/fpe", json={"input": "def get_customer(): pass", "crumb_level": 1})
+    assert r.status_code == 200, r.text
+    assert r.json()["reidentify_map"] is None
+
+
+@pytest.mark.parametrize("slug", ["fpe", "literal-tagging"])
+def test_emit_map_string_false_does_not_opt_in(slug):
+    """The map re-identifies the source; a truthy non-boolean such as the
+    string "false" used to switch it on."""
+    r = client.post(f"/husk/{slug}", json={
+        "input": 'def get_customer(): return "a@b.com"', "crumb_level": 1,
+        "options": {"emit_map": "false"},
+    })
     assert r.status_code == 200, r.text
     assert r.json()["reidentify_map"] is None
 

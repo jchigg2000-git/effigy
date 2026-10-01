@@ -75,7 +75,8 @@ pseudonym → original map they build internally, so an LLM's diagnosis of the
 *husked* code can be rewritten back onto the real source — the reverse half of
 the promise in the top-level README.
 
-Set `options.emit_map: true` on a husk request and the response gains a
+Set `options.emit_map: true` (the JSON boolean; any other value, the string
+`"true"` included, leaves it off) on a husk request and the response gains a
 top-level `reidentify_map` (a `{pseudonym: original}` object; `null` when not
 requested or when the solution can't reverse, e.g. `llm-translation`):
 
@@ -218,7 +219,8 @@ input under `HUSK_CHECK_MIN_LINES` code lines, which can come back
 byte-identical with a `200`. The module-name check reads Go import paths: bare
 module names, and the org and repo segments of a host-prefixed path when an
 import has an `internal/` segment. It applies Go rules whenever the input has a
-`package` clause, whatever `options.suffix` says.
+`package` clause, whatever `options.suffix` says. `options.suffix` may be
+given with or without the dot, in any case (`ts`, `.TS`).
 
 Other variables:
 
@@ -230,11 +232,11 @@ Other variables:
 
     pytest
 
-95 tests, offline: model clients are mocked, and `tests/conftest.py` strips
+98 tests, offline: model clients are mocked, and `tests/conftest.py` strips
 every `HUSK_CHECK_*` and `LLM_*` variable, plus `FPE_KEY`, `FPE_DEMO_KEY`,
 `FPE_ALLOW_EPHEMERAL_KEY` and `EFFIGY_ENV`, that a local `.env` would set, so
 the suite runs against the documented defaults.
-By file: `test_llm_translation.py` 26, `test_fpe.py` 18, `test_dehusk.py` 16,
+By file: `test_llm_translation.py` 27, `test_fpe.py` 18, `test_dehusk.py` 18,
 `test_literal_tagging.py` 15, `test_service_hardening.py` 11,
 `test_contract.py` 6.
 
