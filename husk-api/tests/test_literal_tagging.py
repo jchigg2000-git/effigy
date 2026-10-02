@@ -155,3 +155,22 @@ def test_rune_literals_stay_single_characters():
     src = "var m = map[byte]string{'S': \"SCHEDULED\"}; if b == '\\n' {}"
     out = _post({"input": src, "crumb_level": 1})["output"]
     assert out == "var m = map[byte]string{'S': \"<MSG:0>\"}; if b == '\\n' {}"
+
+
+def test_rust_lifetimes_and_raw_strings():
+    # A lifetime's quote paired with the next quote on its line, so code became a
+    # placeholder (fn deny<'<MSG:0>'a str)), and a raw string's inner quotes split
+    # it, leaving "member_id" in plain text between two placeholders.
+    src = (
+        "pub fn deny<'a>(reason: &'a str) -> Option<&'a str> { // don't deny 'em\n"
+        "    let q = r#\"SELECT \"member_id\" FROM claims\"#; let ch = '\\''; let e = '\\u{1F600}';\n"
+        "    let msg = \"claim denied\"; 'outer: loop { break 'outer; }\n"
+        "}\n"
+    )
+    assert "<MSG:0>'a str)" in _post({"input": src, "crumb_level": 1})["output"]
+    body = _post({"input": src, "crumb_level": 1, "options": {"language": "rust", "emit_map": True}})
+    out = body["output"]
+    assert out == src.replace('SELECT "member_id" FROM claims', "<SQL:0>").replace(
+        "claim denied", "<MSG:0>")
+    r = client.post("/dehusk", json={"input": out, "map": body["reidentify_map"]})
+    assert r.json()["output"] == src

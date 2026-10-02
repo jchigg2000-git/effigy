@@ -151,6 +151,10 @@ What each solution adds to `meta`, beyond its counts:
   literal. Without it the first inner backtick ends the literal, as before,
   because a Go raw string containing `${` would otherwise swallow the code
   after it.
+  Set it to `rust` or `rs` to have a single quote open only a char literal
+  (left as it is), so a lifetime or label (`<'a>`, `&'a str`, `'outer:`) no
+  longer pairs with the next quote and turns code into a placeholder, and to
+  tag a raw string (`r#"..."#`) whole, inner quotes included.
 - `llm-translation` — `meta.postcondition` is the gate's full report, now
   with `retries_allowed`. `meta.usage` is summed over every post-condition
   attempt, with `reasoning_tokens`, and `meta.usage_attempts` lists each
@@ -251,12 +255,12 @@ Other variables:
 
     pytest
 
-103 tests, offline: model clients are mocked, and `tests/conftest.py` strips
+104 tests, offline: model clients are mocked, and `tests/conftest.py` strips
 every `HUSK_CHECK_*` and `LLM_*` variable, plus `FPE_KEY`, `FPE_DEMO_KEY`,
 `FPE_ALLOW_EPHEMERAL_KEY` and `EFFIGY_ENV`, that a local `.env` would set, so
 the suite runs against the documented defaults.
 By file: `test_llm_translation.py` 27, `test_fpe.py` 23, `test_dehusk.py` 18,
-`test_literal_tagging.py` 17, `test_service_hardening.py` 12,
+`test_literal_tagging.py` 18, `test_service_hardening.py` 12,
 `test_contract.py` 6.
 
 ## Adding a solution

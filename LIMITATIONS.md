@@ -792,6 +792,13 @@ more. What the fixed defects did to committed husks is erratum E7.
   is MSG. No committed corpus or eval literal changes class.
 - An apostrophe can still pair with a quote later on the same line (`// Don't use 'x'`); the corpus
   has none.
+- *[2026-10-01]* **`literal-tagging` turned Rust code into placeholders.** A lifetime's quote paired
+  with the next quote on its line (`fn deny<'a>(r: &'a str)` became `fn deny<'<MSG:0>'a str)`), and
+  a raw string's inner quotes split it (`r#"SELECT "member_id" FROM t"#` kept `member_id` in plain
+  text between two placeholders). With `options.language` `rust`/`rs`, a single quote opens only a
+  char literal, which is left as it is, and a raw string is tagged whole; husk → dehusk is exact.
+  Without it the old rules apply. C++ digit separators (`1'000'000`) still pair up under every
+  setting.
 - `fpe`'s comment syntax is language-blind **unless the request sets `options.language`**
   *[2026-10-01]*. Without it, Python `//` floor division and a TS `#private` declaration hide the
   rest of the line from encipherment (37 of 4,059 code names in this repo's own Python). With

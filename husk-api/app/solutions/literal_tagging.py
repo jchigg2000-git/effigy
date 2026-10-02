@@ -31,6 +31,14 @@ _SQ_RUN_RE = re.compile(r"'(?:\\.|[^'\\\n])*", re.DOTALL)
 
 # Languages whose backticks are template literals with ${...} interpolation.
 _JS_LANGUAGES = frozenset({"js", "jsx", "ts", "tsx", "javascript", "typescript"})
+_RUST_LANGUAGES = frozenset({"rs", "rust"})
+
+# Rust: a single quote opens only a char literal ('x', '\n', '\u{1F600}'); in
+# <'a>, &'a str and 'outer: it is a lifetime or a label, and a char literal is
+# left as it is, like any rune. A raw string r"..." / br#"..."# has no escapes
+# and ends at a quote followed by as many # as opened it.
+_RUST_CHAR_RE = re.compile(r"'(?:[^'\\\n]|\\(?:u\{[0-9A-Fa-f_]{1,8}\}|x[0-9A-Fa-f]{2}|.))'")
+_RUST_RAW_HEAD_RE = re.compile(r"(?<![\w#])b?r(#*)$")
 
 
 def _template_end(s: str, i: int) -> int:
@@ -82,7 +90,23 @@ def _template_end(s: str, i: int) -> int:
     return -1
 
 
-def _iter_literals(s: str, js_templates: bool = False):
+def _rust_raw_end(s: str, i: int, dead: set[str]) -> int:
+    """If the double quote at s[i] opens a Rust raw string, the index just past
+    its closing quote (its closing #s stay outside the literal), else -1. A
+    closer that is missing from one point on is missing from every later one,
+    so `dead` makes each failed search count once."""
+    head = _RUST_RAW_HEAD_RE.search(s, max(0, i - 258), i)
+    if head is None:
+        return -1
+    closer = '"' + head.group(1)
+    close = -1 if closer in dead else s.find(closer, i + 1)
+    if close < 0:
+        dead.add(closer)
+        return -1
+    return close + 1
+
+
+def _iter_literals(s: str, js_templates: bool = False, rust: bool = False):
     """Yield (start, end) for each literal, left to right.
 
     Gives the same spans as one alternation of _BRANCHES under re.sub, which is
@@ -94,6 +118,7 @@ def _iter_literals(s: str, js_templates: bool = False):
     """
     n = len(s)
     dead_until = [0] * len(_BRANCHES)
+    dead_raw: set[str] = set()
     pos = 0
     while True:
         m = _OPENER_RE.search(s, pos)
@@ -101,6 +126,14 @@ def _iter_literals(s: str, js_templates: bool = False):
             return
         i = m.start()
         end = -1
+        if rust and s[i] == "'":
+            char = _RUST_CHAR_RE.match(s, i)
+            pos = char.end() if char else i + 1
+            continue
+        if rust and s[i] == '"' and (end := _rust_raw_end(s, i, dead_raw)) >= 0:
+            yield i, end
+            pos = end
+            continue
         for b, (opener, rx) in enumerate(_BRANCHES):
             if i < dead_until[b] or not s.startswith(opener, i):
                 continue
@@ -266,7 +299,8 @@ def _format_placeholder(klass: str, idx: int, crumb_level: int, content: str) ->
 
 
 def _replace_literals(
-    input_str: str, crumb_level: int, emit_map: bool = False, js_templates: bool = False
+    input_str: str, crumb_level: int, emit_map: bool = False, js_templates: bool = False,
+    rust: bool = False,
 ) -> tuple[str, dict[str, int], dict[str, str]]:
     indices: dict[tuple[str, str], int] = {}
     counters: dict[str, int] = {}
@@ -293,7 +327,7 @@ def _replace_literals(
         return f"{quote}{placeholder}{quote}"
 
     parts, last = [], 0
-    for start, end in _iter_literals(input_str, js_templates):
+    for start, end in _iter_literals(input_str, js_templates, rust):
         parts.append(input_str[last:start])
         parts.append(replace(input_str[start:end]))
         last = end
@@ -314,7 +348,7 @@ def husk(input: str, crumb_level: int, options: dict) -> tuple[str, dict]:
     # would send the scanner on through the code after it.
     language = str(options.get("language") or "").lower().lstrip(".")
     output, by_class, reidentify_map = _replace_literals(
-        input, crumb_level, emit_map, language in _JS_LANGUAGES
+        input, crumb_level, emit_map, language in _JS_LANGUAGES, language in _RUST_LANGUAGES
     )
     meta = {
         "literals_by_class": by_class,
