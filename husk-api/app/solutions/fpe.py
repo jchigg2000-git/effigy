@@ -18,6 +18,8 @@ so a Go raw string containing ${...} has the identifiers inside it enciphered
 too. The same holds for the replacement fields of a Python f-string or t-string
 (f"{order.total!r:>{width}}"): the expressions are code and are enciphered,
 while the literal text, the conversion and the format-spec text stay verbatim.
+With options.language set, Kotlin string templates ("$id", "${a.b}") and C#
+interpolated strings ($"{total,10:C2}") are treated the same way.
 
 Crumb levels control which tokens are spared (kept as-is) vs ciphered.
 """
@@ -100,6 +102,9 @@ class _Lexer:
     # Kotlin string templates: "$name" and "${expr}" in a double-quoted string
     # are code and are enciphered; the string's text stays verbatim.
     dq_templates: bool = False
+    # C# interpolated strings: the expressions in $"...{expr,align:format}..."
+    # (and $@"...", @$"...") are code and are enciphered.
+    cs_interpolation: bool = False
 
 
 # C, and C++ on top of it. `defined` is the preprocessor operator.
@@ -195,6 +200,32 @@ _KOTLIN_BUILTINS = frozenset({
     "equals", "hashCode", "size", "isEmpty", "map", "filter", "forEach",
 })
 
+# C#: its built-in type names are keywords, so they are spared at crumb 0 too.
+_CSHARP_KEYWORDS = frozenset({
+    "bool", "byte", "sbyte", "char", "decimal", "double", "float", "int",
+    "uint", "long", "ulong", "short", "ushort", "object", "string", "base",
+    "checked", "unchecked", "event", "explicit", "implicit", "extern", "fixed",
+    "foreach", "goto", "lock", "operator", "out", "override", "params", "ref",
+    "sealed", "sizeof", "stackalloc", "unsafe", "virtual", "volatile", "get",
+    "set", "init", "value", "dynamic", "nameof", "when", "where", "record",
+    "partial", "required", "add", "remove", "global", "notnull", "unmanaged",
+    "managed", "file", "scoped", "args", "nint", "nuint",
+    # #nullable enable / disable / restore [warnings | annotations]
+    "enable", "disable", "restore", "warnings", "annotations",
+})
+_CSHARP_BUILTINS = frozenset({
+    "System", "Console", "WriteLine", "Write", "Task", "ValueTask", "List",
+    "Dictionary", "HashSet", "IEnumerable", "IList", "IDictionary",
+    "ICollection", "IReadOnlyList", "IDisposable", "Func", "Action", "Guid",
+    "DateTime", "DateTimeOffset", "TimeSpan", "Nullable", "Span", "Memory",
+    "StringBuilder", "Linq", "Select", "Where", "ToList", "ToArray",
+    "FirstOrDefault", "Any", "Count", "OrderBy", "CancellationToken",
+    "ArgumentException", "ArgumentNullException", "InvalidOperationException",
+    "NotImplementedException", "ToString", "Equals", "GetHashCode", "Length",
+    "Value", "HasValue", "Empty", "Format", "Parse", "TryParse", "Dispose",
+    "Generic", "Collections", "Threading", "Tasks",
+})
+
 
 _DEFAULT_LEXER = _Lexer("default", _TOKEN_RE)
 _C_TOKEN_RE = _token_re(slash_comments=True, hash_comments=False, c_directives=True)
@@ -222,6 +253,11 @@ _LEXERS = {
                     _Lexer("kotlin", _token_re(slash_comments=True, hash_comments=False),
                            backtick_interpolation=False, dq_templates=True,
                            keywords=_KOTLIN_KEYWORDS, builtins=_KOTLIN_BUILTINS)),
+    # #if/#region/#define lines are code apart from the directive name, as in C.
+    **dict.fromkeys(("cs", "c#", "csharp"),
+                    _Lexer("csharp", _C_TOKEN_RE, backtick_interpolation=False,
+                           cs_interpolation=True,
+                           keywords=_CSHARP_KEYWORDS, builtins=_CSHARP_BUILTINS)),
     **dict.fromkeys(("rs", "rust"),
                     _Lexer("rust", _token_re(slash_comments=True, hash_comments=False, rust=True),
                            backtick_interpolation=False,
@@ -299,6 +335,15 @@ def _field_prefix_len(text: str, start: int) -> int:
     return 0
 
 
+def _cs_prefix_len(text: str, start: int) -> int:
+    """Length of the C# interpolation prefix ($, $@, @$) before the quote at
+    text[start], or 0 when the string is not interpolated."""
+    for p in ("$@", "@$", "$"):
+        if start >= len(p) and text.startswith(p, start - len(p)):
+            return len(p)
+    return 0
+
+
 def _substitute(text: str, replace: Callable[[str], str],
                 lexer: _Lexer = _DEFAULT_LEXER) -> str:
     """Pass every token in `text` through replace(); keep the text between tokens.
@@ -328,7 +373,10 @@ def _substitute(text: str, replace: Callable[[str], str],
             kept = pos = stop
             continue
         if opener is not None:
-            prefix = _field_prefix_len(text, start) if opener in ("'''", '"', "'") else 0
+            if lexer.cs_interpolation:
+                prefix = _cs_prefix_len(text, start) if opener == '"' else 0
+            else:
+                prefix = _field_prefix_len(text, start) if opener in ("'''", '"', "'") else 0
             if prefix and text.startswith('"""', start):
                 opener = '"""'
             stop = -1
@@ -517,6 +565,66 @@ def _map_fields(tok: str, prefix: int, fn: Callable[[str], str]) -> str:
             break
         out.append(field[0])
         i = field[1]
+    out.append(tok[end:])
+    return "".join(out)
+
+
+# C# interpolated-string text up to the next hole: {{ and }} are escaped braces.
+_CS_TEXT_RE = re.compile(r"(?:[^{}\\]|\{\{|\}\}|\\.)*", re.DOTALL)
+_CS_TEXT_VERBATIM_RE = re.compile(r"(?:[^{}]|\{\{|\}\})*")
+# Expression code in a hole, up to a quote, a bracket, or the , and : that end it.
+_CS_CODE_RE = re.compile(r"[^'\"()\[\]{},:]*")
+# Alignment and format text, up to the hole's closing brace.
+_CS_TAIL_RE = re.compile(r"[^}]*")
+
+
+def _map_cs_holes(tok: str, prefix: int, fn: Callable[[str], str]) -> str:
+    """Apply fn to the expression in each hole of a C# interpolated string token
+    ($"...", $@"...", @$"...") and keep its text, alignment and format verbatim.
+    A hole that does not close leaves the rest of the literal verbatim."""
+    end = len(tok) - 1               # the closing quote
+    if end <= prefix:
+        return tok
+    text_re = _CS_TEXT_VERBATIM_RE if "@" in tok[:prefix] else _CS_TEXT_RE
+    out = [tok[:prefix + 1]]
+    dead: dict[str, int] = {}
+    i = prefix + 1
+    while i < end:
+        j = text_re.match(tok, i, end).end()
+        out.append(tok[i:j])
+        if j >= end:
+            break
+        if tok[j] == "}":
+            out.append("}")
+            i = j + 1
+            continue
+        k = j + 1
+        depth = 0
+        while True:
+            k = _CS_CODE_RE.match(tok, k, end).end()
+            if k >= end:
+                break
+            ch = tok[k]
+            if ch in "'\"":
+                stop = _span_end(tok, k, ch, dead, end)
+                if stop < 0:
+                    k = end
+                    break
+                k = stop
+                continue
+            if ch in "([{":
+                depth += 1
+            elif depth and ch in ")]}":
+                depth -= 1
+            elif not depth and ch in "},:":
+                break
+            k += 1
+        tail = _CS_TAIL_RE.match(tok, k, end).end() if k < end else end
+        if tail >= end:
+            out.append(tok[j:end])
+            break
+        out.append("{" + fn(tok[j + 1:k]) + tok[k:tail + 1])
+        i = tail + 1
     out.append(tok[end:])
     return "".join(out)
 
@@ -779,6 +887,8 @@ def husk(input: str, crumb_level: int, options: dict) -> tuple[str, dict]:
         first = tok[0]
         if first == "`" and "${" in tok and lexer.backtick_interpolation:
             return _map_interpolations(tok, substitute_code, lexer.js_templates)
+        if lexer.cs_interpolation and first in "$@" and (p := _cs_prefix_len(tok, tok.find('"'))):
+            return _map_cs_holes(tok, p, substitute_code)
         if first == '"' and lexer.dq_templates and "$" in tok and len(tok) > 1:
             return _map_interpolations(tok, substitute_code, simple_names=True)
         if first in "fFtTrR" and (head := _FIELD_HEAD_RE.match(tok)):

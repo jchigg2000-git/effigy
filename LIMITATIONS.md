@@ -834,6 +834,14 @@ more. What the fixed defects did to committed husks is erratum E7.
   (`synchronized`, `throws`, `long`, `data`, `override`, `val`, ...), which had been enciphered;
   Kotlin's soft keywords (`data`, `value`, `field`, `it`, `get`, `set`) are spared everywhere, not
   only where they are keywords. Ruby, shell and C# interpolation are still not enciphered.]*
+  *[2026-10-01, later: `cs`/`c#`/`csharp` enciphers the expressions in C# interpolated strings
+  (`$"..."`, `$@"..."`, `@$"..."`; text, `{{`/`}}`, alignment and format verbatim), treats
+  `#define`/`#if`/`#region` lines as code apart from the directive name (language-blind they are
+  `#` comments, so a `#define`d symbol and a `#region` title stay in plain text), and spares C#'s
+  keywords, its type names among them, at every level. Not handled: C# 11 raw strings
+  (`$"""..."""`) and a verbatim interpolated string with a doubled quote (`$@"say ""{x}"""`),
+  whose holes after the `""` stay in plain text. Ruby and shell interpolation are still not
+  enciphered.]*
 - *[2026-10-01]* **`fpe` enciphers the expressions in Python f- and t-string replacement fields**
   (`f"{invoice.amount_due!r:>{width}}"`, any prefix case, `'''`/`"""` included); the literal
   text, `{{`/`}}`, `\N{...}`, the conversion and the format-spec text stay verbatim. Every such

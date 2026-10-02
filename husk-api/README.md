@@ -141,12 +141,14 @@ What each solution adds to `meta`, beyond its counts:
   line, so a `#define`d name is enciphered like its uses; under `rust`/`rs` an
   attribute's arguments are code, raw strings stay verbatim, and a lifetime's
   quote (`&'a str`) does not open a string; under `kotlin` (`kt`, `kts`) the
-  names in a string template (`"$id"`, `"${a.b}"`) are enciphered; `java`
-  changes only the spared words. Each also spares its language's
+  names in a string template (`"$id"`, `"${a.b}"`) are enciphered; under
+  `csharp` (`cs`, `c#`) the expressions in an interpolated string's holes
+  (`$"{total,10:C2}"`) are enciphered and `#define`/`#if`/`#region` lines are
+  code, as in C; `java` changes only the spared words. Each also spares its language's
   keywords at every level and its standard names from crumb 1. Any other
   value, or none, keeps the language-blind rules, where both `//` and `#`
   start a comment. `meta.lexer` names the rules used (`default`, `python`,
-  `js`, `go`, `c`, `cpp`, `java`, `kotlin` or `rust`). The UI's Language menu sends this option
+  `js`, `go`, `c`, `cpp`, `csharp`, `java`, `kotlin` or `rust`). The UI's Language menu sends this option
   for both solutions.
 - `literal-tagging` — set `options.language` to `js`, `jsx`, `ts`, `tsx`,
   `javascript` or `typescript` to have a nested template literal tagged as one
@@ -257,11 +259,11 @@ Other variables:
 
     pytest
 
-105 tests, offline: model clients are mocked, and `tests/conftest.py` strips
+106 tests, offline: model clients are mocked, and `tests/conftest.py` strips
 every `HUSK_CHECK_*` and `LLM_*` variable, plus `FPE_KEY`, `FPE_DEMO_KEY`,
 `FPE_ALLOW_EPHEMERAL_KEY` and `EFFIGY_ENV`, that a local `.env` would set, so
 the suite runs against the documented defaults.
-By file: `test_llm_translation.py` 27, `test_fpe.py` 24, `test_dehusk.py` 18,
+By file: `test_llm_translation.py` 27, `test_fpe.py` 25, `test_dehusk.py` 18,
 `test_literal_tagging.py` 18, `test_service_hardening.py` 12,
 `test_contract.py` 6.
 

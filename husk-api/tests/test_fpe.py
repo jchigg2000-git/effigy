@@ -402,3 +402,43 @@ def test_fpe_java_and_kotlin_lexers():
     for kept in ("@Override\n", "public synchronized boolean ", "(final long ", ", double ", ") throws ",
                  "char ", "short n", "List<String> ", "new ArrayList<>()", ".isEmpty()"):
         assert kept in out, (kept, out)
+
+
+CS_SRC = '''#define CLAIMS_AUDIT
+#nullable enable
+#region Adjudication
+public sealed class ClaimService {
+    public decimal Deny(string memberId, decimal amount) {
+#if CLAIMS_AUDIT
+        Console.WriteLine($"Member {memberId} owes {amount,10:C2} of {ledger.Total(memberId)!.Value} {{as-is}}");
+        var path = $@"C:\\claims\\{memberId}.json"; var raw = @"C:\\{notAHole}";
+#endif
+        return amount;
+    }
+}
+#endregion
+'''
+
+
+def test_fpe_csharp_lexer():
+    # Language-blind, every C# preprocessor line was a "#" comment (the #define'd
+    # name and the #region title stayed in plain text) and an interpolated
+    # string passed through verbatim with every name in its holes; C#'s type
+    # keywords (decimal, string at crumb 0) were enciphered.
+    import re
+
+    blind = _post({"input": CS_SRC, "crumb_level": 1})["output"]
+    assert "#define CLAIMS_AUDIT" in blind and "{memberId}" in blind
+    body = _post({"input": CS_SRC, "crumb_level": 0, "options": {"language": "c#", "emit_map": True}})
+    out = body["output"]
+    assert body["meta"]["lexer"] == "csharp"
+    for name in ("CLAIMS_AUDIT", "Adjudication", "ClaimService", "Deny", "memberId", "amount",
+                 "ledger", "Total", "path"):
+        assert not re.search(rf"\b{name}\b", out), (name, out)
+    for kept in ("#define ", "#nullable enable\n", "#region ", "#if ", "#endif\n", "#endregion\n",
+                 "public sealed class ", "public decimal ", "(string ", ", decimal ",
+                 '($"Member {', ",10:C2} of {", ")!.", " {{as-is}}\");", '$@"C:\\claims\\{',
+                 '}.json";', '@"C:\\{notAHole}";'):
+        assert kept in out, (kept, out)
+    r = client.post("/dehusk", json={"input": out, "map": body["reidentify_map"]})
+    assert r.json()["output"] == CS_SRC
