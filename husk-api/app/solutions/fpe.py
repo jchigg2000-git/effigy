@@ -97,6 +97,9 @@ class _Lexer:
     # predeclared types and standard names, spared from crumb 1 (L1).
     keywords: frozenset[str] = frozenset()
     builtins: frozenset[str] = frozenset()
+    # Kotlin string templates: "$name" and "${expr}" in a double-quoted string
+    # are code and are enciphered; the string's text stays verbatim.
+    dq_templates: bool = False
 
 
 # C, and C++ on top of it. `defined` is the preprocessor operator.
@@ -152,6 +155,46 @@ _RUST_BUILTINS = frozenset({
     "into", "to_string", "as_str", "new", "test", "feature",
 })
 
+_JAVA_KEYWORDS = frozenset({
+    "boolean", "byte", "char", "double", "float", "int", "long", "short",
+    "synchronized", "throws", "transient", "native", "strictfp", "volatile",
+    "goto", "record", "sealed", "permits", "yield",
+})
+_JAVA_BUILTINS = frozenset({
+    "Integer", "Long", "Double", "Float", "Character", "Byte", "Short", "Void",
+    "List", "ArrayList", "LinkedList", "HashMap", "TreeMap", "LinkedHashMap",
+    "HashSet", "TreeSet", "Optional", "Stream", "Collectors", "System", "out",
+    "err", "println", "printf", "Objects", "Arrays", "Collections",
+    "Iterable", "Iterator", "Comparable", "Comparator", "Runnable", "Thread",
+    "StringBuilder", "CharSequence", "Throwable", "IllegalArgumentException",
+    "IllegalStateException", "NullPointerException", "UnsupportedOperationException",
+    "IOException", "Override", "Deprecated", "FunctionalInterface",
+    "SuppressWarnings", "SafeVarargs", "BigDecimal", "BigInteger", "equals",
+    "hashCode", "toString", "valueOf", "size", "get", "put", "add", "isEmpty",
+})
+# Kotlin, hard and soft keywords alike: enciphering `data` in `data class` or
+# `value` in a setter breaks the parse as surely as enciphering `val`.
+_KOTLIN_KEYWORDS = frozenset({
+    "val", "when", "object", "typealias", "companion", "data", "sealed",
+    "inner", "open", "override", "lateinit", "vararg", "inline", "noinline",
+    "crossinline", "reified", "suspend", "tailrec", "operator", "infix",
+    "external", "annotation", "out", "by", "get", "set", "field", "it",
+    "constructor", "where", "expect", "actual", "value", "dynamic", "file",
+    "property", "receiver", "param", "setparam", "delegate",
+})
+_KOTLIN_BUILTINS = frozenset({
+    "Int", "Long", "Double", "Float", "Char", "Byte", "Short", "Unit", "Any",
+    "Nothing", "Array", "IntArray", "List", "MutableList", "MutableMap",
+    "MutableSet", "Sequence", "Pair", "Triple", "Result", "Throwable",
+    "Comparable", "Iterable", "Collection", "listOf", "mutableListOf", "mapOf",
+    "mutableMapOf", "setOf", "mutableSetOf", "emptyList", "emptyMap", "arrayOf",
+    "println", "require", "requireNotNull", "check", "checkNotNull", "error",
+    "let", "also", "apply", "run", "with", "takeIf", "lazy", "to", "repeat",
+    "TODO", "IllegalArgumentException", "IllegalStateException", "JvmStatic",
+    "JvmField", "JvmOverloads", "Suppress", "Deprecated", "toString",
+    "equals", "hashCode", "size", "isEmpty", "map", "filter", "forEach",
+})
+
 
 _DEFAULT_LEXER = _Lexer("default", _TOKEN_RE)
 _C_TOKEN_RE = _token_re(slash_comments=True, hash_comments=False, c_directives=True)
@@ -170,6 +213,15 @@ _LEXERS = {
     **dict.fromkeys(("cpp", "c++", "cc", "cxx", "hpp", "hh", "hxx"),
                     _Lexer("cpp", _C_TOKEN_RE, backtick_interpolation=False,
                            keywords=_CPP_KEYWORDS, builtins=_CPP_BUILTINS)),
+    **dict.fromkeys(("java",),
+                    _Lexer("java", _token_re(slash_comments=True, hash_comments=False),
+                           backtick_interpolation=False,
+                           keywords=_JAVA_KEYWORDS, builtins=_JAVA_BUILTINS)),
+    # A Kotlin backtick quotes an identifier; it still passes through verbatim.
+    **dict.fromkeys(("kt", "kts", "kotlin"),
+                    _Lexer("kotlin", _token_re(slash_comments=True, hash_comments=False),
+                           backtick_interpolation=False, dq_templates=True,
+                           keywords=_KOTLIN_KEYWORDS, builtins=_KOTLIN_BUILTINS)),
     **dict.fromkeys(("rs", "rust"),
                     _Lexer("rust", _token_re(slash_comments=True, hash_comments=False, rust=True),
                            backtick_interpolation=False,
@@ -304,24 +356,35 @@ def _substitute(text: str, replace: Callable[[str], str],
 
 # Literal text of a template, up to the next ${ (or the end).
 _TEMPLATE_TEXT_RE = re.compile(r"(?:[^\\$]|\\.|\$(?!\{))*", re.DOTALL)
+# Kotlin string text, up to the next ${ or $name.
+_DQ_TEMPLATE_TEXT_RE = re.compile(r"(?:[^\\$]|\\.|\$(?![{A-Za-z_]))*", re.DOTALL)
+_DQ_TEMPLATE_NAME_RE = re.compile(r"[A-Za-z_]\w*")
 # Code inside ${...}, up to the next quote or brace (or backtick, for JS).
 _INTERPOLATION_CODE_RE = re.compile(r"[^'\"{}]*")
 _INTERPOLATION_CODE_JS_RE = re.compile(r"[^'\"{}`]*")
 
 
 def _map_interpolations(template: str, fn: Callable[[str], str],
-                        js_templates: bool = False) -> str:
-    """Apply fn to the code inside each ${...} of a backtick literal token and keep
+                        js_templates: bool = False, simple_names: bool = False) -> str:
+    """Apply fn to the code inside each ${...} of a backtick literal token (or,
+    with simple_names, of a Kotlin string, where $name is code too) and keep
     the literal text around it verbatim. Braces inside quoted strings in that
     code do not count towards finding the closing brace, nor, with js_templates,
     braces inside a nested template literal."""
     code_re = _INTERPOLATION_CODE_JS_RE if js_templates else _INTERPOLATION_CODE_RE
-    out = ["`"]
+    text_re = _DQ_TEMPLATE_TEXT_RE if simple_names else _TEMPLATE_TEXT_RE
+    out = [template[0]]
     dead: dict[str, int] = {}
-    end = len(template) - 1          # the closing backtick
+    end = len(template) - 1          # the closing backtick or quote
     i = 1
     while True:
-        j = _TEMPLATE_TEXT_RE.match(template, i, end).end()
+        j = text_re.match(template, i, end).end()
+        if simple_names and j < end and not template.startswith("${", j, end):
+            out.append(template[i:j + 1])
+            name = _DQ_TEMPLATE_NAME_RE.match(template, j + 1, end)
+            out.append(fn(name.group()))
+            i = name.end()
+            continue
         if not template.startswith("${", j, end):
             out.append(template[i:end])
             break
@@ -353,7 +416,7 @@ def _map_interpolations(template: str, fn: Callable[[str], str],
             break
         out.append("${" + fn(template[body:k]))
         i = k
-    out.append("`")
+    out.append(template[-1])
     return "".join(out)
 
 
@@ -716,6 +779,8 @@ def husk(input: str, crumb_level: int, options: dict) -> tuple[str, dict]:
         first = tok[0]
         if first == "`" and "${" in tok and lexer.backtick_interpolation:
             return _map_interpolations(tok, substitute_code, lexer.js_templates)
+        if first == '"' and lexer.dq_templates and "$" in tok and len(tok) > 1:
+            return _map_interpolations(tok, substitute_code, simple_names=True)
         if first in "fFtTrR" and (head := _FIELD_HEAD_RE.match(tok)):
             return _map_fields(tok, head.end(), substitute_code)
         # Strings, comments and numbers: pass through verbatim

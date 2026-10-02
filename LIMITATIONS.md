@@ -826,7 +826,14 @@ more. What the fixed defects did to committed husks is erratum E7.
   18,659 enciphered corpus tokens. Crumb 0 still enciphers them.]* Without a JS/TS
   `options.language` it splits a nested template at the inner backtick, and it does not encipher
   interpolation inside
-  double-quoted strings (Ruby `#{}`, Kotlin/shell `${}`, C# `$"{}"`).
+  double-quoted strings (Ruby `#{}`, Kotlin/shell `${}`, C# `$"{}"`). *[2026-10-01: with
+  `options.language` `kotlin`/`kt`/`kts` it enciphers Kotlin's `$name` and `${expr}` (every name
+  in a template used to stay in plain text beside its own pseudonym elsewhere on the line); a
+  template whose `${...}` holds a quoted string (`"${m["k"]}"`) still leaves its tail verbatim,
+  and a backtick-quoted Kotlin name passes through. `java` and `kotlin` also spare their keywords
+  (`synchronized`, `throws`, `long`, `data`, `override`, `val`, ...), which had been enciphered;
+  Kotlin's soft keywords (`data`, `value`, `field`, `it`, `get`, `set`) are spared everywhere, not
+  only where they are keywords. Ruby, shell and C# interpolation are still not enciphered.]*
 - *[2026-10-01]* **`fpe` enciphers the expressions in Python f- and t-string replacement fields**
   (`f"{invoice.amount_due!r:>{width}}"`, any prefix case, `'''`/`"""` included); the literal
   text, `{{`/`}}`, `\N{...}`, the conversion and the format-spec text stay verbatim. Every such

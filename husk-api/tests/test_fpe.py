@@ -364,3 +364,41 @@ def test_fpe_c_and_rust_lexers():
         assert kept in out, (kept, out)
     r = client.post("/dehusk", json={"input": out, "map": body["reidentify_map"]})
     assert r.json()["output"] == RUST_SRC
+
+
+def test_fpe_java_and_kotlin_lexers():
+    # A Kotlin string template passed through verbatim, so every name in it stayed
+    # in plain text beside its pseudonym elsewhere on the line, and Java/Kotlin
+    # keywords (synchronized, throws, long, double, data, override) were enciphered.
+    import re
+
+    kt = (
+        "data class Claim(val memberId: String, val amount: Double) {\n"
+        '    override fun toString(): String = "Due $memberId owes ${amount * rate} on ${ledger.period}, \\$5 $1"\n'
+        "}\n"
+    )
+    assert "$memberId owes ${amount * rate}" in _post({"input": kt, "crumb_level": 1})["output"]
+    body = _post({"input": kt, "crumb_level": 1, "options": {"language": "kotlin", "emit_map": True}})
+    out = body["output"]
+    assert body["meta"]["lexer"] == "kotlin"
+    for name in ("Claim", "memberId", "amount", "rate", "ledger", "period"):
+        assert not re.search(rf"\b{name}\b", out), (name, out)
+    for kept in ("data class ", "(val ", ": String, val ", ": Double)", "override fun toString(): String",
+                 '= "Due $', " owes ${", " * ", "} on ${", ", \\$5 $1\""):
+        assert kept in out, (kept, out)
+    r = client.post("/dehusk", json={"input": out, "map": body["reidentify_map"]})
+    assert r.json()["output"] == kt
+
+    java = (
+        "@Override\n"
+        "public synchronized boolean denyClaim(final long memberId, double amount) throws ClaimException {\n"
+        "    char tier = 'g'; short n = 1; List<String> reasons = new ArrayList<>();\n"
+        "    return amount > MAX_CLAIMS && reasons.isEmpty();\n"
+        "}\n"
+    )
+    out = _post({"input": java, "crumb_level": 1, "options": {"language": "java"}})["output"]
+    for name in ("denyClaim", "memberId", "amount", "ClaimException", "tier", "reasons", "MAX_CLAIMS"):
+        assert not re.search(rf"\b{name}\b", out), (name, out)
+    for kept in ("@Override\n", "public synchronized boolean ", "(final long ", ", double ", ") throws ",
+                 "char ", "short n", "List<String> ", "new ArrayList<>()", ".isEmpty()"):
+        assert kept in out, (kept, out)
