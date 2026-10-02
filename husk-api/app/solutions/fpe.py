@@ -48,13 +48,29 @@ from app.solutions.literal_tagging import _JS_LANGUAGES, _template_end
 # scanned by _span_end. In a single alternation, re.sub retried an unterminated
 # opener at every later opener, each retry scanning to the end of the input, so
 # one 200 KB request of escaped quotes held the process for minutes.
-def _token_re(slash_comments: bool, hash_comments: bool) -> re.Pattern[str]:
+def _token_re(slash_comments: bool, hash_comments: bool, *,
+              c_directives: bool = False, rust: bool = False) -> re.Pattern[str]:
     return re.compile(
-        r"(?P<open>'''|[`\"']|/\*)"     # quoted literal or /* block comment */
+        # C/C++ preprocessor: a directive name, an #include <...> path and a whole
+        # #pragma line pass through verbatim; the rest of a directive line is code,
+        # so a #define'd name gets the same pseudonym as its uses.
+        (r"(?m:^[ \t]*\#[ \t]*(?:include|include_next|import)[ \t]*<[^>\n]*>"
+         r"|^[ \t]*\#[ \t]*pragma\b[^\n]*"
+         r"|^[ \t]*\#[ \t]*[A-Za-z_]\w*)|" if c_directives else "")
+        # Rust: an attribute's name (#[derive(...)], #![allow(...)]) passes through
+        # verbatim and its arguments are code; a raw string r"..." / r#"..."#
+        # (b-prefixed too) opens here and is closed by _substitute; and only a
+        # char literal pairs a single quote: 'a in <'a> is a lifetime, not the
+        # opener of a string.
+        + (r"\#!?\[[ \t]*[A-Za-z_]\w*|(?P<rawopen>(?<!\w)b?r(?P<hashes>\#*)\")"
+           r"|'(?:[^'\\\n]|\\(?:u\{[0-9A-Fa-f_]{1,8}\}|x[0-9A-Fa-f]{2}|.))'|" if rust else "")
+        # quoted literal or /* block comment */
+        + (r"(?P<open>\"|/\*)" if rust else r"(?P<open>'''|[`\"']|/\*)")
         + (r"|//[^\n]*" if slash_comments else "")   # // line comment
         # # line comment (Python, shell), but not JS `this.#field`; where # is
-        # code, only a #! line at the very start is a comment
-        + (r"|(?<!\.)\#[^\n]*" if hash_comments else r"|\A\#![^\n]*")
+        # code, only a #! line at the very start is a comment (not in Rust, where
+        # #![...] is an attribute)
+        + (r"|(?<!\.)\#[^\n]*" if hash_comments else "" if rust else r"|\A\#![^\n]*")
         + r"|(?<!\w)\d\w*"              # number (0x1F, 0o755, 1_000); its tail is not an identifier
         # identifier (2+ chars, so `i`/`x` are never clobbered), except a two-letter string
         # prefix (Python/Rust rf, Rb, br, rt, ...) glued to its quote, which is part of the literal
@@ -77,9 +93,68 @@ class _Lexer:
     # The code in a backtick literal's ${...} is enciphered. Go's raw strings
     # have no interpolation, so under "go" they pass through like any literal.
     backtick_interpolation: bool = True
+    # The language's reserved words, spared at every crumb level, and its
+    # predeclared types and standard names, spared from crumb 1 (L1).
+    keywords: frozenset[str] = frozenset()
+    builtins: frozenset[str] = frozenset()
+
+
+# C, and C++ on top of it. `defined` is the preprocessor operator.
+_C_KEYWORDS = frozenset({
+    "auto", "char", "double", "extern", "float", "int", "long", "register",
+    "restrict", "short", "signed", "sizeof", "typedef", "union", "unsigned",
+    "volatile", "inline", "bool", "alignas", "alignof", "static_assert",
+    "thread_local", "typeof", "typeof_unqual", "constexpr", "nullptr",
+    "_Bool", "_Complex", "_Imaginary", "_Alignas", "_Alignof", "_Atomic",
+    "_Generic", "_Noreturn", "_Static_assert", "_Thread_local", "defined",
+})
+_CPP_KEYWORDS = _C_KEYWORDS | frozenset({
+    "template", "typename", "virtual", "override", "friend", "operator",
+    "explicit", "mutable", "noexcept", "decltype", "const_cast", "static_cast",
+    "dynamic_cast", "reinterpret_cast", "consteval", "constinit", "co_await",
+    "co_return", "co_yield", "concept", "requires", "wchar_t", "char8_t",
+    "char16_t", "char32_t", "xor", "bitand", "bitor", "compl", "and_eq",
+    "or_eq", "xor_eq", "not_eq", "typeid",
+})
+_C_BUILTINS = frozenset({
+    "size_t", "ssize_t", "ptrdiff_t", "intptr_t", "uintptr_t", "intmax_t",
+    "uintmax_t", "int8_t", "int16_t", "int32_t", "int64_t", "uint8_t",
+    "uint16_t", "uint32_t", "uint64_t", "wchar_t", "FILE", "NULL", "EOF",
+    "errno", "stdin", "stdout", "stderr", "printf", "fprintf", "sprintf",
+    "snprintf", "scanf", "sscanf", "puts", "fputs", "fgets", "fopen", "fclose",
+    "fread", "fwrite", "malloc", "calloc", "realloc", "free", "exit", "abort",
+    "memcpy", "memmove", "memset", "memcmp", "strlen", "strcmp", "strncmp",
+    "strcpy", "strncpy", "strcat", "strchr", "strstr", "atoi", "strtol", "assert",
+})
+_CPP_BUILTINS = _C_BUILTINS | frozenset({
+    "std", "vector", "string_view", "unordered_map", "unordered_set",
+    "unique_ptr", "shared_ptr", "weak_ptr", "make_unique", "make_shared",
+    "optional", "variant", "pair", "array", "deque", "cout", "cerr", "endl",
+    "move", "forward", "size", "begin", "end", "push_back", "emplace_back",
+})
+_RUST_KEYWORDS = frozenset({
+    "crate", "dyn", "loop", "match", "mod", "move", "mut", "pub", "ref",
+    "Self", "unsafe", "where", "macro_rules", "union", "box", "become",
+    "priv", "unsized", "virtual", "macro",
+})
+_RUST_BUILTINS = frozenset({
+    "i8", "i16", "i32", "i64", "i128", "isize", "u8", "u16", "u32", "u64",
+    "u128", "usize", "f32", "f64", "char", "str",
+    "Option", "Some", "Result", "Ok", "Err", "Vec", "Box", "Rc", "Arc",
+    "RefCell", "Cell", "Mutex", "HashMap", "HashSet", "BTreeMap", "BTreeSet",
+    "VecDeque", "ToString", "Into", "From", "TryFrom", "TryInto", "AsRef",
+    "Iterator", "IntoIterator", "Default", "Drop", "Fn", "FnMut", "FnOnce",
+    "Send", "Sync", "Sized", "Copy", "Clone", "Debug", "Display", "PartialEq",
+    "Eq", "PartialOrd", "Ord", "Hash", "std", "core", "alloc", "fmt",
+    "collections", "println", "eprintln", "format", "vec", "write", "writeln",
+    "panic", "assert", "assert_eq", "assert_ne", "matches", "todo",
+    "unimplemented", "unreachable", "unwrap", "expect", "clone", "iter",
+    "into", "to_string", "as_str", "new", "test", "feature",
+})
 
 
 _DEFAULT_LEXER = _Lexer("default", _TOKEN_RE)
+_C_TOKEN_RE = _token_re(slash_comments=True, hash_comments=False, c_directives=True)
 _LEXERS = {
     **dict.fromkeys(("py", "pyi", "pyw", "python"),
                     _Lexer("python", _token_re(slash_comments=False, hash_comments=True))),
@@ -89,6 +164,16 @@ _LEXERS = {
     **dict.fromkeys(("go", "golang"),
                     _Lexer("go", _token_re(slash_comments=True, hash_comments=False),
                            backtick_interpolation=False)),
+    **dict.fromkeys(("c", "h"),
+                    _Lexer("c", _C_TOKEN_RE, backtick_interpolation=False,
+                           keywords=_C_KEYWORDS, builtins=_C_BUILTINS)),
+    **dict.fromkeys(("cpp", "c++", "cc", "cxx", "hpp", "hh", "hxx"),
+                    _Lexer("cpp", _C_TOKEN_RE, backtick_interpolation=False,
+                           keywords=_CPP_KEYWORDS, builtins=_CPP_BUILTINS)),
+    **dict.fromkeys(("rs", "rust"),
+                    _Lexer("rust", _token_re(slash_comments=True, hash_comments=False, rust=True),
+                           backtick_interpolation=False,
+                           keywords=_RUST_KEYWORDS, builtins=_RUST_BUILTINS)),
 }
 
 
@@ -175,6 +260,21 @@ def _substitute(text: str, replace: Callable[[str], str],
     while (m := lexer.token_re.search(text, pos)) is not None:
         start, stop = m.span()
         opener = m.group("open")
+        if raw := m.groupdict().get("rawopen"):
+            # Rust raw string: no escapes, ends at the first quote followed by as
+            # many # as opened it. A failed search fails from every later opener
+            # with the same closer, so it is paid for once.
+            closer = '"' + m.group("hashes")
+            close = -1 if "raw" + closer in dead else text.find(closer, stop)
+            if close < 0:
+                dead["raw" + closer] = len(text)
+                pos = start + 1
+                continue
+            stop = close + len(closer)
+            out.append(text[kept:start])
+            out.append(text[start:stop])       # verbatim, like any literal
+            kept = pos = stop
+            continue
         if opener is not None:
             prefix = _field_prefix_len(text, start) if opener in ("'''", '"', "'") else 0
             if prefix and text.startswith('"""', start):
@@ -415,18 +515,18 @@ _ALPHABET_MIXED = string.ascii_letters + string.digits + "_"
 
 
 @functools.cache
-def _spared_words(crumb_level: int) -> frozenset[str]:
-    """The fixed word lists kept as-is at this crumb level."""
-    words = _BASELINE_KEYWORDS
+def _spared_words(crumb_level: int, lexer: _Lexer = _DEFAULT_LEXER) -> frozenset[str]:
+    """The fixed word lists kept as-is at this crumb level, for this language."""
+    words = _BASELINE_KEYWORDS | lexer.keywords
     if crumb_level >= 1:
-        words |= _STDLIB_NAMES
+        words |= _STDLIB_NAMES | lexer.builtins
     if crumb_level >= 2:
         words |= _GENERIC_DOMAIN_NOUNS
     return words
 
 
-def _should_skip(token: str, crumb_level: int) -> bool:
-    if token in _spared_words(crumb_level):
+def _should_skip(token: str, crumb_level: int, lexer: _Lexer = _DEFAULT_LEXER) -> bool:
+    if token in _spared_words(crumb_level, lexer):
         return True
     if crumb_level >= 3:
         humps = len(re.findall(r"[A-Z][a-z]+", token))
@@ -572,7 +672,8 @@ def _load_key() -> tuple[bytes, str]:
 )
 def husk(input: str, crumb_level: int, options: dict) -> tuple[str, dict]:
     key, key_id = _load_key()
-    reserved = _spared_words(crumb_level)
+    lexer = _lexer_for(options)
+    reserved = _spared_words(crumb_level, lexer)
     fallback = _make_cipher_fallback(key, _ALPHABET_MIXED, reserved)
     backend_name = "pyffx"
     try:
@@ -595,7 +696,6 @@ def husk(input: str, crumb_level: int, options: dict) -> tuple[str, dict]:
     # Only the JSON boolean true opts in: the map re-identifies the source, so
     # a string such as "false" must not switch it on by being truthy.
     emit_map = options.get("emit_map") is True
-    lexer = _lexer_for(options)
     flat = dataclasses.replace(lexer, js_templates=False)
 
     nesting = 0
@@ -621,7 +721,7 @@ def husk(input: str, crumb_level: int, options: dict) -> tuple[str, dict]:
         # Strings, comments and numbers: pass through verbatim
         if not (first.isalpha() or first == "_"):
             return tok
-        if _should_skip(tok, crumb_level):
+        if _should_skip(tok, crumb_level, lexer):
             skipped += 1
             spared.add(tok)
             return tok

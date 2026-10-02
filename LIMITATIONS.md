@@ -798,8 +798,18 @@ more. What the fixed defects did to committed husks is erratum E7.
   `python`/`py`, `//` is code; with a JS/TS name (as `literal-tagging` takes it), `#` is code apart
   from a leading `#!` line, and a nested template literal is one literal; with `go`/`golang`, `#` is
   code and a backtick raw string passes through verbatim, `${...}` included. `meta.lexer` says
-  which rules ran. C `#define`/`#include` and Rust `#[attr]` lines still pass through verbatim,
-  under every setting. The UI sends `options.language` from its Language menu (since
+  which rules ran. *[2026-10-01: `c`/`h` and `cpp`/`c++`/`cc`/`cxx`/`hpp`/`hh`/`hxx` make a
+  preprocessor line code: the directive name, an `#include <...>` path and a whole `#pragma` line
+  stay verbatim, and a `#define`d name gets the same pseudonym as its uses (unset, the line is a
+  `#` comment, so the macro's name stays in plain text beside its enciphered uses). `rs`/`rust`
+  makes `#[attr]`/`#![attr]` code apart from the attribute's name, passes raw strings
+  (`r#"..."#`) through verbatim, and pairs a single quote only as a char literal, so a lifetime
+  (`<'a>`, `&'a str`) or loop label no longer pairs with the next quote on its line and leaves
+  the names between in plain text. Each adds its language's keywords (spared at every level) and
+  its predeclared types and standard names (from crumb 1). Not handled: C++ raw strings
+  (`R"(...)"`), nested Rust block comments, and a Rust attribute name that is itself a domain
+  word (`#[claims_audit]`).]* Without one of these settings, C `#define`/`#include` and Rust
+  `#[attr]` lines still pass through verbatim as `#` comments. The UI sends `options.language` from its Language menu (since
   2026-10-01; unset by default); the evals harness does not.
 - `fpe` now leaves two-letter string prefixes (`rf"..."`, `Rb'...'`) and the TS contextual keywords
   `keyof`, `readonly`, `declare` and `satisfies` as they are; each used to be enciphered and break

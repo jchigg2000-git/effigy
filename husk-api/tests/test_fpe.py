@@ -301,3 +301,66 @@ def test_fpe_spares_go_and_ts_builtin_types_from_crumb_1():
     for name in ("Holding", "unknownThing"):
         assert name not in out
     assert "string" not in _post({"input": src, "crumb_level": 0})["output"]   # L0 spares keywords only
+
+
+C_SRC = '''#include <stdio.h>
+#include "claims/adjudicate.h"
+#  define MAX_CLAIMS 42
+#pragma once
+#if defined(MAX_CLAIMS)
+typedef unsigned long claim_id;
+#endif
+static int deny_claim(const char *member, double amount) {
+    if (amount > MAX_CLAIMS) return sizeof(claim_id);
+    printf("%s", member); return 0;
+}
+'''
+
+RUST_SRC = '''#![allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct Claim<'a> { member: &'a str, amount: f64 }
+impl<'a> Claim<'a> {
+    pub fn deny(&mut self, reason: &'a str) -> Option<&'a str> {
+        let q = br#"SELECT "member_id" FROM claims"#; let ch = '\\''; let nl = b'\\n';
+        'outer: loop { match self.member { _ => break 'outer } }
+        None
+    }
+}
+'''
+
+
+def test_fpe_c_and_rust_lexers():
+    # Unset, a C #define line was a "#" comment, so the macro's name stayed in plain
+    # text while its uses were enciphered, and C's own keywords (typedef, unsigned,
+    # double, sizeof) were enciphered. In Rust a lifetime's quote paired with the
+    # next one on the line ('a> { member: &'), so the names between stayed in plain
+    # text, and pub/mut/match were enciphered.
+    import re
+
+    blind = _post({"input": C_SRC, "crumb_level": 1})["output"]
+    assert "#  define MAX_CLAIMS 42" in blind
+    body = _post({"input": C_SRC, "crumb_level": 1, "options": {"language": "c", "emit_map": True}})
+    out = body["output"]
+    assert body["meta"]["lexer"] == "c"
+    for name in ("MAX_CLAIMS", "claim_id", "deny_claim", "member", "amount"):
+        assert not re.search(rf"\b{name}\b", out), (name, out)
+    for kept in ("#include <stdio.h>", '#include "claims/adjudicate.h"', "#pragma once",
+                 "#if defined(", "typedef unsigned long ", "(const char *", "double ",
+                 "return sizeof(", 'printf("%s", '):
+        assert kept in out, (kept, out)
+    assert len(out) == len(C_SRC)
+    r = client.post("/dehusk", json={"input": out, "map": body["reidentify_map"]})
+    assert r.json()["output"] == C_SRC
+
+    assert "member" in _post({"input": RUST_SRC, "crumb_level": 1})["output"]
+    body = _post({"input": RUST_SRC, "crumb_level": 1, "options": {"language": "rs", "emit_map": True}})
+    out = body["output"]
+    assert body["meta"]["lexer"] == "rust"
+    for name in ("Claim", "member", "amount", "reason", "dead_code", "outer"):
+        assert not re.search(rf"\b{name}\b", out), (name, out)
+    for kept in ("#![allow(", "#[derive(Debug, Clone)]", "pub struct ", "<'a> { ", ": &'a str, ",
+                 ": f64 }", "(&mut self, ", "-> Option<&'a str>", 'br#"SELECT "member_id" FROM claims"#',
+                 "'\\''", "b'\\n'", ": loop { match self.", "break '", "None"):
+        assert kept in out, (kept, out)
+    r = client.post("/dehusk", json={"input": out, "map": body["reidentify_map"]})
+    assert r.json()["output"] == RUST_SRC
