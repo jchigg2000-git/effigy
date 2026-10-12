@@ -54,7 +54,7 @@ defect it sits beside, because reviewers read the labels instead of the code whe
 they do.
 
 > **Provenance.** The corpus is synthetic and spec-first. `corpus/stacks/` was
-> written from `corpus/stacks/SPEC.md` — a 969-line normative spec that fixes the
+> written from `corpus/stacks/SPEC.md` — a 971-line normative spec that fixes the
 > module layout, symbol inventory, literal classes and all nine pathologies by
 > anchor before a line of it existed. The spec is the contract and the tree was
 > generated to satisfy it; `evals/run_eval.py --verify` re-checks that it still
